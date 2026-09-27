@@ -3,9 +3,9 @@
 main()(stdin の JSON → 対象パスかつcoverage.include未列挙ならexit code 2でstderrへ
 警告 / それ以外は何も出力せず正常終了)の入出力仕様を検証する。
 
-`.claude/hooks/`はpythonpath外かつ非パッケージのため、
+`.codex/hooks/`はpythonpath外かつ非パッケージのため、
 importlib.util.spec_from_file_locationでモジュールをロードする
-(dev-flowプラグインのフックテストと同じ方式)。
+。
 """
 
 import importlib.util
@@ -37,7 +37,8 @@ def _make_repo(tmp_path: Path, include_lines: list[str]) -> Path:
     frontend.mkdir()
     include_body = ",\n".join(f'      "{line}"' for line in include_lines)
     (frontend / "vite.config.ts").write_text(
-        f"export default {{\n  test: {{\n    coverage: {{\n      include: [\n{include_body}\n      ],\n"
+        "export default {\n  test: {\n    coverage: {\n"
+        f"      include: [\n{include_body}\n      ],\n"
         "    },\n  },\n}};\n",
         encoding="utf-8",
     )
@@ -188,4 +189,52 @@ class TestFailOpenOnInvalidInput:
 
         _run_main(monkeypatch, {"tool_input": {"file_path": file_path}, "cwd": str(tmp_path)})
 
+        assert capsys.readouterr().err == ""
+
+
+class TestCodexPatch:
+    def test_multiple_files_from_frontend_cwd(self, tmp_path, monkeypatch, capsys):
+        repo_root = _make_repo(tmp_path, ["src/lib/apiClient.ts"])
+        for name in ("apiClient.ts", "newClient.ts", "otherClient.ts"):
+            _write_target_file(repo_root, f"frontend/src/lib/{name}")
+        patch = "\n".join([
+            "*** Begin Patch",
+            "*** Update File: src/lib/apiClient.ts",
+            "*** Add File: src/lib/newClient.ts",
+            "*** Add File: src/lib/otherClient.ts",
+            "*** End Patch",
+        ])
+        with pytest.raises(SystemExit) as error:
+            _run_main(monkeypatch, {
+                "tool_name": "apply_patch", "tool_input": {"command": patch},
+                "cwd": str(repo_root / "frontend"),
+            })
+        assert error.value.code == 2
+        warning = capsys.readouterr().err
+        assert "newClient.ts" in warning
+        assert "otherClient.ts" in warning
+        assert "apiClient.ts" not in warning
+
+    def test_move_checks_destination_and_ignores_delete(self, tmp_path, monkeypatch, capsys):
+        repo_root = _make_repo(tmp_path, [])
+        _write_target_file(repo_root, "frontend/src/lib/newClient.ts")
+        patch = "\n".join([
+            "*** Begin Patch",
+            "*** Delete File: frontend/src/lib/deleted.ts",
+            "*** Update File: frontend/src/lib/oldClient.ts",
+            "*** Move to: frontend/src/lib/newClient.ts",
+            "*** End Patch",
+        ])
+        with pytest.raises(SystemExit):
+            _run_main(monkeypatch, {
+                "tool_input": {"command": patch}, "cwd": str(repo_root),
+            })
+        warning = capsys.readouterr().err
+        assert "newClient.ts" in warning
+        assert "oldClient.ts" not in warning
+        assert "deleted.ts" not in warning
+
+    @pytest.mark.parametrize("tool_input", [None, [], "invalid", {"command": []}])
+    def test_invalid_tool_input_is_ignored(self, tmp_path, monkeypatch, capsys, tool_input):
+        _run_main(monkeypatch, {"tool_input": tool_input, "cwd": str(tmp_path)})
         assert capsys.readouterr().err == ""

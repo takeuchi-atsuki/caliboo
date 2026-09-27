@@ -1,0 +1,11 @@
+# Project-local settings; loaded only for trusted projects.
+# Models are selected per PoC agent; the main session keeps the user's model.
+approval_policy = "on-request"
+sandbox_mode = "workspace-write"
+
+[sandbox_workspace_write]
+network_access = false
+
+# Preserve the previous preference to disable usage analytics.
+[analytics]
+enabled = false

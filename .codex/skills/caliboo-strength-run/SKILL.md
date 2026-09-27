@@ -1,21 +1,32 @@
 ---
 name: caliboo-strength-run
-description: "強み解析PoC(`example/Caliboo_強み解析_PoC_機能追加_基本仕様書.md`)のrunを、事前執筆の台本ではなく本セッションのClaudeが4種のエージェント(strength-worker/-trainer/-reviewer/-analyst)を演じて実行し、`POST /api/poc/runs/import`へ投入する。"
-when_to_use: "強み解析PoCを実LLMで(台本のデモシナリオ以外で)動かしたいとき、検証(a)機構妥当性を確認したいとき、既存3ペルソナ以外のシナリオで`/strengths`画面の表示を確認したいときに使う。"
+description: "強み解析PoC(`example/Caliboo_強み解析_PoC_機能追加_基本仕様書.md`)のrunを、事前執筆の台本ではなく本セッションのCodexが4種のエージェント(strength-worker/-trainer/-reviewer/-analyst)を演じて実行し、`POST /api/poc/runs/import`へ投入する。"
 ---
 
-強み解析PoCの①ループ×3 → ②日報 → ③3職種レビュー(Fan-inはサーバー側) → ④解析、を本セッションのClaudeが演じて1 run分の入力を組み立て、`POST /api/poc/runs/import`へ投入する。
+## 使用する場面
 
-前提として`docs/architecture.md`「強み解析PoCの構成」節が説明する通り、アプリ実行時にLLMを呼ぶ経路は無い(台本ベースの`AuthoredMockProvider`のみ)。本skillはその制約の外側、つまり「Claude Codeセッション自身が生成を担い、結果を投入する」経路を担う。
+強み解析PoCを実LLMで(台本のデモシナリオ以外で)動かしたいとき、検証(a)機構妥当性を確認したいとき、既存3ペルソナ以外のシナリオで`/strengths`画面の表示を確認したいときに使う。
+
+強み解析PoCの①ループ×3 → ②日報 → ③3職種レビュー(Fan-inはサーバー側) → ④解析、を本セッションのCodexが演じて1 run分の入力を組み立て、`POST /api/poc/runs/import`へ投入する。
+
+前提として`docs/architecture.md`「強み解析PoCの構成」節が説明する通り、アプリ実行時にLLMを呼ぶ経路は無い(台本ベースの`AuthoredMockProvider`のみ)。本skillはその制約の外側、つまり「Codexセッション自身が生成を担い、結果を投入する」経路を担う。
 
 ## 前提条件
 
-- backend devサーバーが`http://localhost:8000`で起動していること(`./devel/dev-server.sh`、または`cd backend && python3 -m uvicorn caliboo_api.main:app --reload --port 8000`)。起動していなければユーザーに起動を依頼するか、Bashでバックグラウンド起動する。
-- 4つのAgent定義(`.claude/agents/strength-worker.md`・`strength-trainer.md`・`strength-reviewer.md`・`strength-analyst.md`)が使える状態であること。
+- backend devサーバーが`http://localhost:8000`で起動していること(`./devel/dev-server.sh`、または`cd backend && python3 -m uvicorn caliboo_api.main:app --reload --port 8000`)。起動していなければユーザーに起動を依頼するか、シェルでバックグラウンド起動する。
+- 4つのAgent定義(`.codex/agents/strength-worker.toml`・`strength-trainer.toml`・`strength-reviewer.toml`・`strength-analyst.toml`)が使える状態であること。
+
+## エージェントの起動と入力分離
+
+このskillの実行時は、4種の役割をサブエージェントへ委譲する。各TOML定義のモデルと指示を使い、会話履歴を継承しない新規エージェントへ必要な入力だけを渡す。`collaboration.spawn_agent`を使う環境では`fork_turns="none"`とし、TOMLの`developer_instructions`を依頼文に含め、`model`を明示する。カスタムエージェント選択を備えた環境では対応する名前を指定する。
+
+親エージェントはリポジトリ全体やペルソナを見られるため、独立解析を親が代演してはならない。別モデル・履歴分離を利用できない場合は実行を止め、その制約を報告する。モデルを変更する場合は実際のモデル名をtraceへ記録する。各呼び出しが終了したら環境が備える終了・解放操作で並列枠を解放する。
+
+仕様書の`example/`がない場合は`docs/architecture.md`・`docs/api.md`とこのskillの入出力定義を参照する。
 
 ## 1. 入力の確認
 
-次が未指定ならAskUserQuestionで確認する。
+次が未指定ならユーザーへの質問で確認する。
 
 | 項目 | 説明 | 既定 |
 | --- | --- | --- |
@@ -29,9 +40,9 @@ when_to_use: "強み解析PoCを実LLMで(台本のデモシナリオ以外で)�
 
 各周(iteration=1,2,3)ごとに、スクラッチパッドの`run.json`へ追記しながら進める。
 
-1. `strength-worker`を反復モードで起動する(`run_in_background: false`。次周が前周の結果に依存するため直列実行)。入力: ペルソナ説明(`injectedPersona`があれば含める)・当該周のタスク定義・それまでの全trajectory。
+1. `strength-worker`を反復モードで起動する(結果を待ってから次へ進む。次周が前周の結果に依存するため直列実行)。入力: ペルソナ説明(`injectedPersona`があれば含める)・当該周のタスク定義・それまでの全trajectory。
 2. `strength-trainer`を起動する。入力: 当該周のタスク定義・`workerOutput`・それまでのtrajectory。1〜2周目は`nextTask`も受け取る。
-3. `mode: hitl`の場合、`trainerFeedback`をAskUserQuestionで提示し「承認する/上書きする」を選ばせる。上書きされた内容を`humanOverride`に記録する(`mode: agent`では`humanOverride`は常に`null`)。
+3. `mode: hitl`の場合、`trainerFeedback`をユーザーへの質問で提示し「承認する/上書きする」を選ばせる。上書きされた内容を`humanOverride`に記録する(`mode: agent`では`humanOverride`は常に`null`)。
 4. `trajectory[]`に`{iteration, task, workerOutput, trainerFeedback, humanOverride}`を追記する。
 5. 1〜2周目は、`strength-trainer`が返した`nextTask`を次周のタスク定義として使う(3周目には次タスクが無い)。
 
@@ -41,7 +52,7 @@ when_to_use: "強み解析PoCを実LLMで(台本のデモシナリオ以外で)�
 
 ## 4. 3職種レビュー
 
-`strength-reviewer`を`alpha`(管理職/MELCHIOR)・`beta`(講師/BALTHASAR)・`gamma`(シニアエンジニア/CASPER)の3ロールで並列起動する(3つのAgent呼び出しを同一メッセージ内で行う。前後の依存が無いため)。各ロールには`diary`のみを渡す(trajectoryは渡さない。基本仕様書§3の入力欄に合わせる)。返ってきた`comment`・`flags`に`agentKey`・`reviewerRole`・`magiTone`を補って`reviews[]`(3件、alpha→beta→gammaの順)を組み立てる。
+`strength-reviewer`を`alpha`(管理職/MELCHIOR)・`beta`(講師/BALTHASAR)・`gamma`(シニアエンジニア/CASPER)の3ロールで並列起動する(空き枠があれば3件を並列実行し、全件の完了を待つ。枠不足なら順次実行する)。各ロールには`diary`のみを渡す(trajectoryは渡さない。基本仕様書§3の入力欄に合わせる)。返ってきた`comment`・`flags`に`agentKey`・`reviewerRole`・`magiTone`を補って`reviews[]`(3件、alpha→beta→gammaの順)を組み立てる。
 
 ## 5. 独立解析(別モデル)
 
@@ -52,7 +63,7 @@ when_to_use: "強み解析PoCを実LLMで(台本のデモシナリオ以外で)�
 - `diary`は`mentorComment`が無い状態(手順3の出力そのもの)を渡す
 - `reviews`は手順4で組み立てた3件(Fan-in前の個別コメント)を渡す
 
-返ってきた`strengths`/`overallStatus`/`notes`に、`subjectId`・`runId`(空文字のままでよい。サーバー側が投入後に補完する対象は`strengths`側のみで、`externalAnalysis`側は補完されない)・`generatedAt`(現在時刻のISO8601)・`provider`(例: `"strength-analyst_opus_2026-09-24.1"`、モデル名とpromptVersionを含める)を補い、`externalStrengths`として保持する。
+返ってきた`strengths`/`overallStatus`/`notes`に、`subjectId`・`runId`(空文字のままでよい。サーバー側が投入後に補完する対象は`strengths`側のみで、`externalAnalysis`側は補完されない)・`generatedAt`(現在時刻のISO8601)・`provider`(例: `"strength-analyst_gpt-6-astra_2026-09-28.1"`、モデル名とpromptVersionを含める)を補い、`externalStrengths`として保持する。
 
 ## 6. サーバーへの投入
 
@@ -60,7 +71,7 @@ when_to_use: "強み解析PoCを実LLMで(台本のデモシナリオ以外で)�
 
 ```json
 {
-  "personaKey": "external_claude",
+  "personaKey": "external_codex",
   "subjectId": "<手順1>",
   "label": "<手順1>",
   "injectedPersona": "<手順1、省略時null>",
@@ -68,31 +79,31 @@ when_to_use: "強み解析PoCを実LLMで(台本のデモシナリオ以外で)�
   "diary": "<手順3>",
   "reviews": "<手順4>",
   "trace": {
-    "generationProvider": "claude_session",
+    "generationProvider": "codex_session",
     "agents": [
-      { "key": "strength-worker", "model": "sonnet", "promptVersion": "2026-09-24.1" },
-      { "key": "strength-trainer", "model": "sonnet", "promptVersion": "2026-09-24.1" },
-      { "key": "strength-reviewer", "model": "sonnet", "promptVersion": "2026-09-24.1" },
-      { "key": "strength-analyst", "model": "opus", "promptVersion": "2026-09-24.1" }
+      { "key": "strength-worker", "model": "gpt-6-sol", "promptVersion": "2026-09-28.1" },
+      { "key": "strength-trainer", "model": "gpt-6-sol", "promptVersion": "2026-09-28.1" },
+      { "key": "strength-reviewer", "model": "gpt-6-sol", "promptVersion": "2026-09-28.1" },
+      { "key": "strength-analyst", "model": "gpt-6-astra", "promptVersion": "2026-09-28.1" }
     ]
   },
   "externalStrengths": "<手順5>"
 }
 ```
 
-`model`・`promptVersion`は実際に使用したAgent定義のfrontmatter(`model`)と本文冒頭の`promptVersion`をそのまま転記する(定義を改訂したら値も更新する)。
+`model`・`promptVersion`は実際に使用したAgent定義のTOMLの`model`と`developer_instructions`内の`promptVersion`をそのまま転記する(定義を改訂したら値も更新する)。
 
 ### HTTP呼び出し方法
 
-`curl`/`wget`は`.claude/settings.json`のdenyで禁止されているため使わない。スクラッチパッドへペイロードをJSONファイルとして書き出し、`python3`標準ライブラリ(`urllib.request`)でPOSTする。
+HTTP投入は次の標準ライブラリの手順を使う。スクラッチパッドへペイロードをJSONファイルとして書き出し、`python3`標準ライブラリ(`urllib.request`)でPOSTする。
 
 APIは`/api/auth/login`・`/api/auth/logout`以外すべて認証必須のため、開発用の講師アカウント(`sensei`、`docs/screens/login.md`参照)でログインし、発行されたセッションCookieを付けて投入する。
 
 > [!NOTE]
 > 投入経路だけを認証の対象外にしなかったのは、誰でもrunを投入できる穴を残さないため(ユーザー判断、2026-09-25)。
 
-1. Writeツールでスクラッチパッドに`payload.json`を書く。
-2. 次のPythonスクリプトを同ディレクトリに`post_import.py`として保存し、Bashで`python3 post_import.py`を実行する。
+1. ファイル編集ツールでスクラッチパッドに`payload.json`を書く。
+2. 次のPythonスクリプトを同ディレクトリに`post_import.py`として保存し、シェルで`python3 post_import.py`を実行する。
 
 ```python
 import http.cookiejar

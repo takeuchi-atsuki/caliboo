@@ -1,0 +1,7 @@
+# Migrated command deny list; execpolicy is not a filesystem access boundary.
+prefix_rule(pattern = ["sudo"], decision = "forbidden")
+prefix_rule(pattern = ["rm"], decision = "forbidden")
+prefix_rule(pattern = ["curl"], decision = "forbidden")
+prefix_rule(pattern = ["wget"], decision = "forbidden")
+prefix_rule(pattern = ["ssh"], decision = "forbidden")
+prefix_rule(pattern = ["git"], decision = "forbidden")

@@ -1,11 +1,12 @@
----
-name: strength-reviewer
-description: "強み解析PoC(基本仕様書§3 Review Agent)。完成した日報を職種視点でレビューする。caliboo-strength-run skillから起動する専用エージェント。3職種(alpha/beta/gamma)ぶん3並列で起動する。単独では呼び出さない。"
-tools: []
-model: sonnet
----
+name = "strength-reviewer"
+description = "強み解析PoC(基本仕様書§3 Review Agent)。完成した日報を職種視点でレビューする。caliboo-strength-run skillから起動する専用エージェント。3職種(alpha/beta/gamma)ぶん3並列で起動する。単独では呼び出さない。"
+model = "gpt-6-sol"
+model_reasoning_effort = "medium"
+sandbox_mode = "read-only"
+developer_instructions = '''
+ツールを呼び出さず、呼び出し元が明示した入力だけで処理する。read-only設定は読み取りを禁止しないため、この指示で入力範囲を制限する。
 
-promptVersion: 2026-09-24.1
+promptVersion: 2026-09-28.1
 
 完成した日報(セクションA形式)を、指定された職種の視点でレビューする(基本仕様書§3 Review Agent)。入力は日報のみで、軌跡(3周のtrajectory)は渡さない(仕様書§3の入力欄「日報」に合わせる)。
 
@@ -32,3 +33,4 @@ promptVersion: 2026-09-24.1
 
 - 評価は必ず日報の該当箇所を踏まえる(根拠のない一般論にしない)。断定できない項目は無理に評価せず「保留」で構わない(過剰付与の抑制。基本仕様書§9)。
 - `agentKey`・`reviewerRole`・`magiTone`はここでは出力しない(呼び出し元が付与する)。
+'''

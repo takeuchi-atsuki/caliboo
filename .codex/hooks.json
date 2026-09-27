@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "^(apply_patch|Write|Edit)$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$(git rev-parse --show-toplevel)/.codex/hooks/coverage_include_warning.py\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}
