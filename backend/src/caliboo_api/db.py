@@ -15,6 +15,7 @@ from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session, sessionmaker
 
 from caliboo_api.auth.password import hash_password
+from caliboo_api.data.account_data import initialize_extensions
 from caliboo_api.data.seed import (
     assignment_seed,
     home_seed,
@@ -250,6 +251,10 @@ def _seed_report(session: Session, users: dict[str, User]) -> None:
             )
 
 
+def _demo_seed_enabled() -> bool:
+    return os.environ.get("CALIBOO_DEMO_SEED", "true").strip().lower() in {"1", "true"}
+
+
 def _check_schema_compatibility(session: Session) -> None:
     """旧スキーマ(`users`テーブル導入前)のDBを検知し、起動を失敗させる。
 
@@ -269,7 +274,9 @@ def _check_schema_compatibility(session: Session) -> None:
     departments_seeded = session.query(Department).first() is not None
     users_seeded = session.query(User).first() is not None
 
-    if departments_seeded and (not users_seeded or "user_id" not in columns):
+    if departments_seeded and (
+        (not users_seeded and _demo_seed_enabled()) or "user_id" not in columns
+    ):
         raise RuntimeError(
             "旧スキーマのDBを検出しました。backend/var/caliboo.db を削除して再起動してください。"
         )
@@ -294,12 +301,15 @@ def bootstrap_db() -> None:
         _check_schema_compatibility(session)
 
         if session.query(Department).first() is not None:
+            initialize_extensions(session)
             return
 
-        users = _seed_users(session)
-        _seed_home(session, users)
+        if _demo_seed_enabled():
+            users = _seed_users(session)
+            _seed_home(session, users)
+            _seed_assignment(session, users)
+            _seed_report(session, users)
         _seed_ojt(session)
         _seed_study(session)
-        _seed_assignment(session, users)
-        _seed_report(session, users)
         session.commit()
+        initialize_extensions(session)

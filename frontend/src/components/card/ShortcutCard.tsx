@@ -16,7 +16,6 @@ export interface ShortcutCardProps {
 export function ShortcutCard({ icon, title, description, tone, to }: ShortcutCardProps) {
   const theme = useTheme();
   const style = theme.palette.accent[tone];
-  const shadow = `color-mix(in srgb, ${style.main} 20%, transparent)`;
 
   return (
     <Box
@@ -24,36 +23,39 @@ export function ShortcutCard({ icon, title, description, tone, to }: ShortcutCar
       to={to}
       sx={{
         flex: { xs: "1 1 auto", md: 1 },
-        background: style.light,
+        minWidth: 0,
+        background: style.wash,
+        border: "1px solid var(--color-border-soft)",
         borderRadius: "22px",
-        padding: "24px",
+        padding: { xs: "20px", lg: "24px" },
         display: "flex",
         alignItems: "center",
-        gap: "16px",
+        gap: "14px",
         cursor: "pointer",
         textDecoration: "none",
         transition: "transform .16s, box-shadow .16s",
-        "@media (prefers-reduced-motion: reduce)": {
-          transition: "none",
-        },
         "@media (hover: hover) and (pointer: fine)": {
           "&:hover": {
-            transform: "translateY(-5px)",
-            boxShadow: `0 18px 32px ${shadow}`,
+            transform: "translateY(-2px)",
+            boxShadow: "var(--shadow-card)",
           },
         },
         "&:focus-visible": {
-          transform: "translateY(-5px)",
-          boxShadow: `0 18px 32px ${shadow}`,
+          outline: "3px solid var(--color-action)",
+          outlineOffset: 3,
+        },
+        "@media (prefers-reduced-motion: reduce)": {
+          transition: "none",
+          "&:hover": { transform: "none" },
         },
       }}
     >
       <Box
         sx={{
-          width: 54,
-          height: 54,
+          width: 48,
+          height: 48,
           borderRadius: "17px",
-          background: "color-mix(in srgb, var(--color-panel) 65%, transparent)",
+          background: style.light,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -62,10 +64,10 @@ export function ShortcutCard({ icon, title, description, tone, to }: ShortcutCar
       >
         <PhosphorIcon name={icon} size={26} color={style.main} />
       </Box>
-      <Box sx={{ flex: 1 }}>
-        <Box sx={{ fontWeight: 800, fontSize: 18, color: "var(--color-text)" }}>{title}</Box>
+      <Box sx={{ flex: 1, minWidth: 0 }}>
+        <Box sx={{ fontWeight: 700, fontSize: 16, color: "var(--color-text)" }}>{title}</Box>
         {description ? (
-          <Box sx={{ fontWeight: 500, fontSize: 12, color: style.main }}>{description}</Box>
+          <Box sx={{ fontWeight: 400, fontSize: 12, lineHeight: 1.7, mt: 0.5, color: "var(--color-text-sub2)" }}>{description}</Box>
         ) : null}
       </Box>
       <PhosphorIcon name="ph-bold ph-arrow-right" size={19} color={style.main} />

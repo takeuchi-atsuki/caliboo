@@ -1,3 +1,4 @@
+import { ProposalRegenerate } from "./ProposalRegenerate";
 import { useEffect, useState } from "react";
 import { Link as RouterLink, Navigate, useNavigate, useParams } from "react-router-dom";
 import Alert from "@mui/material/Alert";
@@ -43,7 +44,7 @@ export function AssignmentProposalPage() {
 
   return (
     <PageContainer>
-      <div style={{ padding: "26px 30px", display: "flex", flexDirection: "column", gap: 20 }}>
+      <div style={{ padding: "var(--page-gutter)", display: "flex", flexDirection: "column", gap: 24 }}>
         <Box
           component={RouterLink}
           to="/assignments?tab=proposals"
@@ -75,6 +76,7 @@ export function AssignmentProposalPage() {
               <Box component="span" sx={{ fontWeight: 700, fontSize: 13, color: "var(--color-text)" }}>
                 {proposal.target.displayName}
               </Box>
+              <ProposalRegenerate proposalId={proposal.id} pending={proposal.status === "pending"} generator={proposal.generator} />
               <Tag label={proposalStatusLabel(proposal.status)} tone={proposalStatusTone(proposal.status)} />
             </Box>
 

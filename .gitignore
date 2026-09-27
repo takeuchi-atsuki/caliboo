@@ -1,8 +1,13 @@
 # Backend
 __pycache__/
 .pytest_cache/
+.coverage
+.coverage.*
+*.egg-info/
 
 # Frontend
 node_modules/
 dist/
 build/
+coverage/
+*.tsbuildinfo

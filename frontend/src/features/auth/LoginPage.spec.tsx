@@ -70,3 +70,16 @@ describe("LoginPage", () => {
     expect(screen.getByText("ログインして始めよう")).toBeInTheDocument();
   });
 });
+
+it("試行制限を専用メッセージで表示する", async () => {
+  const { fireEvent } = await import("@testing-library/react");
+  const { ApiError } = await import("../../lib/apiClient");
+  const auth = authValue("unauthenticated");
+  auth.login.mockRejectedValue(new ApiError(429, "limited"));
+  mockedUseAuth.mockReturnValue(auth);
+  renderWithFrom();
+  fireEvent.change(screen.getByLabelText("ログインID"), { target: { value: "yuki" } });
+  fireEvent.change(screen.getByLabelText("パスワード"), { target: { value: "password" } });
+  fireEvent.click(screen.getByRole("button", { name: "ログイン" }));
+  expect(await screen.findByText(/最大15分/)).toBeInTheDocument();
+});

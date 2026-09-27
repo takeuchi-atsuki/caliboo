@@ -11,6 +11,7 @@ from datetime import datetime, timedelta, timezone
 from sqlalchemy.orm import Session
 
 from caliboo_api.models import User, UserSession
+from caliboo_api.extension_models import AccountState
 
 COOKIE_NAME = "caliboo_session"
 SESSION_LIFETIME = timedelta(hours=12)
@@ -60,6 +61,9 @@ def get_user_for_token(session: Session, token: str) -> User | None:
     if row is None:
         return None
     if datetime.fromisoformat(row.expires_at) < _now():
+        return None
+    state = session.get(AccountState, row.user_id)
+    if state is not None and not state.active:
         return None
     return session.get(User, row.user_id)
 

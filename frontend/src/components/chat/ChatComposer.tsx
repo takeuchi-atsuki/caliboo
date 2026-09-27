@@ -46,7 +46,7 @@ export function ChatComposer({
           background: "var(--color-bg)",
           borderRadius: "15px",
           padding: "14px 17px",
-          font: "500 14px 'M PLUS Rounded 1c'",
+          font: "400 16px var(--font-body)",
           color: "var(--color-text)",
         }}
       />
@@ -59,11 +59,11 @@ export function ChatComposer({
           flex: "none",
           borderRadius: "15px",
           background: accentColor,
-          boxShadow: `0 8px 18px color-mix(in srgb, ${accentColor} 40%, transparent)`,
+          boxShadow: "none",
           "&:hover": { background: accentColor },
         }}
       >
-        <PhosphorIcon name="ph-fill ph-paper-plane-tilt" color="var(--color-panel)" size={20} />
+        <PhosphorIcon name="ph-fill ph-paper-plane-tilt" color="var(--color-on-pastel)" size={20} />
       </IconButton>
     </Box>
   );

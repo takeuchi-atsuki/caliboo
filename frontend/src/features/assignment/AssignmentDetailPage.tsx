@@ -65,7 +65,7 @@ export function AssignmentDetailPage() {
 
   return (
     <PageContainer>
-      <div style={{ padding: "26px 30px", display: "flex", flexDirection: "column", gap: 20 }}>
+      <div style={{ padding: "var(--page-gutter)", display: "flex", flexDirection: "column", gap: 24 }}>
         <Box
           component={RouterLink}
           to="/assignments"
@@ -95,7 +95,7 @@ export function AssignmentDetailPage() {
             <div style={panelStyle}>
               <Box sx={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "10px", flexWrap: "wrap" }}>
                 <span style={{ fontWeight: 800, fontSize: 20, color: "var(--color-text)" }}>{assignment.title}</span>
-                <Tag label={assignmentStatusLabel(assignment.status)} tone={assignmentStatusTone(assignment.status)} />
+                {user.role === "member" && <Tag label={assignmentStatusLabel(assignment.status)} tone={assignmentStatusTone(assignment.status)} />}
                 {user.role === "admin" ? (
                   <Box component="span" sx={{ fontWeight: 700, fontSize: 12.5, color: "var(--color-text-sub)" }}>
                     配信先: {assignment.target ? assignment.target.displayName : "全員"}
@@ -173,6 +173,7 @@ export function AssignmentDetailPage() {
                     </div>
                     <div style={{ whiteSpace: "pre-wrap", fontSize: 13.5, color: "var(--color-text-sub2)" }}>
                       {assignment.submission.feedbackComment}
+                      {assignment.submission.score != null && <p>点数: {assignment.submission.score} / 100</p>}
                     </div>
                   </div>
                 ) : null}
@@ -212,7 +213,7 @@ export function AssignmentDetailPage() {
                         status={item.status}
                         submission={item.submission}
                         submitting={submitting}
-                        onSubmit={(comment) => submitFeedback(item.user.id, comment)}
+                        onSubmit={(comment, score) => submitFeedback(item.user.id, comment, score)}
                       />
                     </div>
                   ))}

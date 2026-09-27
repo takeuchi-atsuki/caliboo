@@ -19,8 +19,8 @@ const inputStyle = {
   border: "1.5px solid var(--color-border)",
   background: "var(--color-bg)",
   borderRadius: 13,
-  padding: "11px 14px",
-  font: "500 13.5px/1.6 'M PLUS Rounded 1c'",
+  padding: "13px 16px",
+  font: "400 16px/1.6 var(--font-body)",
   color: "var(--color-text)",
 };
 
@@ -62,7 +62,9 @@ export function LoginPage() {
       setErrorMessage(
         err instanceof ApiError && err.status === 401
           ? "ログインIDまたはパスワードが正しくありません"
-          : "ログインできませんでした。時間をおいて再度お試しください。",
+          : err instanceof ApiError && err.status === 429
+            ? "ログイン試行が多すぎます。最大15分待ってから再度お試しください。"
+            : "ログインできませんでした。時間をおいて再度お試しください。",
       );
     } finally {
       setSubmitting(false);
@@ -72,8 +74,8 @@ export function LoginPage() {
   return (
     <Box
       sx={{
-        minHeight: "100vh",
-        background: "var(--color-bg)",
+        minHeight: "100dvh",
+        background: "radial-gradient(ellipse at 20% 15%, var(--color-pink-100), transparent 55%), radial-gradient(ellipse at 80% 85%, var(--color-green-100), transparent 55%), var(--color-bg)",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -84,12 +86,13 @@ export function LoginPage() {
         component="form"
         onSubmit={handleSubmit}
         sx={{
-          width: 360,
+          width: 420,
           maxWidth: "100%",
           background: "var(--color-panel)",
-          borderRadius: "26px",
-          padding: "34px 30px",
-          boxShadow: "0 6px 20px var(--color-border-soft)",
+          borderRadius: "var(--radius-lg)",
+          padding: { xs: "32px 24px", sm: "40px" },
+          border: "1px solid var(--color-border-soft)",
+          boxShadow: "var(--shadow-float)",
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
@@ -98,7 +101,7 @@ export function LoginPage() {
       >
         <Mascot size={72} color="var(--color-green-300)" mood="cheer" />
         <Box sx={{ textAlign: "center" }}>
-          <Box sx={{ fontWeight: 800, fontSize: 22, color: "var(--color-text)" }}>Caliboo</Box>
+          <Box component="h1" sx={{ m: 0, fontFamily: "'Nunito', sans-serif", fontWeight: 800, fontSize: 32, letterSpacing: "-0.04em", color: "var(--color-text)" }}>Caliboo</Box>
           <Box sx={{ fontWeight: 500, fontSize: 12.5, color: "var(--color-text-sub)", marginTop: "4px" }}>
             ログインして始めよう
           </Box>

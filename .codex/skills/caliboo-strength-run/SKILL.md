@@ -3,6 +3,10 @@ name: caliboo-strength-run
 description: "強み解析PoC(`example/Caliboo_強み解析_PoC_機能追加_基本仕様書.md`)のrunを、事前執筆の台本ではなく本セッションのCodexが4種のエージェント(strength-worker/-trainer/-reviewer/-analyst)を演じて実行し、`POST /api/poc/runs/import`へ投入する。"
 ---
 
+## 実日報・待ちジョブの処理
+
+実日報の解析、強み候補の生成、解析管理画面の待ちジョブ、課題案の再生成を依頼された場合は [references/live-reports.md](references/live-reports.md) の実日報モードを使用する。手順5の独立解析を実提出データへ適用し、模擬の3周ループは作成しない。ChatGPT API・外部LLM APIを呼ばずCodexサブエージェントを使う。
+
 ## 使用する場面
 
 強み解析PoCを実LLMで(台本のデモシナリオ以外で)動かしたいとき、検証(a)機構妥当性を確認したいとき、既存3ペルソナ以外のシナリオで`/strengths`画面の表示を確認したいときに使う。
@@ -55,6 +59,8 @@ description: "強み解析PoC(`example/Caliboo_強み解析_PoC_機能追加_基
 `strength-reviewer`を`alpha`(管理職/MELCHIOR)・`beta`(講師/BALTHASAR)・`gamma`(シニアエンジニア/CASPER)の3ロールで並列起動する(空き枠があれば3件を並列実行し、全件の完了を待つ。枠不足なら順次実行する)。各ロールには`diary`のみを渡す(trajectoryは渡さない。基本仕様書§3の入力欄に合わせる)。返ってきた`comment`・`flags`に`agentKey`・`reviewerRole`・`magiTone`を補って`reviews[]`(3件、alpha→beta→gammaの順)を組み立てる。
 
 ## 5. 独立解析(別モデル)
+
+実日報モードは上記 `references/live-reports.md` の手順5に従う。以下はPoCモード。
 
 `strength-analyst`を起動する。入力は次のように整形する(いずれも仕様書§8(a)の循環評価回避のため必須の加工):
 

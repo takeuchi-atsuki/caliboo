@@ -37,3 +37,6 @@ source = ["caliboo_api"]
 # 分岐カバレッジも計測する。行カバレッジだけだと、条件式の片側しか通っていない
 # 判定ロジック(解析エンジンのしきい値分岐等)が100%と表示されてしまうため。
 branch = true
+
+[tool.setuptools.package-data]
+caliboo_api = ["quiz_assets/*.svg"]

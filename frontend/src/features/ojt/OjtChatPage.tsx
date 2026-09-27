@@ -1,3 +1,4 @@
+import { Alert, Button as MuiButton } from "@mui/material";
 import Box from "@mui/material/Box";
 import IconButton from "@mui/material/IconButton";
 
@@ -19,20 +20,21 @@ export function OjtChatPage() {
     setInput,
     selectDept,
     backToDeptList,
-    sendMessage,
+    sendMessage, error, sending, escalated, escalate,
     quickAsks,
   } = useOjt();
 
   if (!selectedDept) {
     return (
       <PageContainer>
-        <div style={{ padding: "34px 38px", minHeight: 560 }}>
+        {error && <Alert severity="error">{error}</Alert>}
+        <div style={{ padding: "var(--page-gutter)", minHeight: 560 }}>
           <div style={{ display: "flex", gap: 14, marginBottom: 6 }}>
             <Mascot size={48} color="var(--color-green-200)" mood="cheer" />
             <div>
-              <div style={{ fontWeight: 800, fontSize: 24, color: "var(--color-text)" }}>
+              <h1 style={{ margin: 0, fontWeight: 800, fontSize: 24, color: "var(--color-text)" }}>
                 どの課のことを聞きたい？
-              </div>
+              </h1>
               <div style={{ fontWeight: 500, fontSize: 13, color: "var(--color-text-sub)" }}>
                 課を選ぶとAIメンターに相談できます
               </div>
@@ -42,7 +44,7 @@ export function OjtChatPage() {
             sx={{
               display: "grid",
               gridTemplateColumns: { xs: "1fr", md: "repeat(3,1fr)" },
-              gap: 18,
+              gap: "18px",
               marginTop: "24px",
             }}
           >
@@ -95,6 +97,8 @@ export function OjtChatPage() {
         <ChatMessageList messages={messages} botIconBg="var(--color-green-200)" botIconColor="var(--color-green-500)" meBg="var(--color-green-400)" />
         <div style={{ padding: "16px 24px", background: "var(--color-panel)", borderTop: "1px solid var(--color-border-soft)" }}>
           <QuickQuestionChips questions={quickAsks} onSelect={sendMessage} hoverColor="var(--color-green-500)" />
+          {error && <Alert severity="error">{error}</Alert>}
+          <MuiButton disabled={sending || escalated} onClick={() => void escalate()}>{escalated ? "講師に相談済み" : "講師に相談"}</MuiButton>
           <ChatComposer
             value={input}
             onChange={setInput}

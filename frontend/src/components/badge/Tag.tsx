@@ -16,7 +16,8 @@ export function Tag({ label, tone = "green" }: TagProps) {
     <Box
       component="span"
       sx={{
-        padding: "7px 15px",
+        display: "inline-flex",
+        padding: "7px 13px",
         borderRadius: "20px",
         fontWeight: 700,
         fontSize: 12.5,

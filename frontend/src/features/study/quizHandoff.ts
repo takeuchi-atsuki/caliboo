@@ -1,4 +1,4 @@
-import type { ChatMessage } from "../../lib/types";
+import type { ChatMessage, QuizChoice } from "../../lib/types";
 
 /**
  * 2a(過去問演習ドリル)から2b(質問チャット)へ画面遷移時のstateで引き継ぐ問題。
@@ -8,7 +8,7 @@ import type { ChatMessage } from "../../lib/types";
  */
 export interface QuizHandoff {
   text: string;
-  choices: string[];
+  choices: QuizChoice[];
 }
 
 // !NOTE: 出題は4択前提(seedの全問題が4択)。2aの選択肢ラベルと引き継ぎ文のラベルを揃えるため共有する。
@@ -39,11 +39,15 @@ export function readQuizHandoff(state: unknown): QuizHandoff | null {
   if (typeof quizQuestion !== "object" || quizQuestion === null) return null;
   const { text, choices } = quizQuestion as { text?: unknown; choices?: unknown };
   if (typeof text !== "string" || !Array.isArray(choices)) return null;
-  if (!choices.every((choice) => typeof choice === "string")) return null;
+  if (!choices.every((choice) => typeof choice === "string" || (
+    typeof choice === "object" && choice !== null && typeof choice.text === "string" &&
+    typeof choice.alt === "string" && choice.alt.trim() !== "" &&
+    typeof choice.imageUrl === "string" && /^\/quiz-assets\/[A-Za-z0-9_-]+\.svg$/.test(choice.imageUrl)
+  ))) return null;
   return { text, choices };
 }
 
 export function buildQuizQuestionPrompt(question: QuizHandoff): string {
-  const choiceLines = question.choices.map((choice, index) => `${CHOICE_LETTERS[index]}. ${choice}`);
+  const choiceLines = question.choices.map((choice, index) => `${CHOICE_LETTERS[index]}. ${typeof choice === "string" ? choice : `${choice.text}（図: ${choice.alt}）`}`);
   return ["この問題がわからない：", question.text, "", ...choiceLines].join("\n");
 }

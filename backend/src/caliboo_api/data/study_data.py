@@ -6,7 +6,8 @@
 """
 
 from caliboo_api.db import session_scope
-from caliboo_api.models import Certification, HomeProfile, ProgressCategory as ProgressCategoryModel
+from caliboo_api.models import Certification, HomeProfile
+from caliboo_api.extension_models import UserProgress
 from caliboo_api.models import QuizQuestion as QuizQuestionModel
 from caliboo_api.models import RelatedQuestion as RelatedQuestionModel
 from caliboo_api.schemas.study import (
@@ -84,7 +85,7 @@ def fetch_study_progress(user_id: int) -> StudyProgress:
     with session_scope() as session:
         profile = session.query(HomeProfile).filter(HomeProfile.user_id == user_id).first()
         certification = session.get(Certification, profile.certification_id)
-        categories = session.query(ProgressCategoryModel).all()
+        categories = session.query(UserProgress).filter_by(user_id=user_id).all()
 
         return StudyProgress(
             certification=StudyCertification(
@@ -92,7 +93,7 @@ def fetch_study_progress(user_id: int) -> StudyProgress:
                 achievementPercent=certification.achievement_percent,
             ),
             categories=[
-                ProgressCategory(id=row.id, label=row.label, percent=row.percent)
+                ProgressCategory(id=row.category_id, label=row.label, percent=row.percent)
                 for row in categories
             ],
             streakDays=profile.user_streak_days,

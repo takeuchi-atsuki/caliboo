@@ -26,3 +26,5 @@ class CurrentUser(BaseModel):
     loginId: str
     displayName: str
     role: Role
+
+    streakDays: int = 0

@@ -5,6 +5,7 @@
 """
 
 from caliboo_api.db import session_scope
+from caliboo_api.extension_models import StrengthCandidate
 from caliboo_api.models import Certification, HomeProfile, User
 from caliboo_api.schemas.home import (
     HomeCertification,
@@ -59,9 +60,10 @@ def fetch_home_summary(user_id: int) -> HomeSummary:
                 achievementPercent=certification.achievement_percent,
             ),
             strengths=[
-                HomeStrength(label=profile.strength1_label, tone=profile.strength1_tone),
-                HomeStrength(label=profile.strength2_label, tone=profile.strength2_tone),
-                HomeStrength(label=profile.strength3_label, tone=profile.strength3_tone),
+                HomeStrength(label=row.label, tone="green", evidence=row.evidence,
+                             growthAction=row.growth_action)
+                for row in session.query(StrengthCandidate).filter_by(
+                    user_id=user_id, status="approved").order_by(StrengthCandidate.id.desc())
             ],
             shortcuts=_SHORTCUTS,
         )

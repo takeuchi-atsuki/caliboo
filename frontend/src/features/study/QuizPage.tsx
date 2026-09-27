@@ -1,3 +1,4 @@
+import Alert from "@mui/material/Alert";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import Box from "@mui/material/Box";
@@ -34,7 +35,7 @@ function choiceStyle(
           border: "var(--color-blue-400)",
           color: "var(--color-blue-500)",
           lbg: "var(--color-blue-400)",
-          lcolor: "var(--color-panel)",
+          lcolor: "var(--color-on-pastel)",
         }
       : {
           bg: "var(--color-panel)",
@@ -72,13 +73,14 @@ function choiceStyle(
 }
 
 export function QuizPage() {
-  const { progress, question, categoryFilter, selectedIndex, result, selectCategory, selectChoice, submitAnswer, nextQuestion } =
+  const { error, submitting, progress, question, categoryFilter, selectedIndex, result, selectCategory, selectChoice, submitAnswer, nextQuestion } =
     useQuiz();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   if (!progress || !question) {
     return (
       <PageContainer>
+      {error && <Alert severity="error">{error}</Alert>}
         <div style={{ padding: 36 }}>読み込み中…</div>
       </PageContainer>
     );
@@ -88,6 +90,7 @@ export function QuizPage() {
 
   return (
     <PageContainer>
+      {error && <Alert severity="error">{error}</Alert>}
       <div style={{ display: "flex", minHeight: 640 }}>
         <CollapsibleAside
           open={sidebarOpen}
@@ -151,7 +154,7 @@ export function QuizPage() {
             <StreakBadge days={progress.streakDays} />
           </div>
         </CollapsibleAside>
-        <main style={{ flex: 1, padding: "28px 34px", display: "flex", flexDirection: "column" }}>
+        <main style={{ flex: 1, minWidth: 0, padding: "var(--page-gutter)", display: "flex", flexDirection: "column" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 18 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <IconButton
@@ -204,9 +207,9 @@ export function QuizPage() {
               const isCorrectMark = index === result?.correctIndex;
               return (
                 <FormControlLabel
-                  key={choice}
+                  key={index}
                   value={String(index)}
-                  disabled={answered}
+                  disabled={answered || submitting}
                   // !NOTE: 見た目上のカードはFormControlLabelのlabel部分として描画し、
                   //        Radio自体は視覚的に隠している。ネイティブradio要素を使うことで、
                   //        矢印キーでの選択肢間移動がブラウザ標準の挙動として手に入る
@@ -246,7 +249,7 @@ export function QuizPage() {
                         {CHOICE_LETTERS[index]}
                       </Box>
                       <Box component="span" sx={{ flex: 1, fontWeight: 600, fontSize: 15, color: style.color }}>
-                        {choice}
+                        {typeof choice === "string" ? choice : <span>{choice.text}<img src={choice.imageUrl} alt={choice.alt} style={{ display: "block", maxWidth: "100%", width: 260 }} /></span>}
                       </Box>
                       {showMark ? (
                         <PhosphorIcon
@@ -295,7 +298,7 @@ export function QuizPage() {
               </div>
             </div>
           ) : null}
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "auto", paddingTop: 22 }}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 12, justifyContent: "space-between", alignItems: "center", marginTop: "auto", paddingTop: 22 }}>
             <Link
               to="/study/chat"
               state={{ quizQuestion: { text: question.text, choices: question.choices } }}
@@ -330,8 +333,8 @@ export function QuizPage() {
                   fontWeight: 800,
                   fontSize: 14,
                   textTransform: "none",
-                  color: "var(--color-panel)",
-                  boxShadow: "0 8px 18px color-mix(in srgb, var(--color-blue-400) 40%, transparent)",
+                  color: "var(--color-on-pastel)",
+                  boxShadow: "none",
                   "&:hover": { background: "var(--color-blue-400)" },
                 }}
               >
@@ -341,6 +344,7 @@ export function QuizPage() {
             ) : (
               <Button
                 onClick={submitAnswer}
+                disabled={selectedIndex === null || submitting}
                 disableRipple
                 sx={{
                   display: "flex",
@@ -353,7 +357,7 @@ export function QuizPage() {
                   textTransform: "none",
                   cursor: selectedIndex === null ? "default" : "pointer",
                   background: selectedIndex === null ? "var(--color-bg-alt)" : "var(--color-blue-400)",
-                  color: selectedIndex === null ? "var(--color-text-sub)" : "var(--color-panel)",
+                  color: selectedIndex === null ? "var(--color-text-sub)" : "var(--color-on-pastel)",
                   "&:hover": { background: selectedIndex === null ? "var(--color-bg-alt)" : "var(--color-blue-400)" },
                 }}
               >

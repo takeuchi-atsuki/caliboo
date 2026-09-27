@@ -13,6 +13,7 @@ from caliboo_api.data.assignment_data import (
     save_submission,
 )
 from caliboo_api.db import get_session
+from caliboo_api.data.agent_jobs import enqueue_strength
 from caliboo_api.models import User
 from caliboo_api.schemas.assignment import (
     AssignmentCreateRequest,
@@ -48,7 +49,7 @@ def create_new_assignment(
     session: Session = Depends(get_session),
     _admin: User = Depends(require_admin),
 ) -> AssignmentDetail:
-    return create_assignment(session, payload.title, payload.body)
+    return create_assignment(session, payload.title, payload.body, payload.targetUserId)
 
 
 @router.post("/{assignment_id}/submission", response_model=AssignmentDetail)
@@ -65,6 +66,7 @@ def submit_assignment_answer(
         raise HTTPException(
             status_code=409, detail=f"assignment already reviewed: {assignment_id}"
         )
+    enqueue_strength(session, member.id)
     return result
 
 
@@ -88,11 +90,12 @@ def submit_member_feedback(
     session: Session = Depends(get_session),
     _admin: User = Depends(require_admin),
 ) -> MemberSubmission:
-    result = save_member_feedback(session, assignment_id, user_id, payload.comment)
+    result = save_member_feedback(session, assignment_id, user_id, payload.comment, payload.score)
     if result is FeedbackSaveError.ASSIGNMENT_NOT_FOUND:
         raise HTTPException(status_code=404, detail=f"assignment not found: {assignment_id}")
     if result is FeedbackSaveError.USER_NOT_FOUND:
         raise HTTPException(status_code=404, detail=f"member not found: {user_id}")
     if result is FeedbackSaveError.NOT_SUBMITTED:
         raise HTTPException(status_code=409, detail=f"assignment not submitted: {assignment_id}")
+    enqueue_strength(session, user_id)
     return result

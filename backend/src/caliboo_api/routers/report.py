@@ -9,6 +9,8 @@ from caliboo_api.data.report_data import (
     fetch_report_history,
 )
 from caliboo_api.db import get_session
+from caliboo_api.data.agent_jobs import enqueue_strength
+from caliboo_api.data.proposal_extensions import auto_propose
 from caliboo_api.models import User
 from caliboo_api.schemas.report import (
     ReportDraftListResponse,
@@ -27,6 +29,9 @@ def submit_report(
     user: User = Depends(get_current_user),
 ) -> ReportResponse:
     report = create_report(session, user.id, payload)
+    if report.status == "submitted" and user.role == "member":
+        enqueue_strength(session, user.id)
+        auto_propose(session, user.id)
     report_id = f"rpt_{payload.date.replace('-', '')}_{report.id}"
     return ReportResponse(
         id=report_id,

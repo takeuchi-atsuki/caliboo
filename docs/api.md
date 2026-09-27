@@ -2,7 +2,7 @@
 
 FastAPIアプリ本体: `backend/src/caliboo_api/main.py`。CORS設定は持たない(開発時はViteの`server.proxy`で`/api`を転送し、画面と同一オリジンで呼び出す。理由は`docs/architecture.md`「認証・認可」参照)。
 
-`POST /api/auth/login`・`POST /api/auth/logout`以外の全エンドポイントはログイン必須で、未認証(Cookie無し・無効・期限切れ)の場合は401 `{"detail": "not authenticated"}`を返す。ロールによる権限不足は403 `{"detail": "forbidden"}`。ユーザーごとのデータ(ホーム・資格勉強の進捗・日報・課題の提出)は、ログイン中のユーザーのものだけを返す。ただし、資格勉強の分野別進捗率(`progress_categories`)は全ユーザー共通(`BACKLOG.md` #21)。
+`POST /api/auth/login`・`POST /api/auth/logout`以外の全エンドポイントはログイン必須で、未認証(Cookie無し・無効・期限切れ)の場合は401 `{"detail": "not authenticated"}`を返す。ロールによる権限不足は403 `{"detail": "forbidden"}`。ユーザーごとのデータ(ホーム・資格勉強の進捗・日報・課題の提出)は、ログイン中のユーザーのものだけを返す。分野別進捗率は`user_progress_categories`の本人行を返す。
 
 ## 認証
 
@@ -15,7 +15,7 @@ FastAPIアプリ本体: `backend/src/caliboo_api/main.py`。CORS設定は持た�
 `login`・`me`のレスポンス(`schemas/auth.py`の`CurrentUser`):
 
 ```json
-{ "id": 1, "loginId": "yuki", "displayName": "ユウキ", "role": "member" }
+{ "id": 1, "loginId": "yuki", "displayName": "ユウキ", "role": "member", "streakDays": 12 }
 ```
 
 `role`は`"member"`(新入社員)|`"admin"`(講師)。開発用アカウントは`docs/screens/login.md`を参照。
@@ -182,7 +182,7 @@ FastAPIアプリ本体: `backend/src/caliboo_api/main.py`。CORS設定は持た�
 
 `status`は`"not_submitted"`(未提出)|`"submitted"`(レビュー待ち)|`"reviewed"`(フィードバック済み)。`submission`は未提出の場合`null`。
 
-`target`は配信先で、全員宛ての課題は`null`、個人宛ての課題(課題案から配信)は`{ "id": 3, "displayName": "ハルカ" }`。一覧(`GET /api/assignments`)の各要素にも含む。`messageForMember`(詳細のみ)は講師から対象者へのひとことで、全員宛て・未入力の場合は`null`。
+`target`は配信先で、全員宛ての課題は`null`、個人宛ての課題(手動作成または課題案から配信)は`{ "id": 3, "displayName": "ハルカ" }`。一覧(`GET /api/assignments`)の各要素にも含む。`messageForMember`(詳細のみ)は講師から対象者へのひとことで、全員宛て・未入力の場合は`null`。
 
 !NOTE: 課題が課題案から配信されたかどうか(由来)はこのAPIに出さない。新入社員に「AIが作った」ことを見せない方針(`docs/screens/assignment.md`「AIの課題案」)のため。講師が課題から元の課題案を引くときは`GET /api/assignment-proposals?assignmentId=`を使う。
 
@@ -491,3 +491,50 @@ print(opener.open("http://localhost:8000/api/home/summary").read().decode("utf-8
 ```
 
 !NOTE: テストは`pyproject.toml`の`addopts`により既定で`--disable-socket --allow-unix-socket`が付く(テストが実ネットワークへ出ないことを担保するため)。Unixソケットを許可しているのは、FastAPIの`TestClient`が内部のイベントループ起動に`socketpair`(AF_UNIX)を使うためで、これを塞ぐと`TestClient`を使うテストが起動できなくなる。
+
+## 運用拡張API（2026-09-28）
+
+以下の既存APIの変更と追加APIを使用する。正確な型定義は `schemas/agent_jobs.py`、`routers/users.py`、`routers/proposal_agent.py` と `/openapi.json` を参照。
+
+- `login/me` は `streakDays` を返す。ログイン失敗が実接続元単位で15分20回に達した場合は429と `Retry-After`（秒）を返す。
+- ホームの `strengths` は本人の承認済み候補（可変件数）。各要素は `label,tone,evidence,growthAction`。未承認のみなら空配列。
+- OJTのmessagesは共通初期メッセージと本人×課の永続履歴、`escalated`を返す。chatは質問と一次回答を保存する。
+- クイズの `choices` は文字列または `{text,imageUrl,alt}`。画像は `/quiz-assets/[A-Za-z0-9_-]+.svg` に限定、alt必須。`selectedIndex`が範囲外なら422。正解済み問題の重複を数えず、本人の分野別・資格全体進捗を更新する。画像自体は認証を要しない静的コンテンツ。
+- 課題作成は任意の `targetUserId`（有効なmember）を受け付ける。不正な対象は404。フィードバックは任意の `score`（0〜100整数/null）を受け付け、提出の詳細にも返す。
+
+| Method | Path | 権限・入出力 |
+| --- | --- | --- |
+| GET | /api/users | admin。`{users:[{id,loginId,displayName,role,active,departmentId,history}]}`。任意のdepartmentIdで絞込 |
+| POST | /api/users | admin。loginId/displayName/password/role/departmentId。パスワード12〜128文字。作成201、ID重複409 |
+| POST | /api/users/{user_id} | admin。displayName/role/active/departmentId、任意password。本人無効化・降格409。パスワード/ロール変更・無効化で既存セッション失効 |
+| POST | /api/ojt/departments/{dept_id}/escalate | member本人。保存済み会話がある課を相談。重複依頼は冪等。発言なし409 |
+| GET | /api/ojt/escalations | admin。任意departmentId。threadsとpendingCount。明示相談された履歴のみ |
+| POST | /api/ojt/escalations/{thread_id}/reply | admin。`{text}`。同じ履歴に講師名付き回答を保存。未相談404、回答済み409 |
+| GET | /api/development/strengths | 本人/講師。任意userId（他人指定はadminのみ）。candidatesとjobs。memberには承認済み候補のみ |
+| POST | /api/development/strengths/{user_id}/request | admin。提出材料をスナップショット化。材料なし409、対象不在404。同じ材料は同じジョブ |
+| GET | /api/development/jobs | admin。処理待ちjobs |
+| GET | /api/development/jobs/{job_id} | admin。ジョブ情報・materials・result |
+| POST | /api/development/jobs/{job_id}/strength-result | admin。StrengthResultを取り込み候補を確認待ちで保存。引用/材料ID/skillCode重複を検証。古い/完了済み409、形式422 |
+| POST | /api/development/strengths/{candidate_id}/decision | admin。`{status:approved/rejected,label,growthAction}`。確認待ちのみ。既決409 |
+| GET | /api/development/evaluations/{job_id}/materials | admin。人間ラベル付け用の材料（解析結果を含めない） |
+| POST | /api/development/evaluations/{job_id} | admin。`{skillCodes,accepted,comment}`。完了した強みジョブのみ。本人の評価を更新しmatch(exact/partial/none)を返す |
+| GET | /api/development/evaluations | admin。evaluatedJobs/requiredJobs=20/requiredReviewers=2/agreement/acceptance/threshold=0.8/status。statusはinsufficient_data/passed/failed |
+| POST | /api/assignment-proposals/{proposal_id}/regenerate | admin。`{instruction}`。確認待ち課題案に再生成ジョブを登録 |
+| GET | /api/assignment-proposals/{proposal_id}/revisions | admin。調整指示とprevious（旧課題内容）の履歴 |
+| POST | /api/assignment-proposals/agent-jobs/{job_id}/result | admin。ProposalAgentResultを保存。配信済み・見送り済み・旧版不一致409 |
+
+StrengthResultの形:
+
+```json
+{
+  "trace": {"provider":"codex_agent","model":"gpt-6-astra","promptVersion":"live-2026-09-28.1"},
+  "candidates": [{"label":"確認する力","skillCode":"TEST","confidence":75,
+    "evidence":[{"materialId":"report:1:keep","quote":"原文の引用"}],
+    "growthAction":"次の小さな取り組み"}],
+  "notes":"解析の根拠と限界"
+}
+```
+
+候補は最大10件、根拠は候補ごとに1〜10件、confidenceは0〜100整数。ジョブのsourcesから原文を引用する。`evidenceEligible=false`（Problem/Try/気分コメント）を根拠にすると422。入力なしを推測して補完せず空候補を保存できる。traceはモデル・プロンプト版の追跡情報であり、サーバーがモデル実行を証明する署名ではない。取込は認証済み講師専用。
+
+ProposalAgentResultはtrace/title/body/messageForMember/rationale/estimateMinutes（5〜480）。再生成結果の自動配信はしない。

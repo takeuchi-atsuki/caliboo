@@ -79,12 +79,12 @@ export function useAssignmentDetail(assignmentId: number, role: UserRole) {
     }
   };
 
-  const submitFeedback = async (userId: number, comment: string) => {
+  const submitFeedback = async (userId: number, comment: string, score?: number | null) => {
     setSubmitting(true);
     try {
       const data = await apiClient.post<MemberSubmission>(
         `/api/assignments/${assignmentId}/submissions/${userId}/feedback`,
-        { comment }
+        { comment, ...(score !== undefined ? { score } : {}) }
       );
       setSubmissions((prev) => prev.map((item) => (item.user.id === userId ? data : item)));
       setNotice({ severity: "success", message: "フィードバックを保存しました。" });

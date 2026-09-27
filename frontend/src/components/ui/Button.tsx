@@ -23,13 +23,13 @@ export function Button({
     variant === "primary"
       ? {
           background: accentColor,
-          color: "var(--color-panel)",
-          boxShadow: `0 8px 18px color-mix(in srgb, ${accentColor} 40%, transparent)`,
+          color: "var(--color-on-pastel)",
+          boxShadow: "none",
           border: "none",
         }
       : {
           background: "var(--color-panel)",
-          color: "var(--color-text-sub2)",
+          color: "var(--color-text)",
           border: "1px solid var(--color-border)",
         };
 
@@ -40,17 +40,20 @@ export function Button({
       disableElevation
       style={style}
       sx={{
-        display: "flex",
+        display: "inline-flex",
         alignItems: "center",
         gap: "7px",
-        padding: "11px 24px",
+        minHeight: 44,
+        padding: "11px 20px",
         borderRadius: "14px",
-        fontWeight: 800,
-        fontSize: 13.5,
+        fontWeight: 700,
+        fontSize: 14,
         textTransform: "none",
         cursor: "pointer",
         ...variantSx,
-        "&:hover": variantSx,
+        "&:hover": { ...variantSx, filter: "brightness(.97)" },
+        "&:active": { filter: "brightness(.93)" },
+        "&.Mui-disabled": { background: "var(--color-bg-alt)", color: "var(--color-text-sub)", border: "1px solid var(--color-border-soft)", boxShadow: "none" },
       }}
       {...rest}
     >

@@ -88,7 +88,7 @@ export function AssignmentListPage() {
 
   return (
     <PageContainer>
-      <div style={{ padding: "26px 30px", display: "flex", flexDirection: "column", gap: 20 }}>
+      <div style={{ padding: "var(--page-gutter)", display: "flex", flexDirection: "column", gap: 24 }}>
         <Box
           sx={{
             display: "flex",

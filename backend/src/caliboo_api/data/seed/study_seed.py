@@ -507,3 +507,18 @@ RELATED_QUESTIONS_SEED = [
         "tags": [],
     },
 ]
+
+
+# !NOTE: 画像選択肢の動作確認用に独自作成した例題。実試験の問6を再現したものではない。
+QUIZ_QUESTIONS_SEED.append({
+    "id": "q_image_001", "category": "technology",
+    "text": "Lowから始まり、High、Low、Highの順に変化する波形を選んでください。",
+    "choices": [
+        {"text": "波形A", "imageUrl": "/quiz-assets/wave-a.svg", "alt": "Low、High、Low、Highの順"},
+        {"text": "波形B", "imageUrl": "/quiz-assets/wave-b.svg", "alt": "LowからHighへ一度変化"},
+        {"text": "波形C", "imageUrl": "/quiz-assets/wave-c.svg", "alt": "High、Low、High、Lowの順"},
+        {"text": "波形D", "imageUrl": "/quiz-assets/wave-d.svg", "alt": "HighからLowへ一度変化"},
+    ],
+    "correct_index": 0, "explanation": "波形AはLowから始まり、3回切り替わります。",
+    "time_limit_sec": 90, "source": "Calibooオリジナル例題（画像選択肢）",
+})

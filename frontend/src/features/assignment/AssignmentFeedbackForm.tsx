@@ -1,3 +1,4 @@
+import TextField from "@mui/material/TextField";
 import { useEffect, useState } from "react";
 
 import { Button } from "../../components/ui/Button";
@@ -9,7 +10,7 @@ export interface AssignmentFeedbackFormProps {
   status: AssignmentStatus;
   submission: AssignmentSubmissionDetail | null;
   submitting: boolean;
-  onSubmit: (comment: string) => Promise<void>;
+  onSubmit: (comment: string, score?: number | null) => Promise<void>;
 }
 
 export function AssignmentFeedbackForm({
@@ -19,11 +20,13 @@ export function AssignmentFeedbackForm({
   submitting,
   onSubmit,
 }: AssignmentFeedbackFormProps) {
+  const [score, setScore] = useState(submission?.score?.toString() ?? "");
   const [comment, setComment] = useState(submission?.feedbackComment ?? "");
 
   useEffect(() => {
     setComment(submission?.feedbackComment ?? "");
-  }, [assignmentId, submission?.feedbackComment]);
+    setScore(submission?.score?.toString() ?? "");
+  }, [assignmentId, submission?.feedbackComment, submission?.score]);
 
   if (status === "not_submitted") {
     return (
@@ -43,13 +46,15 @@ export function AssignmentFeedbackForm({
       <div style={{ fontWeight: 800, fontSize: 15, color: "var(--color-text)", marginBottom: 10 }}>
         フィードバック
       </div>
+      <TextField label="点数（任意・0〜100）" type="number" value={score} onChange={(e) => setScore(e.target.value)}
+        slotProps={{ htmlInput: { min: 0, max: 100, step: 1 } }} />
       <Textarea
         value={comment}
         onChange={(e) => setComment(e.target.value)}
         placeholder="回答へのコメントを記入してください"
       />
       <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 12 }}>
-        <Button disabled={submitting || comment.trim() === ""} onClick={() => onSubmit(comment)}>
+        <Button disabled={submitting || comment.trim() === "" || (score !== "" && (!Number.isInteger(Number(score)) || Number(score) < 0 || Number(score) > 100))} onClick={() => onSubmit(comment, score === "" ? null : Number(score))}>
           {status === "reviewed" ? "フィードバックを更新する" : "フィードバックを送る"}
         </Button>
       </div>

@@ -9,6 +9,9 @@
 """
 
 from contextlib import asynccontextmanager
+from pathlib import Path
+
+from fastapi.staticfiles import StaticFiles
 from typing import AsyncIterator
 
 from fastapi import Depends, FastAPI
@@ -26,6 +29,9 @@ from caliboo_api.routers import (
     quiz,
     report,
     study,
+    users,
+    development,
+    proposal_agent,
 )
 
 
@@ -48,3 +54,10 @@ app.include_router(quiz.router, dependencies=[Depends(get_current_user)])
 app.include_router(assignment.router, dependencies=[Depends(get_current_user)])
 app.include_router(assignment_proposal.router, dependencies=[Depends(get_current_user)])
 app.include_router(poc_strength.router, dependencies=[Depends(get_current_user)])
+
+app.include_router(users.router, dependencies=[Depends(get_current_user)])
+app.include_router(development.router, dependencies=[Depends(get_current_user)])
+app.include_router(proposal_agent.router, dependencies=[Depends(get_current_user)])
+
+app.mount("/quiz-assets", StaticFiles(directory=Path(__file__).parent / "quiz_assets"),
+          name="quiz-assets")

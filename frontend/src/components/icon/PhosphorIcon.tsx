@@ -6,5 +6,5 @@ export interface PhosphorIconProps {
 }
 
 export function PhosphorIcon({ name, size, color, className }: PhosphorIconProps) {
-  return <i className={[name, className].filter(Boolean).join(" ")} style={{ fontSize: size, color }} />;
+  return <i aria-hidden="true" className={[name, className].filter(Boolean).join(" ")} style={{ fontSize: size, color }} />;
 }

@@ -1,6 +1,6 @@
 from typing import Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 QuizCategory = Literal["technology", "management", "strategy"]
 
@@ -22,20 +22,26 @@ class StudyProgress(BaseModel):
     streakDays: int
 
 
+class ImageChoice(BaseModel):
+    text: str = ""
+    imageUrl: str = Field(pattern=r"^/quiz-assets/[A-Za-z0-9_-]+\.svg$")
+    alt: str = Field(min_length=1, max_length=500, pattern=r"\S")
+
+
 class QuizQuestion(BaseModel):
     """フロントに渡す出題用データ。正解・解説は解答後まで含めない。"""
 
     id: str
     category: QuizCategory
     text: str
-    choices: list[str]
+    choices: list[str | ImageChoice]
     timeLimitSec: int
     source: str | None = None
 
 
 class QuizAnswerRequest(BaseModel):
     questionId: str
-    selectedIndex: int
+    selectedIndex: int = Field(ge=0)
 
 
 class QuizAnswerResponse(BaseModel):
