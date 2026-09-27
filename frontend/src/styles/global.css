@@ -1,0 +1,36 @@
+@import "./tokens.css";
+
+body {
+  background: var(--color-bg);
+  font-family: "M PLUS Rounded 1c", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  color: var(--color-text);
+}
+
+textarea,
+input {
+  font-family: "M PLUS Rounded 1c", sans-serif;
+}
+
+/*
+ * !NOTE: Tailwind撤去前は`tailwind.config.ts`の`fontFamily.numeric`から生成された
+ *        ユーティリティクラスだった。DonutProgress.tsx等、MUI化の対象外として
+ *        現状維持しているコンポーネントがこのクラス名で参照しているため、
+ *        同名の素のCSSクラスとして残している(値はsrc/theme.tsのNUMERIC_FONT_FAMILYと同一)。
+ */
+.font-numeric {
+  font-family: "Nunito", system-ui, sans-serif;
+}
+
+::placeholder {
+  color: var(--color-text-sub);
+}
+
+i.ph,
+i[class^="ph-"],
+i[class*=" ph-"] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-style: normal;
+}

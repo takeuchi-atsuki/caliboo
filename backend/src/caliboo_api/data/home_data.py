@@ -1,0 +1,67 @@
+"""ホーム画面データのDBアクセス層。
+
+!NOTE: `HomeShortcut`(ショートカットカード)は固定リンク集でユーザー状態に依存しないため、
+       DBテーブル化せずコード定数のまま保持している。
+"""
+
+from caliboo_api.db import session_scope
+from caliboo_api.models import Certification, HomeProfile, User
+from caliboo_api.schemas.home import (
+    HomeCertification,
+    HomeHero,
+    HomeShortcut,
+    HomeStrength,
+    HomeSummary,
+    HomeUser,
+)
+
+_SHORTCUTS = [
+    HomeShortcut(
+        icon="ph-bold ph-note-pencil",
+        title="日報作成",
+        description="今日を振り返る",
+        to="/report",
+        tone="pink",
+    ),
+    HomeShortcut(
+        icon="ph-bold ph-graduation-cap",
+        title="資格勉強",
+        description="過去問・質問",
+        to="/study",
+        tone="blue",
+    ),
+    HomeShortcut(
+        icon="ph-bold ph-users-three",
+        title="OJT",
+        description="AIメンターに相談",
+        to="/ojt",
+        tone="green",
+    ),
+]
+
+
+def fetch_home_summary(user_id: int) -> HomeSummary:
+    """ログイン中のユーザー本人のホームサマリを返す。
+
+    !NOTE: `hero.message`はDB列を持たず、`users.display_name`からテンプレート
+           (`おかえり、{name}さん！今日の振り返りをしよう`)で組み立てる。
+    """
+    with session_scope() as session:
+        user = session.get(User, user_id)
+        profile = session.query(HomeProfile).filter(HomeProfile.user_id == user_id).first()
+        certification = session.get(Certification, profile.certification_id)
+
+        return HomeSummary(
+            user=HomeUser(name=user.display_name, streakDays=profile.user_streak_days),
+            hero=HomeHero(message=f"おかえり、{user.display_name}さん！今日の振り返りをしよう"),
+            certification=HomeCertification(
+                name=certification.name,
+                achievementPercent=certification.achievement_percent,
+            ),
+            strengths=[
+                HomeStrength(label=profile.strength1_label, tone=profile.strength1_tone),
+                HomeStrength(label=profile.strength2_label, tone=profile.strength2_tone),
+                HomeStrength(label=profile.strength3_label, tone=profile.strength3_tone),
+            ],
+            shortcuts=_SHORTCUTS,
+        )

@@ -1,0 +1,115 @@
+/*
+ * Caliboo デザイントークン
+ * !NOTE: Claude Designのデザインカンプ(Caliboo 画面案.dc.html)から抽出した値。
+ *        MUIテーマ(src/theme.ts)はこの変数を参照するため、色や角丸を変更する場合は
+ *        このファイルだけを直せばよい。
+ * !NOTE: --color-orange-600は、他系統(green/blue/purple/pink)の"500"がそのまま
+ *        文字色として使われているのに対し、オレンジ系だけ"500"(#f0b54a)では
+ *        淡いオレンジ背景(--color-orange-200)上でのコントラストが不足するため、
+ *        Tag/ShortcutCardコンポーネントの文字色専用に別途用意した濃い値。
+ * !NOTE: --color-*-100は、Tagコンポーネントが使う、-200よりさらに薄い背景色。
+ *        DeptCard/ShortcutCardの背景(-200)とは意図的に別の薄さで、デザインカンプ上
+ *        「タグ」と「カード」で背景の濃さを変える意図があったため、統合していない。
+ */
+:root {
+  --color-bg: #faf6f1;
+  --color-bg-alt: #efe9e1;
+  --color-panel: #ffffff;
+  --color-text: #5b5364;
+  --color-text-sub: #a89fb0;
+  --color-text-sub2: #8a8392;
+  --color-border: rgba(91, 83, 100, 0.1);
+  --color-border-soft: rgba(91, 83, 100, 0.06);
+
+  --color-green-500: #3f9577;
+  --color-green-400: #7fd4b8;
+  --color-green-300: #bfe9d6;
+  --color-green-200: #cdeede;
+  --color-green-100: #e7f3ee;
+
+  --color-blue-500: #4f86c6;
+  --color-blue-400: #7fb6ec;
+  --color-blue-200: #d6ebff;
+  --color-blue-100: #eef5ff;
+
+  --color-purple-500: #7b6cc9;
+  --color-purple-400: #bcaeec;
+  --color-purple-200: #e3ddff;
+  --color-purple-100: #efeaf6;
+
+  --color-pink-500: #d36a93;
+  --color-pink-400: #ff9fc0;
+  --color-pink-300: #ffc2d4;
+  --color-pink-200: #ffd9e6;
+  --color-pink-100: #fbeaf1;
+
+  --color-orange-600: #bd9a4a;
+  --color-orange-500: #f0b54a;
+  --color-orange-400: #ff9a6b;
+  --color-orange-200: #ffe9c7;
+  --color-orange-100: #fdedc5;
+
+  --radius-lg: 24px;
+  --radius-md: 16px;
+  --radius-sm: 9px;
+}
+
+/*
+ * !NOTE: ダーク版は単純な明度反転ではなく、各アクセント色相の色味(hue)を保ったまま
+ *        再設計している。ライトモードでは「淡い背景(-100/-200) + 彩度のある文字色(-500)」
+ *        という組み合わせだったが、ダーク背景でこれをそのまま使うと(a)淡い背景がパネルより
+ *        明るくなり浮いて見える、(b)彩度のある-500文字色が暗い背景相手ではコントラスト不足、
+ *        の2つの問題が起きる。そのためダーク版では階調の役割を次のように再定義した:
+ *        -100/-200(背景) → 暗く彩度を落とした「沈んだ」トーン
+ *        -500(文字色)    → 明るく彩度を保った「浮き上がる」トーン
+ *        -400/-300(装飾用の塗り・リング・マスコット等) → 暗背景でも映えるよう軽く調整
+ * !NOTE: --radius-*は明度に依存しないためダーク版でのオーバーライドは不要。
+ */
+[data-theme="dark"] {
+  --color-bg: #201e29;
+  --color-bg-alt: #2a2735;
+  --color-panel: #322f3d;
+  --color-text: #f1eef7;
+  --color-text-sub: #9c93ab;
+  --color-text-sub2: #b6aec4;
+  --color-border: rgba(255, 255, 255, 0.12);
+  --color-border-soft: rgba(255, 255, 255, 0.07);
+
+  --color-green-500: #6fe0b8;
+  --color-green-400: #46c99e;
+  --color-green-300: #2f8f72;
+  --color-green-200: #17352b;
+  --color-green-100: #12251e;
+
+  --color-blue-500: #7db8f2;
+  --color-blue-400: #4f93da;
+  --color-blue-200: #16324f;
+  --color-blue-100: #10233a;
+
+  --color-purple-500: #b6a8f2;
+  --color-purple-400: #8f7be0;
+  --color-purple-200: #33294f;
+  --color-purple-100: #241f38;
+
+  --color-pink-500: #ff9ac0;
+  --color-pink-400: #e8709d;
+  --color-pink-300: #a84c6d;
+  --color-pink-200: #4a2433;
+  --color-pink-100: #331b26;
+
+  /*
+   * !NOTE: orange-600は元々「500ではオレンジ系の淡い背景上でコントラスト不足のため
+   *        文字色専用に濃くした値」だった。ダークモードでは逆に「暗い背景の上で
+   *        彩度そのまま暗いオレンジだと沈んで読めない」問題になるため、
+   *        600という変数名・役割(Tag/ShortcutCard文字色専用)は維持しつつ、
+   *        値は"濃く"ではなく"明るく"作り直している。ライト/ダークで
+   *        600が担う調整方向が反転する点に注意。
+   */
+  --color-orange-600: #ffb648;
+  --color-orange-500: #e0993d;
+  --color-orange-400: #ff8a52;
+  --color-orange-200: #4a3419;
+  --color-orange-100: #33240f;
+
+  color-scheme: dark;
+}

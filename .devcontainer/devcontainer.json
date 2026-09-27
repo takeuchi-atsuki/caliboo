@@ -1,0 +1,48 @@
+{
+    "name": "Caliboo",
+    "build": {
+        "dockerfile": "./Dockerfile"
+    },
+    "features": {
+        "ghcr.io/devcontainers/features/common-utils:2": {
+            "installZsh": false,
+            "username": "vscode",
+            "userUid": "automatic",
+            "userGid": "automatic"
+        }
+    },
+    "remoteUser": "vscode",
+    "postCreateCommand": "/bin/sh -e ./.devcontainer/setup.sh",
+    "postStartCommand": "/bin/sh -e ./.devcontainer/startup.sh",
+    "customizations": {
+        "vscode": {
+            "settings": {
+                "chat.disableAIFeatures": true,
+                "markdown.extension.toc.levels": "2..6",
+                "markdown.extension.toc.updateOnSave": false,
+                "markdown.extension.orderedList.marker": "ordered",
+                "python.defaultInterpreterPath": "/usr/local/bin/python3"
+            },
+            "extensions": [
+                "3w36zj6.textlint",
+                // "anthropic.claude-code",
+                "openai.chatgpt",
+                "bierner.markdown-mermaid",
+                "charliermarsh.ruff",
+                "DavidAnson.vscode-markdownlint",
+                "EditorConfig.EditorConfig",
+                "ms-python.python",
+                "streetsidesoftware.code-spell-checker",
+                "yzhang.markdown-all-in-one"
+            ]
+        }
+    },
+    "containerEnv": {
+        "TZ": "Asia/Tokyo",
+        "NODE_OPTIONS": "--dns-result-order=ipv4first"
+    },
+    "runArgs": [
+        "--sysctl", "net.ipv6.conf.all.disable_ipv6=1",
+        "--cap-add=NET_ADMIN"
+    ]
+}

@@ -1,0 +1,7 @@
+[flake8]
+# !NOTE: flake8はpyproject.tomlを読まないため、本ファイルで設定する。
+#        max-line-lengthは既定79桁ではなく、既存コードの実測最長行(100桁)に合わせている。
+#        `black`等のフォーマッタは未導入で、改行位置は各自の判断に委ねられているため、
+#        既定値のまま強制すると本題と無関係な行分割の指摘が大量に出てしまう。
+max-line-length = 100
+extend-exclude = var,.pytest_cache

@@ -1,0 +1,51 @@
+# 資格勉強画面 (2a / 2b)
+
+## 概要
+
+資格試験対策を2つの案で実装している。
+
+- 2a: 過去問演習ドリル — パス `/study`、実装 `frontend/src/features/study/QuizPage.tsx`、ロジック `useQuiz`
+- 2b: 質問チャット中心 — パス `/study/chat`、実装 `frontend/src/features/study/StudyChatPage.tsx`、ロジック `useStudyChat`
+
+## 2a: 過去問演習ドリル
+
+- `GET /api/study/progress`: サイドバー用（資格名・分野別進捗・連続学習日数）
+- `GET /api/quiz/next?category=&excludeId=`: 次の問題取得。**正解・解説は含めない**（`QuizQuestion`スキーマに`correctIndex`/`explanation`フィールドが無い）
+- `POST /api/quiz/answer`: 選択した`selectedIndex`を送信し、サーバー側で正誤判定した結果(`correct`/`correctIndex`/`explanation`)を受け取る
+
+!NOTE: 出題は`category`一致する問題群からランダムに1問選ぶ。直前に出題した問題のIDを`excludeId`としてフロントから送ることで、同じ問題が連続して出題されないようにしている（`backend/src/caliboo_api/routers/quiz.py`の`get_next_quiz()`）。除外後に候補が0件になる場合（該当分野の問題が1問しかない等）は、出題を止めるより同じ問題が出てもドリルを継続できる方を優先し、除外せず全候補から選ぶ。
+
+!NOTE: `QuizQuestion`は出典(`source`)を任意項目として持つ。令和8年度公開問題など出典が判明している問題では画面上に薄く表示し、サンプル問題（出典不明）では表示しない。学習者がどの年度・回の問題かを把握できるようにするための項目で、正誤判定には使わない。
+
+!NOTE: レスポンス中の資格名・達成率・連続学習日数は、ホーム画面（`docs/screens/home.md`）と同一ユーザーの同一データのため、DB上は`home_profile`/`certifications`テーブルをそのまま参照している（`study_data.py`側に値を複製しない）。いずれもログイン中のユーザーの`home_profile`行(と、それが参照する資格行)を引く。分野別の進捗率(`progress_categories`)は現状全ユーザー共通の値で、ユーザーごとの学習進捗にはなっていない(`BACKLOG.md` #21)。
+
+!NOTE: 採点をフロントではなくサーバー側で行う設計にしたのは、正解をブラウザに事前配布しないため。デザインカンプの`{{quizChoices}}`にはこの区別が無かったが、実装時に「出題」と「採点」でAPIを分けることで、開発者ツールのネットワークタブを見ても正解が漏れない構造にした。
+
+- 選択肢クリック（`selectChoice`）は解答確定前のみ有効（`result`がセットされた後はクリックしても無視）。
+- 分野リスト（テクノロジ系/マネジメント系/ストラテジ系）をクリックすると`selectCategory`で出題分野を絞り込み、次の問題を再取得する。
+
+!NOTE: 選択肢は`RadioGroup`+`Radio`(ネイティブ`<input type="radio">`、見た目上のradioアイコンは非表示)で実装する。ネイティブradioグループを使うことで、Tab/矢印キーでの選択肢間移動をブラウザ標準の挙動として得られ、自前実装が不要になるため。分野リストは`ListItemButton`でキーボード操作可能にしている。
+
+- 「わからない → AIに聞く」ボタンは、表示中の問題文と選択肢を画面遷移時のstate(`{ quizQuestion: { text, choices } }`)に載せて`/study/chat`(2b)へ遷移する（2b側の表示は「2b: 質問チャット中心」を参照）。
+
+!NOTE: 引き継ぎにはURLクエリではなくreact-routerの遷移時stateを使う。問題文をURLに載せずに済み、問題1件を取得するAPIをバックエンドへ新設する必要も無いため。引き継ぐのは問題文と選択肢のみで、解答後であっても正解・解説は含めない（「正解をブラウザに事前配布しない」方針に揃えるため）。
+
+- サイドバー(達成率ドーナツ・分野リスト・連続日数)は`md`(900px)未満で`CollapsibleAside`によりオーバーレイのドロワーに切り替わり、設問エリア冒頭のアイコンボタンで開閉する(レスポンシブ方針は`docs/architecture.md`「レイアウト・レスポンシブ方針」参照)。
+
+## 2b: 質問チャット中心
+
+- `GET /api/study/related-questions`: 左サイドバーの関連過去問カード
+- `POST /api/study/chat`: チャット送信→ダミー応答
+- 2aから問題を引き継いで遷移した場合は、初期botメッセージに続けて「この問題がわからない：」＋問題文＋選択肢(A〜D、改行区切り)を自分の質問として、さらにAI回答を初期表示する。引き継ぎ内容の読み取り・整形は`frontend/src/features/study/quizHandoff.ts`。
+
+!NOTE: 引き継ぎ時のAI回答はフロントエンドのモック固定文(`QUIZ_HANDOFF_REPLY`)で、`POST /api/study/chat`は呼ばない。フロントは正解を知らないため、答えに触れない汎用文にしている。入力欄・クイック質問からの以降の送信は従来どおりAPIを使う。
+
+!NOTE: 受け取った遷移時stateは表示直後に`navigate(..., { replace: true, state: null })`で履歴から消す。`location.state`はリロード後も履歴に残るため、消さないとリロードのたびに同じ質問が再表示される。また引き継ぎメッセージはeffectで追加せず`useStudyChat`の`messages`初期値にしており、StrictModeの二重effect実行やstateクリア後の再レンダーで二重に追加されない。
+
+- サイドバー(関連する過去問)は2aと同様、`md`未満で`CollapsibleAside`によりドロワー化される。
+
+## 未実装・簡略化した点
+
+- 出題順序はランダム（直前の1問を除外するのみ）。誤答復習優先などのより高度な出題アルゴリズムは対象外（BACKLOG.md参照）。
+- 選択肢が図（画像）でしか表現できない問題（例: 論理回路のタイミングチャート）は、画像選択肢を扱う仕組みが無いため登録できない（BACKLOG.md参照）。
+- 2aから引き継いだ質問へのAI回答はモック固定文で、問題内容に応じた解説は行わない。

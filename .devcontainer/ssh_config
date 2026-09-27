@@ -1,0 +1,7 @@
+# GitHub.com (personal desktop -> GitHub; no local Git SSH server)
+Host github.com
+    HostName github.com
+    User git
+    Port 22
+    PreferredAuthentications publickey
+    StrictHostKeyChecking ask

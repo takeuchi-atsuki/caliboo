@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "language": "japanese",
+  "permissions": {
+    "allow": [
+      "Bash(python3 -m flake8:*)",
+      "Bash(python3 -m pytest:*)",
+      "Bash(npm run lint:*)",
+      "Bash(npm run test:*)",
+      "WebFetch(domain:json.schemastore.org)"
+    ],
+    "ask": [],
+    "deny": [
+      "Bash(sudo:*)",
+      "Bash(rm:*)",
+      "Bash(curl:*)",
+      "Bash(wget:*)",
+      "Bash(ssh:*)",
+      "Bash(git:*)",
+      "Read(*.env)",
+      "Read(*.env.*)",
+      "Write(*.env)",
+      "Write(*.env.*)",
+      "Read(/.devcontainer/ssh_config)",
+      "Write(/.devcontainer/ssh_config)",
+      "Read(/public/)"
+    ],
+    "defaultMode": "default"
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ${CLAUDE_PROJECT_DIR}/.claude/hooks/coverage_include_warning.py"
+          }
+        ]
+      }
+    ]
+  },
+  "skillOverrides": {
+    "legacy-context": "name-only",
+    "deploy": "off",
+    "claude-api": "off",
+    "keybindings-help": "off"
+  },
+  "env": {
+    "CLAUDE_CODE_DISABLE_FAST_MODE": "1",
+    "CLAUDE_CODE_DISABLE_GIT_INSTRUCTIONS": "1",
+    "DISABLE_ERROR_REPORTING": "1",
+    "DISABLE_TELEMETRY": "1",
+    "CLAUDE_CONFIG_DIR": "/home/vscode/.claude"
+  },
+  "plansDirectory": "/home/vscode/.claude/plans"
+}

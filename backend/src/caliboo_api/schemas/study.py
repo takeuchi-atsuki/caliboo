@@ -1,0 +1,59 @@
+from typing import Literal
+
+from pydantic import BaseModel
+
+QuizCategory = Literal["technology", "management", "strategy"]
+
+
+class ProgressCategory(BaseModel):
+    id: QuizCategory
+    label: str
+    percent: int
+
+
+class StudyCertification(BaseModel):
+    name: str
+    achievementPercent: int
+
+
+class StudyProgress(BaseModel):
+    certification: StudyCertification
+    categories: list[ProgressCategory]
+    streakDays: int
+
+
+class QuizQuestion(BaseModel):
+    """フロントに渡す出題用データ。正解・解説は解答後まで含めない。"""
+
+    id: str
+    category: QuizCategory
+    text: str
+    choices: list[str]
+    timeLimitSec: int
+    source: str | None = None
+
+
+class QuizAnswerRequest(BaseModel):
+    questionId: str
+    selectedIndex: int
+
+
+class QuizAnswerResponse(BaseModel):
+    correct: bool
+    correctIndex: int
+    explanation: str
+
+
+class RelatedQuestionItem(BaseModel):
+    id: str
+    title: str
+    questionCount: int
+    tags: list[str]
+
+
+class RelatedQuestionsResponse(BaseModel):
+    items: list[RelatedQuestionItem]
+
+
+class StudyChatRequest(BaseModel):
+    text: str
