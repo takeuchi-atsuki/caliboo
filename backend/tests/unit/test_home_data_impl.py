@@ -8,7 +8,7 @@ def test_fetch_home_summary(bootstrapped_db, user_ids):
     assert summary.user.streakDays == 12
     assert summary.certification.achievementPercent == 68
     assert summary.hero.message == "おかえり、ユウキさん！今日の振り返りをしよう"
-    assert len(summary.strengths) == 3
+    assert summary.strengths == []
     assert len(summary.shortcuts) == 3
     assert {s.to for s in summary.shortcuts} == {"/report", "/study", "/ojt"}
 

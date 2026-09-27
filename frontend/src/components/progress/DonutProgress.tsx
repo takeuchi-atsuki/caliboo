@@ -40,7 +40,7 @@ export function DonutProgress({
           justifyContent: "center",
         }}
       >
-        <span className="font-numeric" style={{ fontWeight: 800, fontSize: size * 0.22, color }}>
+        <span className="font-numeric" style={{ fontWeight: 800, fontSize: size * 0.22, color: "var(--color-text)" }}>
           {label}
         </span>
         {subLabel ? (

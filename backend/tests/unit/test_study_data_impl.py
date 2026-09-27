@@ -31,7 +31,7 @@ def test_fetch_related_questions(bootstrapped_db):
 def test_list_questions_without_category(bootstrapped_db):
     records = list_questions(None)
 
-    assert len(records) == 23
+    assert len(records) == 24
     assert records[0].id == "q_101"
 
 

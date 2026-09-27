@@ -20,6 +20,7 @@ export function MoodPicker({ value, onChange }: MoodPickerProps) {
       onChange={(_event, newValue: Mood[]) => onChange(newValue)}
       sx={{
         display: "flex",
+        flexWrap: "wrap",
         gap: "8px",
         margin: "12px 0",
         "& .MuiToggleButtonGroup-grouped": {
@@ -36,6 +37,7 @@ export function MoodPicker({ value, onChange }: MoodPickerProps) {
           disableRipple
           sx={{
             padding: "8px 15px",
+            minHeight: 44,
             fontWeight: 700,
             fontSize: 12.5,
             textTransform: "none",

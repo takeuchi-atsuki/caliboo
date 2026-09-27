@@ -5,6 +5,9 @@
        `Depends(get_current_user)`を宣言して認証を要求する。
 """
 
+import math
+import time
+
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from sqlalchemy.orm import Session
 
@@ -18,15 +21,19 @@ from caliboo_api.auth.session import (
 )
 from caliboo_api.config import get_settings
 from caliboo_api.db import get_session
-from caliboo_api.models import User
+from caliboo_api.models import HomeProfile, User
+from caliboo_api.extension_models import LoginAttempt
+from caliboo_api.data.account_data import is_active
 from caliboo_api.schemas.auth import CurrentUser, LoginRequest
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
 
-def _to_current_user(user: User) -> CurrentUser:
+def _to_current_user(user: User, session: Session) -> CurrentUser:
+    profile = session.query(HomeProfile).filter_by(user_id=user.id).first()
     return CurrentUser(
-        id=user.id, loginId=user.login_id, displayName=user.display_name, role=user.role
+        id=user.id, loginId=user.login_id, displayName=user.display_name, role=user.role,
+        streakDays=profile.user_streak_days if profile else 0,
     )
 
 
@@ -44,7 +51,8 @@ def _set_session_cookie(response: Response, token: str) -> None:
 
 @router.post("/login", response_model=CurrentUser)
 def login(
-    payload: LoginRequest, response: Response, session: Session = Depends(get_session)
+    payload: LoginRequest, request: Request, response: Response,
+    session: Session = Depends(get_session)
 ) -> CurrentUser:
     """ログインID・パスワードを検証し、成功時はセッションCookieを発行する。
 
@@ -54,18 +62,30 @@ def login(
            ログインIDの存在有無が推測されないようにするため。失敗理由(ID誤り/パスワード誤り/
            パスワード未設定)も区別しない。
     """
+    # !NOTE: X-Forwarded-Forは信頼しない。プロキシ運用では信頼済み接続元の設定が必要。
+    source = request.client.host if request.client else "unknown"
+    now = int(time.time())
+    session.query(LoginAttempt).filter(LoginAttempt.attempted_at <= now - 900).delete()
+    attempts = session.query(LoginAttempt).filter_by(source=source).order_by(
+        LoginAttempt.attempted_at).all()
+    if len(attempts) >= 20:
+        retry = max(1, math.ceil(attempts[0].attempted_at + 900 - now))
+        session.commit()
+        raise HTTPException(429, "too many login attempts", headers={"Retry-After": str(retry)})
     user = session.query(User).filter(User.login_id == payload.loginId).first()
     has_password = user is not None and user.password_hash
     password_hash = user.password_hash if has_password else password.DUMMY_PASSWORD_HASH
     password_is_valid = password.verify_password(payload.password, password_hash)
 
-    if user is None or not password_is_valid:
+    if user is None or not password_is_valid or not is_active(session, user.id):
+        session.add(LoginAttempt(source=source, attempted_at=now))
+        session.commit()
         raise HTTPException(status_code=401, detail="invalid login id or password")
 
     token = create_session(session, user)
     session.commit()
     _set_session_cookie(response, token)
-    return _to_current_user(user)
+    return _to_current_user(user, session)
 
 
 @router.post("/logout", status_code=204)
@@ -88,5 +108,6 @@ def logout(
 
 
 @router.get("/me", response_model=CurrentUser)
-def me(user: User = Depends(get_current_user)) -> CurrentUser:
-    return _to_current_user(user)
+def me(user: User = Depends(get_current_user),
+       session: Session = Depends(get_session)) -> CurrentUser:
+    return _to_current_user(user, session)

@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from caliboo_api.schemas.common import ChatMessage
 
@@ -18,6 +18,7 @@ class DepartmentsResponse(BaseModel):
 class DepartmentMessagesResponse(BaseModel):
     deptId: str
     messages: list[ChatMessage]
+    escalated: bool = False
 
 
 class KnowledgeItem(BaseModel):
@@ -33,4 +34,4 @@ class DepartmentKnowledgeResponse(BaseModel):
 
 class OjtChatRequest(BaseModel):
     deptId: str
-    text: str
+    text: str = Field(min_length=1, max_length=10000, pattern=r"\S")

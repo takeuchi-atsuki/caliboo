@@ -10,39 +10,39 @@
 #        合わせて更新すること。更新されない場合、ダークモードでは
 #        ニュートラル配色にフォールバックされる(エラーにはならない)。
 DEPARTMENTS_SEED = [
-    {"id": "dev", "name": "開発課", "icon": "ph-code", "color": "#d6ebff", "knowledge_count": 128},
+    {"id": "dev", "name": "開発課", "icon": "ph ph-code", "color": "#d6ebff", "knowledge_count": 128},
     {
         "id": "qa",
         "name": "品質保証課",
-        "icon": "ph-shield-check",
+        "icon": "ph ph-shield-check",
         "color": "#cdeede",
         "knowledge_count": 94,
     },
     {
         "id": "sales",
         "name": "営業課",
-        "icon": "ph-handshake",
+        "icon": "ph ph-handshake",
         "color": "#ffd9e6",
         "knowledge_count": 76,
     },
     {
         "id": "design",
         "name": "設計課",
-        "icon": "ph-compass-tool",
+        "icon": "ph ph-compass-tool",
         "color": "#e3ddff",
         "knowledge_count": 112,
     },
     {
         "id": "mfg",
         "name": "製造課",
-        "icon": "ph-factory",
+        "icon": "ph ph-factory",
         "color": "#ffe9c7",
         "knowledge_count": 153,
     },
     {
         "id": "ga",
         "name": "総務課",
-        "icon": "ph-briefcase",
+        "icon": "ph ph-briefcase",
         "color": "#f4f0ec",
         "knowledge_count": 61,
     },

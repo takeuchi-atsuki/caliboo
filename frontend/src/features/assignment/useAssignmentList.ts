@@ -30,10 +30,10 @@ export function useAssignmentList() {
     return () => clearTimeout(timer);
   }, [notice]);
 
-  const createAssignment = async (title: string, body: string) => {
+  const createAssignment = async (title: string, body: string, targetUserId?: number) => {
     setCreating(true);
     try {
-      await apiClient.post("/api/assignments", { title, body });
+      await apiClient.post("/api/assignments", { title, body, ...(targetUserId ? { targetUserId } : {}) });
       await fetchAssignments();
       setNotice({ severity: "success", message: "課題を作成しました。" });
       return true;

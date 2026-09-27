@@ -1,15 +1,70 @@
 @import "./tokens.css";
 
+html {
+  scroll-padding-top: 140px;
+  -webkit-text-size-adjust: 100%;
+}
+
 body {
   background: var(--color-bg);
-  font-family: "M PLUS Rounded 1c", system-ui, sans-serif;
+  font-family: var(--font-body);
   -webkit-font-smoothing: antialiased;
   color: var(--color-text);
 }
 
 textarea,
-input {
-  font-family: "M PLUS Rounded 1c", sans-serif;
+input,
+button,
+select {
+  font-family: inherit;
+}
+
+/* !NOTE: rippleを使わない独自UIにもキーボードの現在位置を明示する。 */
+:where(a, button, input, textarea, select, [tabindex]):focus-visible {
+  outline: 3px solid var(--color-action);
+  outline-offset: 4px;
+}
+
+a {
+  color: var(--color-purple-500);
+  text-underline-offset: 3px;
+}
+
+.skip-link {
+  position: fixed;
+  top: 12px;
+  left: 16px;
+  z-index: 1500;
+  padding: 12px 20px;
+  border-radius: 12px;
+  background: var(--color-panel);
+  color: var(--color-text);
+  box-shadow: var(--shadow-float);
+  transform: translateY(-160%);
+}
+
+.skip-link:focus {
+  transform: translateY(0);
+}
+
+@media (max-width: 599.95px) {
+  /* !NOTE: iOS Safariが入力フォーカス時に自動拡大するのを避ける。 */
+  input:not([type="radio"]):not([type="checkbox"]),
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 /*

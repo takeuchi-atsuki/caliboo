@@ -22,6 +22,8 @@ class HomeCertification(BaseModel):
 class HomeStrength(BaseModel):
     label: str
     tone: Tone
+    evidence: list[dict] = []
+    growthAction: str = ""
 
 
 class HomeShortcut(BaseModel):

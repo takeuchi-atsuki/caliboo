@@ -29,18 +29,19 @@ export function Dialog({ open, onClose, title, children }: DialogProps) {
         },
         paper: {
           sx: {
-            borderRadius: "20px",
+            borderRadius: "24px",
             width: 520,
-            maxWidth: "90vw",
-            maxHeight: "80vh",
-            boxShadow: "0 20px 50px color-mix(in srgb, var(--color-text) 25%, transparent)",
+            maxWidth: "calc(100vw - 32px)",
+            maxHeight: "calc(100dvh - 48px)",
+            margin: "16px",
+            boxShadow: "var(--shadow-float)",
           },
         },
       }}
     >
       <DialogTitle
         id={titleId}
-        sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "22px 26px 0" }}
+        sx={{ display: "flex", justifyContent: "space-between", gap: 1, alignItems: "center", padding: "16px 20px 0" }}
       >
         <Box component="span" sx={{ fontWeight: 800, fontSize: 17, color: "var(--color-text)" }}>
           {title}
@@ -49,7 +50,7 @@ export function Dialog({ open, onClose, title, children }: DialogProps) {
           <PhosphorIcon name="ph-bold ph-x" size={18} />
         </IconButton>
       </DialogTitle>
-      <DialogContent sx={{ padding: "16px 26px 22px" }}>{children}</DialogContent>
+      <DialogContent sx={{ padding: "16px 20px 24px" }}>{children}</DialogContent>
     </MuiDialog>
   );
 }

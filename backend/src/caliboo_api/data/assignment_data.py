@@ -3,7 +3,11 @@
 from datetime import datetime, timezone
 from enum import Enum, auto
 
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, object_session
+from fastapi import HTTPException
+
+from caliboo_api.data.account_data import is_active
+from caliboo_api.extension_models import SubmissionScore
 
 from caliboo_api.db import session_scope
 from caliboo_api.models import Assignment, AssignmentRecipient, AssignmentSubmission, User
@@ -42,11 +46,14 @@ def _to_submission_detail(
 ) -> AssignmentSubmissionDetail | None:
     if submission is None:
         return None
+    session = object_session(submission)
+    score = session.get(SubmissionScore, submission.id) if session is not None else None
     return AssignmentSubmissionDetail(
         answerText=submission.answer_text,
         submittedAt=submission.submitted_at,
         feedbackComment=submission.feedback_comment,
         feedbackAt=submission.feedback_at,
+        score=score.score if score else None,
     )
 
 
@@ -228,11 +235,20 @@ def insert_assignment(session: Session, title: str, body: str) -> Assignment:
     return assignment
 
 
-def create_assignment(session: Session, title: str, body: str) -> AssignmentDetail:
+def create_assignment(session: Session, title: str, body: str,
+                      target_user_id: int | None = None) -> AssignmentDetail:
+    target = None
+    if target_user_id is not None:
+        user = session.get(User, target_user_id)
+        if user is None or user.role != "member" or not is_active(session, target_user_id):
+            raise HTTPException(404, "active member not found")
+        target = AssignmentTarget(id=user.id, displayName=user.display_name)
     assignment = insert_assignment(session, title, body)
+    if target_user_id is not None:
+        session.add(AssignmentRecipient(assignment_id=assignment.id, user_id=target_user_id))
     session.commit()
     session.refresh(assignment)
-    return _to_detail(assignment, None)
+    return _to_detail(assignment, None, target)
 
 
 def save_submission(
@@ -321,7 +337,8 @@ def fetch_member_submissions(
 
 
 def save_member_feedback(
-    session: Session, assignment_id: int, target_user_id: int, comment: str
+    session: Session, assignment_id: int, target_user_id: int, comment: str,
+    score: int | None = None,
 ) -> MemberSubmission | FeedbackSaveError:
     """講師が特定の新入社員の提出にフィードバックコメントを保存する(上書き可)。
 
@@ -344,6 +361,11 @@ def save_member_feedback(
     if submission is None:
         return FeedbackSaveError.NOT_SUBMITTED
 
+    grade = session.get(SubmissionScore, submission.id)
+    if grade is None:
+        session.add(SubmissionScore(submission_id=submission.id, score=score))
+    else:
+        grade.score = score
     submission.feedback_comment = comment
     submission.feedback_at = datetime.now(timezone.utc).isoformat()
     session.commit()

@@ -10,6 +10,7 @@ export default defineConfig({
     //        `/api`をバックエンド(`http://localhost:8000`)へ転送し、同一オリジンを保つ。
     proxy: {
       "/api": "http://localhost:8000",
+      "/quiz-assets": "http://localhost:8000",
     },
   },
   /**
@@ -32,6 +33,13 @@ export default defineConfig({
       provider: "v8",
       include: [
         "src/lib/apiClient.ts",
+        "src/lib/useResource.ts",
+        "src/features/assignment/AssignmentCreateDialog.tsx",
+        "src/features/assignment/AssignmentFeedbackForm.tsx",
+        "src/features/assignment/ProposalRegenerate.tsx",
+        "src/features/ojt/useOjt.ts",
+        "src/features/study/useQuiz.ts",
+        "src/features/home/useHomeSummary.ts",
         "src/features/report/useReportForm.ts",
         "src/features/report/reportAutosave.ts",
         "src/components/theme/ThemeModeProvider.tsx",
@@ -48,6 +56,7 @@ export default defineConfig({
         "src/features/study/useStudyChat.ts",
         "src/features/study/quizHandoff.ts",
         // 操作ロジック(キー入力の判定・イベント伝播・フォーカス移動)を持つコンポーネント
+        "src/components/layout/TopNav.tsx",
         "src/components/chat/ChatComposer.tsx",
         "src/features/report/ReportHistoryTable.tsx",
       ],

@@ -1,6 +1,6 @@
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, StringConstraints
+from pydantic import BaseModel, Field, StringConstraints
 
 AssignmentStatus = Literal["not_submitted", "submitted", "reviewed"]
 
@@ -12,6 +12,7 @@ class AssignmentCreateRequest(BaseModel):
 
     title: NonEmptyText
     body: NonEmptyText
+    targetUserId: int | None = None
 
 
 class AssignmentSubmissionRequest(BaseModel):
@@ -24,6 +25,7 @@ class AssignmentFeedbackRequest(BaseModel):
     """講師によるフィードバック入力リクエスト。"""
 
     comment: NonEmptyText
+    score: int | None = Field(default=None, ge=0, le=100)
 
 
 class AssignmentSubmissionDetail(BaseModel):
@@ -31,6 +33,7 @@ class AssignmentSubmissionDetail(BaseModel):
     submittedAt: str
     feedbackComment: str | None = None
     feedbackAt: str | None = None
+    score: int | None = None
 
 
 class AssignmentTarget(BaseModel):

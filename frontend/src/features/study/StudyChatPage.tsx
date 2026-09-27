@@ -41,7 +41,7 @@ export function StudyChatPage() {
             padding: "22px 16px",
             display: "flex",
             flexDirection: "column",
-            gap: 14,
+            gap: "14px",
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: 7, fontWeight: 800, fontSize: 14, color: "var(--color-text)" }}>
@@ -95,7 +95,7 @@ export function StudyChatPage() {
             </div>
           </div>
         </CollapsibleAside>
-        <main style={{ flex: 1, display: "flex", flexDirection: "column", background: "var(--color-bg)" }}>
+        <main style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", background: "var(--color-bg)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "15px 24px", background: "var(--color-panel)", borderBottom: "1px solid var(--color-border-soft)" }}>
             <IconButton
               onClick={() => setSidebarOpen(true)}

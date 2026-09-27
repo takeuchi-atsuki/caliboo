@@ -21,13 +21,14 @@ export function ChatBubble({
       <Box
         sx={{
           alignSelf: "flex-end",
-          maxWidth: "74%",
+          maxWidth: { xs: "88%", sm: "74%" },
           background: meBg,
           borderRadius: "17px 4px 17px 17px",
           padding: "12px 16px",
-          font: "500 13.5px/1.6 'M PLUS Rounded 1c'",
-          color: "var(--color-panel)",
+          font: "400 15px/1.8 var(--font-body)",
+          color: "var(--color-on-pastel)",
           whiteSpace: "pre-wrap",
+          overflowWrap: "anywhere",
         }}
       >
         {message.text}
@@ -36,7 +37,7 @@ export function ChatBubble({
   }
 
   return (
-    <Box sx={{ display: "flex", gap: "11px", alignItems: "flex-start", maxWidth: "78%" }}>
+    <Box sx={{ display: "flex", gap: "11px", alignItems: "flex-start", maxWidth: { xs: "96%", sm: "78%" } }}>
       <Box
         sx={{
           width: 33,
@@ -51,16 +52,17 @@ export function ChatBubble({
       >
         <PhosphorIcon name="ph-fill ph-sparkle" color={botIconColor} size={15} />
       </Box>
-      <Box>
+      <Box sx={{ minWidth: 0 }}>
         <Box
           sx={{
             background: "var(--color-panel)",
             borderRadius: "4px 17px 17px 17px",
             padding: "13px 16px",
-            font: "500 13.5px/1.7 'M PLUS Rounded 1c'",
+            font: "400 15px/1.8 var(--font-body)",
             color: "var(--color-text)",
-            boxShadow: "0 3px 12px var(--color-border-soft)",
+            border: "1px solid var(--color-border-soft)",
             whiteSpace: "pre-wrap",
+            overflowWrap: "anywhere",
           }}
         >
           {message.text}

@@ -1,3 +1,4 @@
+import { Alert, Button as MuiButton } from "@mui/material";
 import { useEffect, useState } from "react";
 import IconButton from "@mui/material/IconButton";
 
@@ -12,7 +13,7 @@ import { PhosphorIcon } from "../../components/icon/PhosphorIcon";
 import { useOjt } from "./useOjt";
 
 export function OjtThreePanePage() {
-  const { departments, selectedDept, messages, knowledge, input, setInput, selectDept, sendMessage } =
+  const { departments, selectedDept, messages, knowledge, input, setInput, selectDept, sendMessage, error, sending, escalated, escalate } =
     useOjt();
   const [leftOpen, setLeftOpen] = useState(false);
   const [rightOpen, setRightOpen] = useState(false);
@@ -37,7 +38,7 @@ export function OjtThreePanePage() {
             padding: "20px 14px",
             display: "flex",
             flexDirection: "column",
-            gap: 5,
+            gap: "5px",
           }}
         >
           <div style={{ fontWeight: 800, fontSize: 15, color: "var(--color-text)", padding: "0 8px 8px" }}>
@@ -56,7 +57,7 @@ export function OjtThreePanePage() {
             />
           ))}
         </CollapsibleAside>
-        <main style={{ flex: 618, display: "flex", flexDirection: "column", background: "var(--color-bg)" }}>
+        <main style={{ flex: 618, minWidth: 0, display: "flex", flexDirection: "column", background: "var(--color-bg)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "15px 22px", background: "var(--color-panel)" }}>
             <IconButton
               onClick={() => setLeftOpen(true)}
@@ -86,7 +87,9 @@ export function OjtThreePanePage() {
           </div>
           <ChatMessageList messages={messages} botIconBg="var(--color-blue-200)" botIconColor="var(--color-blue-500)" meBg="var(--color-blue-400)" />
           <div style={{ padding: "15px 22px", background: "var(--color-panel)", borderTop: "1px solid var(--color-border-soft)" }}>
-            <ChatComposer
+            {error && <Alert severity="error">{error}</Alert>}
+          <MuiButton disabled={sending || escalated} onClick={() => void escalate()}>{escalated ? "講師に相談済み" : "講師に相談"}</MuiButton>
+          <ChatComposer
               value={input}
               onChange={setInput}
               onSend={() => sendMessage(input)}

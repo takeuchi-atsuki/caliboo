@@ -5,13 +5,14 @@ export interface CurrentUser {
   loginId: string;
   displayName: string;
   role: "admin" | "member";
+  streakDays?: number;
 }
 
 export interface HomeSummary {
   user: { name: string; streakDays: number };
   hero: { message: string };
   certification: { name: string; achievementPercent: number };
-  strengths: { label: string; tone: Tone }[];
+  strengths: { label: string; tone: Tone; evidence?: { quote: string }[]; growthAction?: string }[];
   shortcuts: {
     icon: string;
     title: string;
@@ -83,7 +84,7 @@ export interface QuizQuestion {
   id: string;
   category: QuizCategory;
   text: string;
-  choices: string[];
+  choices: QuizChoice[];
   timeLimitSec: number;
   source?: string | null;
 }
@@ -136,6 +137,7 @@ export interface AssignmentSubmissionDetail {
   submittedAt: string;
   feedbackComment?: string | null;
   feedbackAt?: string | null;
+  score?: number | null;
 }
 
 // !NOTE: `target`がnullの課題は全員宛て、値がある課題は対象の新入社員1人だけの個人宛て
@@ -411,3 +413,23 @@ export interface PocRunDetail extends PocRunSummary {
   strengths: StrengthOutput;
   trace: PocRunTrace;
 }
+
+
+export interface ManagedUser extends CurrentUser {
+  active: boolean;
+  departmentId: string | null;
+  history: { departmentId: string | null; changedAt: string; changedBy: number }[];
+}
+
+export interface AgentJob {
+  id: number; userId: number; kind: "strength" | "proposal";
+  status: string; createdAt: string; completedAt: string | null;
+}
+
+export interface StrengthCandidate {
+  id: number; jobId: number; userId: number; label: string; skillCode: string;
+  confidence: number; growthAction: string; status: string;
+  evidence: { materialId: string; quote: string; source: { date: string; field: string } }[];
+}
+
+export type QuizChoice = string | { text: string; imageUrl: string; alt: string };

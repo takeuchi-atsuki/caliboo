@@ -28,7 +28,7 @@ export function Textarea({
         padding: "13px",
         "& .MuiInputBase-input": {
           height: "119px !important",
-          font: "500 13px/1.6 'M PLUS Rounded 1c'",
+          font: "400 16px/1.8 var(--font-body)",
           color: "var(--color-text)",
           resize: "none",
           overflow: "auto",

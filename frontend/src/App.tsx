@@ -17,6 +17,11 @@ import { ThemeModeProvider } from "./components/theme/ThemeModeProvider";
 import { AuthProvider } from "./components/auth/AuthProvider";
 import { RequireAuth } from "./components/auth/RequireAuth";
 
+import { UsersPage } from "./features/admin/UsersPage";
+import { OjtInboxPage } from "./features/admin/OjtInboxPage";
+import { AgentJobsPage } from "./features/admin/AgentJobsPage";
+import { DevelopmentPage } from "./features/development/DevelopmentPage";
+
 export default function App() {
   return (
     <ThemeModeProvider>
@@ -42,7 +47,11 @@ export default function App() {
               <Route path="/assignments" element={<AssignmentListPage />} />
               <Route path="/assignments/proposals/:proposalId" element={<AssignmentProposalPage />} />
               <Route path="/assignments/:assignmentId" element={<AssignmentDetailPage />} />
-              <Route path="/strengths" element={<StrengthsPage />} />
+              <Route path="/strengths" element={<DevelopmentPage />} />
+              <Route path="/strengths/poc" element={<StrengthsPage />} />
+              <Route path="/admin/users" element={<UsersPage />} />
+              <Route path="/admin/ojt" element={<OjtInboxPage />} />
+              <Route path="/admin/agents" element={<AgentJobsPage />} />
               <Route path="*" element={<Navigate to="/home" replace />} />
             </Route>
           </Routes>

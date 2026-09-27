@@ -69,17 +69,17 @@ export function DeptCard({ dept, selected, onSelect, layout = "grid" }: DeptCard
         borderRadius: "20px",
         boxShadow: "none",
         transition: "transform .16s, box-shadow .16s",
-        "@media (prefers-reduced-motion: reduce)": { transition: "none" },
         "@media (hover: hover) and (pointer: fine)": {
           "&:hover": {
-            transform: "translateY(-5px)",
-            boxShadow: "0 18px 32px color-mix(in srgb, var(--color-text) 18%, transparent)",
+            transform: "translateY(-2px)",
+            boxShadow: "var(--shadow-card)",
           },
         },
         "&:focus-within": {
-          transform: "translateY(-5px)",
-          boxShadow: "0 18px 32px color-mix(in srgb, var(--color-text) 18%, transparent)",
+          outline: "3px solid var(--color-action)",
+          outlineOffset: 3,
         },
+        "@media (prefers-reduced-motion: reduce)": { transition: "none", "&:hover": { transform: "none" } },
       }}
     >
       <CardActionArea onClick={() => onSelect(dept.id)} sx={{ padding: "22px" }}>

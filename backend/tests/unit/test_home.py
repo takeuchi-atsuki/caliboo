@@ -5,7 +5,7 @@ def test_get_home_summary(client):
     body = response.json()
     assert body["user"]["name"] == "ユウキ"
     assert body["certification"]["achievementPercent"] == 68
-    assert len(body["strengths"]) == 3
+    assert body["strengths"] == []
     assert len(body["shortcuts"]) == 3
     assert {s["to"] for s in body["shortcuts"]} == {"/report", "/study", "/ojt"}
     assert body["hero"]["message"] == "おかえり、ユウキさん！今日の振り返りをしよう"

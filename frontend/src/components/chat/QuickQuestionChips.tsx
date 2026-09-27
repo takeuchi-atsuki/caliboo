@@ -17,12 +17,14 @@ export function QuickQuestionChips({ questions, onSelect, hoverColor = "var(--co
           onClick={() => onSelect(question)}
           sx={{
             height: "auto",
+            minHeight: 44,
+            maxWidth: "100%",
             background: "var(--color-bg-alt)",
             borderRadius: "14px",
             fontWeight: 600,
             fontSize: 12,
             color: "var(--color-text-sub2)",
-            "& .MuiChip-label": { padding: "8px 14px" },
+            "& .MuiChip-label": { padding: "8px 14px", whiteSpace: "normal" },
             "@media (hover: hover) and (pointer: fine)": {
               "&:hover": { background: "var(--color-bg-alt)", color: hoverColor },
             },

@@ -33,7 +33,7 @@ export function StrengthsPage() {
 
   return (
     <PageContainer>
-      <div style={{ padding: "26px 30px", display: "flex", flexDirection: "column", gap: 20 }}>
+      <div style={{ padding: "var(--page-gutter)", display: "flex", flexDirection: "column", gap: 24 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
           <Mascot size={46} color="var(--color-purple-200)" mood="happy" />
           <div>
@@ -156,6 +156,17 @@ export function StrengthsPage() {
               </Box>
             </Box>
 
+            {detail.trace.externalAnalysis && <Box sx={{ p: 2, background: "var(--color-panel)", overflowX: "auto" }}>
+              <h2>独立エージェントとの比較</h2>
+              <table><thead><tr><th>スキル</th><th>ルールベース</th><th>独立解析</th></tr></thead><tbody>
+                {[...new Set([...detail.strengths.strengths, ...detail.trace.externalAnalysis.strengths].map((item) => item.layerTask.skillCode))].map((code) => {
+                  const rule = detail.strengths.strengths.find((item) => item.layerTask.skillCode === code);
+                  const agent = detail.trace.externalAnalysis?.strengths.find((item) => item.layerTask.skillCode === code);
+                  return <tr key={code}><th>{code}</th><td>{rule ? `${rule.status} (${rule.confidence})` : "なし"}</td><td>{agent ? `${agent.status} (${agent.confidence})` : "なし"}</td></tr>;
+                })}
+              </tbody></table>
+              <p>{detail.trace.externalAnalysis.notes}</p>
+            </Box>}
             {detail.strengths.strengths.length > 0 ? (
               <Box
                 sx={{

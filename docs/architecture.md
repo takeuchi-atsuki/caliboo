@@ -71,7 +71,7 @@ services/poc_strength/
 
 サーバー側はFan-in統合以降(`services/poc_strength/pipeline.py`の`_assemble_run()`)を台本経由と共有するため、解析(`RuleBasedAnalysisProvider`)・確信度・循環評価回避の境界はいずれも変わらない。解析エージェント(`strength-analyst`)の結果はルールベース解析とは別に`trace.externalAnalysis`へ格納し、突き合わせ材料として保持する(仕様書§2「評価者の分離」)。
 
-!NOTE: `trace.externalAnalysis`はDBへ保存されるのみで、`/strengths`画面に比較表示するUIは無い。突き合わせは`caliboo-strength-run` skillの手順7が、実行したセッションの応答メッセージ内でMarkdown表として一時的に提示するのみであり、恒常的なアプリ機能ではない。詳細は`docs/api.md`「強み解析PoC」節を参照。
+!NOTE: `trace.externalAnalysis`はDBに保存し、`/strengths/poc`でルールベース結果とスキルごとの判定・確信度を比較表示する。実日報の解析は別の永続ジョブとして管理する。
 
 !NOTE: 解析(④)だけは台本を返すのではなく、入力テキストから根拠を抽出して確信度・判定・Will-Skill象限を算出する実際のルールベースエンジンとして実装している。基本仕様書が抽象化層を求めた最大の動機が「解析だけ別モデルに差し替える」ことであるため、解析も`AnalysisProvider`インターフェースの内側に置いている(現在の実装は`RuleBasedAnalysisProvider`)。
 
@@ -100,9 +100,21 @@ services/poc_strength/
 
 !NOTE: `Mascot`コンポーネントは、Claude Designの`Mascot.dc.html`（div + 絶対配置のみで構成された素朴なキャラクター）をそのままReactに移植した。SVGやLottieを使わずCSSで完結させているため依存が増えず、`mood`("cheer"|"happy")と`color`(体色)の2パラメータだけで見た目を制御できる。
 
+## パステルUIの共通設計
+
+2026-09-28の改善仕様は [ui-refresh.md](ui-refresh.md) を参照。React + MUIを継続し、`tokens.css`の背景・文字・境界線・影・ページ余白を`theme.ts`と共通コンポーネントへ適用する。`palette.primary`/`secondary`もMUIが色演算するため、背景・文字と同様にCSS変数の実値を同期する。
+
+- パステルの色相とマスコットを継承し、文字色と操作の優先順位を調整する。ボタン、フォーム、ダイアログ、表、タブはMUIテーマで統一する。
+- `PageContainer`はコンテンツ幅を最大1440pxとし、ページ余白は`--page-gutter`（16〜40px）を使う。下部ナビが表示される幅ではその高さと`safe-area-inset-bottom`分の余白を確保する。
+- `TopNav`は半透明のstickyヘッダー。1200px以上はアイコン付きの上部リンク、未満はDrawerを使う。600px未満ではホーム・日報・課題・資格勉強・その他の下部ナビも表示する。「その他」は同じDrawerを開く。Drawerは1200px以上へ広げると閉じる。
+- 現在地は`aria-current="page"`と背景色で表し、課題詳細・学習チャットなどでも親項目を選択表示する。管理者用リンクのロール判定と本人のストリークを維持する。
+- キーボード操作には本文へのスキップリンクとフォーカスリングを用意する。主なボタンは44px以上、モバイル入力文字は16px以上とし、動きを減らす設定では装飾の移動・アニメーションを抑える。
+
+!NOTE: 下部ナビと上部Drawerのリンクは同じ定義から構成する。画面遷移をパネル切替と誤認させないよう、ナビ項目はReact RouterのLinkを使い、Tabsとして扱わない。
+
 ## レイアウト・レスポンシブ方針
 
-`src/theme.ts`で定義済みのMUI標準`breakpoints`(`xs:0, sm:600, md:900, lg:1200, xl:1536`)をそのまま採用し、**`md`(900px)未満を「コンパクト表示」に切り替える原則の閾値**としてアプリ全体で統一している(例外はReport・課題一覧(`/assignments`)のヘッダー行と`TopNav`右側のユーザー表示で、いずれも`sm`を境界にする)。OJT三ペイン(`/ojt/panel`)・Quiz(`/study`)・StudyChat(`/study/chat`)の固定幅サイドバー/ペインは、`components/layout/CollapsibleAside.tsx`により`md`未満でMUI`Drawer`のオーバーレイ表示(ドロワー化)に切り替わり、`TopNav`のナビゲーションも同じ`md`未満でハンバーガーメニュー+Drawerに切り替わる。Home(`/home`)・Report(`/report`)の複数カラム行(ヒーロー2カラム・ショートカット3枚・KPT3カラム)は、同じく`md`(Reportのヘッダーボタン行のみ`sm`)を境に縦積みへ変わる。`TopNav`右側のユーザー表示(表示名・ロール・アバター)も例外的に`sm`未満で隠し、ログアウトボタンが画面内に収まるようにしている(対象とする最小幅は375px。360px以下は`BACKLOG.md` #24)。
+`src/theme.ts`で定義済みのMUI標準`breakpoints`(`xs:0, sm:600, md:900, lg:1200, xl:1536`)をそのまま採用し、**`md`(900px)未満を「コンパクト表示」に切り替える原則の閾値**としてアプリ全体で統一している(例外はReport・課題一覧(`/assignments`)のヘッダー行と`TopNav`右側のユーザー表示で、いずれも`sm`を境界にする)。OJT三ペイン(`/ojt/panel`)・Quiz(`/study`)・StudyChat(`/study/chat`)の固定幅サイドバー/ペインは、`components/layout/CollapsibleAside.tsx`により`md`未満でMUI`Drawer`のオーバーレイ表示(ドロワー化)に切り替わり、`TopNav`のナビゲーションは管理者向け項目を含むため`lg`未満でハンバーガーメニュー+Drawerに切り替わる。Home(`/home`)・Report(`/report`)の複数カラム行(ヒーロー2カラム・ショートカット3枚・KPT3カラム)は、同じく`md`(Reportのヘッダーボタン行のみ`sm`)を境に縦積みへ変わる。`TopNav`右側のユーザー表示(表示名・ロール・アバター)も例外的に`sm`未満で隠し、ログアウトボタンが画面内に収まるようにしている(対象とする最小幅は320px。`sm`未満でロゴ文字も省略)。
 
 !NOTE: 境界を原則`md`に統一した理由は、OJT三ペインの固定幅(左230px+右382px=612px)だけで`sm`(600px)を超えてしまい、`sm`を境界にするとタブレット縦持ち幅(768px前後)でも中央チャットが極端に狭くなるため。画面ごとに閾値がバラバラだと挙動を覚えにくくなる点も踏まえ、`md`をアプリ全体の判断基準としている。例外(Report・課題一覧のヘッダー行、`TopNav`右側のユーザー表示)は、レイアウト全体の切替ではなく、`sm`未満の狭い画面で個別の要素を画面内に収めるための調整に限っている。
 
@@ -122,3 +134,16 @@ services/poc_strength/
 ## ディレクトリ構成
 
 詳細は各画面の仕様書（`docs/screens/*.md`）とAPI仕様書（`docs/api.md`）を参照。
+
+## 2026-09-28の運用基盤拡張
+
+追加モデルは `extension_models.py` に集約する。既存DBに破壊的な列変更をせず、`account_states`・`department_history`・`login_attempts`・`user_progress_categories`・`quiz_successes`・`ojt_threads/messages`・`agent_jobs`・`strength_candidates/evaluations`・`proposal_revisions/automation`・`submission_scores`を作成する。既存ユーザーの状態と共有進捗は起動時に欠けた行だけ移行し、変更済み行は上書きしない。アイコン補正と独自画像問題追加も既存DBへ適用する。この拡張のためにDBを削除する必要はない。
+
+強み解析は永続ジョブによるセッション連携。Webプロセス内からCodexやChatGPT APIを呼び出さない。`data/agent_jobs.py`がスナップショットとハッシュによる重複防止、`routers/development.py`が検証・状態更新・講師承認を担う。課題再生成は `routers/proposal_agent.py` で旧版との整合性を確認する。読み込み中の画面切替による古い応答の混入を `useResource`・`useOjt`・`useQuiz` で防ぐ。
+
+> [!NOTE]
+> 人間評価は運用で収集するデータであり、エージェント出力を人間ラベルとして埋めてはならない。実データ・2名の評価がない状態は「評価データ不足」のまま表示する。
+
+## デモアカウントを作らない起動
+
+運用環境では `CALIBOO_DEMO_SEED=false` を設定し、`python3 -m caliboo_api.manage --login-id admin --display-name 管理者` で初期管理者を対話作成する。パスワードは引数やファイルへ保存しない。この設定では課マスタ・問題マスタのみを投入し、公開済みの開発用ユーザー・日報・課題提出は作成しない。既存DBの開発アカウントは自動削除しないため、管理画面から無効化する。

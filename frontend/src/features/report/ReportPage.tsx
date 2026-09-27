@@ -63,7 +63,7 @@ export function ReportPage() {
 
   return (
     <PageContainer>
-      <div style={{ padding: "26px 30px", display: "flex", flexDirection: "column", gap: 20 }}>
+      <div style={{ padding: "var(--page-gutter)", display: "flex", flexDirection: "column", gap: 24 }}>
         <Box
           sx={{
             display: "flex",
@@ -76,7 +76,7 @@ export function ReportPage() {
           <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
             <Mascot size={46} color="var(--color-green-300)" mood="happy" />
             <div>
-              <div style={{ fontWeight: 800, fontSize: 23, color: "var(--color-text)" }}>今日の日報</div>
+              <h1 style={{ margin: 0, fontWeight: 800, fontSize: 28, letterSpacing: "-0.03em", color: "var(--color-text)" }}>今日の日報</h1>
               <div style={{ fontWeight: 500, fontSize: 12.5, color: "var(--color-text-sub)" }}>
                 {draftDate ? (
                   <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -94,7 +94,7 @@ export function ReportPage() {
               </div>
             </div>
           </div>
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+          <Box sx={{ display: "flex", gap: "10px", flexWrap: "wrap", width: { xs: "100%", sm: "auto" }, "& > button": { flex: { xs: "1 1 auto", sm: "0 0 auto" } } }}>
             <Button
               variant="secondary"
               disabled={submitting}
@@ -111,7 +111,7 @@ export function ReportPage() {
             <Button icon="ph-bold ph-paper-plane-tilt" disabled={submitting} onClick={() => submit("submitted")}>
               提出する
             </Button>
-          </div>
+          </Box>
         </Box>
 
         {pendingRestore ? (
