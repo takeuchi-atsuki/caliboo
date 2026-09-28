@@ -8,6 +8,7 @@
 """
 
 import caliboo_api.db as db
+from caliboo_api.extension_models import AgentJob
 from caliboo_api.models import Assignment, AssignmentSubmission, PocRun, Report
 
 
@@ -1017,3 +1018,142 @@ def test_strength_analysis_import_rejects_malformed_trajectory_flow(client):
     response = client.post("/api/poc/runs/import", json=payload)
 
     assert response.status_code == 422
+
+
+def _strength_result_from_source(source):
+    return {
+        "trace": {"provider": "codex_agent", "model": "test", "promptVersion": "schema-v1"},
+        "candidates": [{
+            "label": "手順を検証する", "skillCode": "TEST", "confidence": 70,
+            "evidence": [{"materialId": source["id"], "quote": source["text"]}],
+            "growthAction": "確認手順を共有する",
+        }],
+        "notes": "入力契約の検証。解析精度の評価ではない。",
+    }
+
+
+def test_strength_materials_submission_to_approval_flow(
+    client, admin_client, other_member_client,
+):
+    """観点: 本人提出→原文を保った6分類→引用検証→講師承認。同一依頼・古い結果も確認。"""
+    user_id = client.get("/api/auth/me").json()["id"]
+    report = dict(date="2026-09-28", keep="  境界値\r\nのテストを追加した。\t",
+                  problem="説明が不足した。", moodComment="嬉しかった。", status="submitted",
+                  **{"try": "明日は結果を共有する。"})
+    assert client.post("/api/report", json={
+        **report, "keep": "下書き専用", "status": "draft",
+    }).status_code == 200
+    assert other_member_client.post("/api/report", json={
+        **report, "keep": "他人の材料",
+    }).status_code == 200
+    assignment = admin_client.post("/api/assignments", json={
+        "title": "境界値", "body": "境界値を確認する",
+    }).json()
+    path = f"/api/assignments/{assignment['id']}"
+    assert client.post(path + "/submission", json={"answerText": "入力の両端を確認した。"}
+                       ).status_code == 200
+    assert admin_client.post(path + f"/submissions/{user_id}/feedback", json={
+        "comment": "確認観点を説明できています。",
+    }).status_code == 200
+    submitted = client.post("/api/report", json=report)
+    assert submitted.status_code == 200
+    report_id = int(submitted.json()["id"].rsplit("_", 1)[1])
+    request_path = f"/api/development/strengths/{user_id}/request"
+    job_id = admin_client.post(request_path).json()["id"]
+    assert admin_client.post(request_path).json()["id"] == job_id
+    job_path = f"/api/development/jobs/{job_id}"
+    materials = admin_client.get(job_path).json()["materials"]
+    assert materials["schemaVersion"] == "strength-materials.v1"
+    sources = materials["sources"]
+    assert {item["sourceRole"] for item in sources} == {
+        "self_report", "difficulty", "plan", "emotion", "work_product", "mentor_feedback",
+    }
+    assert not {"下書き専用", "他人の材料"} & {item["text"] for item in sources}
+    report_sources = [item for item in sources if item["id"].startswith(f"report:{report_id}:")]
+    assert [item["field"] for item in report_sources] == ["keep", "problem", "try", "moodComment"]
+    assert all(item["text"] == report[item["field"]] for item in report_sources)
+    for item in report_sources[1:]:
+        assert item["evidenceEligible"] is False
+        assert admin_client.post(job_path + "/strength-result", json=_strength_result_from_source(
+            item,
+        )).status_code == 422
+    original = _strength_result_from_source(report_sources[0])
+    assert admin_client.post(job_path + "/strength-result", json=original).status_code == 200
+    assert client.get("/api/home/summary").json()["strengths"] == []
+    candidate = admin_client.get(f"/api/development/strengths?userId={user_id}").json()[
+        "candidates"][0]
+    assert candidate["evidence"][0]["source"]["text"] == report["keep"]
+    assert admin_client.post(f"/api/development/strengths/{candidate['id']}/decision", json={
+        "status": "approved", "label": "確認する力", "growthAction": "手順を共有する",
+    }).status_code == 200
+    assert client.get("/api/home/summary").json()["strengths"][0]["label"] == "確認する力"
+    assert other_member_client.get("/api/home/summary").json()["strengths"] == []
+
+    for text in ("追加の確認をした。", "さらに確認をした。"):
+        assert client.post("/api/report", json={**report, "keep": text}).status_code == 200
+        if text == "追加の確認をした。":
+            old_id = admin_client.post(request_path).json()["id"]
+    assert admin_client.get(f"/api/development/jobs/{old_id}").json()["status"] == "superseded"
+    assert admin_client.post(f"/api/development/jobs/{old_id}/strength-result",
+                             json=original).status_code == 409
+    assert admin_client.get(job_path).json()["materials"] == materials
+
+
+def test_strength_materials_legacy_snapshot_read_and_import_flow(client, admin_client):
+    """観点: 旧スナップショットだけで整形・引用でき、DBの材料とハッシュを変更しない。"""
+    user_id = client.get("/api/auth/me").json()["id"]
+    legacy = {"sources": [{
+        "id": "report:123:keep", "kind": "report", "field": "keep",
+        "text": "保存時点の原文を照合した。", "date": "2026-09-01", "evidenceEligible": True,
+    }]}
+    with db.session_scope() as session:
+        job = AgentJob(user_id=user_id, kind="strength", materials=legacy,
+                       fingerprint="legacy-snapshot", created_at="2026-09-01")
+        session.add(job)
+        session.commit()
+        job_id = job.id
+    path = f"/api/development/jobs/{job_id}"
+    material = admin_client.get(path).json()["materials"]
+    assert material["schemaVersion"] == "strength-materials.v1"
+    assert material["sources"][0] == {**legacy["sources"][0], "sourceRole": "self_report"}
+    evaluation = admin_client.get(f"/api/development/evaluations/{job_id}/materials").json()
+    assert evaluation == {"jobId": job_id, "materials": material}
+    assert admin_client.post(path + "/strength-result", json=_strength_result_from_source(
+        legacy["sources"][0],
+    )).status_code == 200
+    with db.session_scope() as session:
+        job = session.get(AgentJob, job_id)
+        assert job.materials == legacy
+        assert job.fingerprint == "legacy-snapshot"
+        assert job.status == "completed"
+
+
+def test_strength_materials_corrupt_snapshot_rejected_flow(client, admin_client):
+    """観点: 未知の版・原文型不正・分類不整合は取得も取込も409、状態変更や本文漏洩なし。"""
+    user_id = client.get("/api/auth/me").json()["id"]
+    source = dict(id="report:1:keep", kind="report", field="keep", date="2026-09-28",
+                  text="応答へ漏らさない原文", evidenceEligible=True, sourceRole="self_report")
+    malformed = [
+        {"schemaVersion": "future", "sources": [source]},
+        {"sources": [{**source, "text": None}]},
+        {"sources": [{**source, "evidenceEligible": False}]},
+        {"sources": [{**source, "field": []}]},
+    ]
+    for index, materials in enumerate(malformed):
+        with db.session_scope() as session:
+            job = AgentJob(user_id=user_id, kind="strength", materials=materials,
+                           fingerprint=f"invalid-{index}", created_at="2026-09-28")
+            session.add(job)
+            session.commit()
+            job_id = job.id
+        path = f"/api/development/jobs/{job_id}"
+        responses = [
+            admin_client.get(path),
+            admin_client.get(f"/api/development/evaluations/{job_id}/materials"),
+            admin_client.post(path + "/strength-result", json=_strength_result_from_source(source)),
+        ]
+        for response in responses:
+            assert response.status_code == 409
+            assert source["text"] not in response.text
+        with db.session_scope() as session:
+            assert session.get(AgentJob, job_id).status == "pending"

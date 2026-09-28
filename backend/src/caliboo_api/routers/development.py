@@ -1,6 +1,7 @@
 """本人の強みと講師のエージェント・評価ワークフロー。"""
 
 from fastapi import APIRouter, Depends, HTTPException
+from pydantic import ValidationError
 from sqlalchemy.dialects.sqlite import insert
 from sqlalchemy.orm import Session
 
@@ -11,8 +12,23 @@ from caliboo_api.db import get_session
 from caliboo_api.extension_models import AgentJob, StrengthCandidate, StrengthEvaluation
 from caliboo_api.models import User
 from caliboo_api.schemas.agent_jobs import EvaluationInput, StrengthDecision, StrengthResult
+from caliboo_api.schemas.strength_materials import StrengthAnalysisMaterials
+from caliboo_api.services.strength_materials import normalize_strength_materials
 
 router = APIRouter(prefix="/api/development", tags=["development"])
+
+
+def validated_strength_materials(job: AgentJob) -> dict:
+    try:
+        return normalize_strength_materials(job.materials)
+    except ValidationError:
+        # !NOTE: 保存済み材料の不整合は入力結果を直しても解決しない。本文は漏らさない。
+        raise HTTPException(409, "invalid or unsupported strength materials") from None
+
+
+@router.get("/strength-materials/schema")
+def strength_materials_schema(_admin: User = Depends(require_admin)) -> dict:
+    return StrengthAnalysisMaterials.model_json_schema()
 
 
 def member_or_404(session: Session, user_id: int) -> User:
@@ -83,7 +99,10 @@ def get_job(
     job = session.get(AgentJob, job_id)
     if job is None:
         raise HTTPException(404, "job not found")
-    return job_view(job, True)
+    result = job_view(job, True)
+    if job.kind == "strength":
+        result["materials"] = validated_strength_materials(job)
+    return result
 
 
 @router.post("/jobs/{job_id}/strength-result")
@@ -94,7 +113,7 @@ def import_strength(
     session: Session = Depends(get_session),
 ) -> dict:
     job = pending_job(session, job_id, "strength")
-    sources = {item["id"]: item for item in job.materials["sources"]}
+    sources = {item["id"]: item for item in validated_strength_materials(job)["sources"]}
     codes = [item.skillCode for item in payload.candidates]
     if len(codes) != len(set(codes)):
         raise HTTPException(422, "duplicate skill code")
@@ -196,7 +215,7 @@ def evaluation_materials(
     if job is None or job.kind != "strength":
         raise HTTPException(404, "strength job not found")
     # !NOTE: 人間ラベル付け用にはモデルの答えを含めない。
-    return {"jobId": job.id, "materials": job.materials}
+    return {"jobId": job.id, "materials": validated_strength_materials(job)}
 
 
 @router.post("/evaluations/{job_id}")
