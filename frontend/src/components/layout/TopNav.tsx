@@ -21,6 +21,7 @@ const MOBILE_ITEMS = NAV_ITEMS.filter((item) => ["/home", "/report", "/assignmen
 const ADMIN_ITEMS = [
   { label: "ユーザー", to: "/admin/users", icon: "ph ph-users" },
   { label: "相談", to: "/admin/ojt", icon: "ph ph-chat-circle-dots" },
+  { label: "OJT設定", to: "/admin/ojt-settings", icon: "ph ph-gear" },
   { label: "解析管理", to: "/admin/agents", icon: "ph ph-chart-line-up" },
 ];
 

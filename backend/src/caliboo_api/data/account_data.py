@@ -15,6 +15,7 @@ from caliboo_api.models import (
     User,
 )
 from caliboo_api.data.seed import study_seed
+from caliboo_api.data.ojt_configuration import initialize_ojt_configurations
 
 
 def now_iso() -> str:
@@ -27,6 +28,7 @@ def is_active(session: Session, user_id: int) -> bool:
 
 
 def initialize_extensions(session: Session) -> None:
+    initialize_ojt_configurations(session)
     for user in session.query(User).all():
         if session.get(AccountState, user.id) is None:
             session.add(AccountState(user_id=user.id, active=True))

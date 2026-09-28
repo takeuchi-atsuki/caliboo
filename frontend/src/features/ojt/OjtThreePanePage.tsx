@@ -9,11 +9,12 @@ import { DeptCard } from "../../components/dept/DeptCard";
 import { KnowledgeCard } from "../../components/dept/KnowledgeCard";
 import { ChatMessageList } from "../../components/chat/ChatMessageList";
 import { ChatComposer } from "../../components/chat/ChatComposer";
+import { QuickQuestionChips } from "../../components/chat/QuickQuestionChips";
 import { PhosphorIcon } from "../../components/icon/PhosphorIcon";
 import { useOjt } from "./useOjt";
 
 export function OjtThreePanePage() {
-  const { departments, selectedDept, messages, knowledge, input, setInput, selectDept, sendMessage, error, sending, escalated, escalate } =
+  const { departments, selectedDept, messages, knowledge, input, setInput, selectDept, sendMessage, error, sending, escalated, escalate, quickAsks } =
     useOjt();
   const [leftOpen, setLeftOpen] = useState(false);
   const [rightOpen, setRightOpen] = useState(false);
@@ -67,13 +68,13 @@ export function OjtThreePanePage() {
               <PhosphorIcon name="ph ph-list" size={20} color="var(--color-text)" />
             </IconButton>
             <Mascot size={38} color="var(--color-blue-200)" mood="happy" />
-            <div>
+            <div style={{ flex: 1, minWidth: 0, overflowWrap: "anywhere" }}>
               <div style={{ fontWeight: 800, fontSize: 16, color: "var(--color-text)" }}>
                 {selectedDept ? `${selectedDept.name} メンター` : "課を選んでください"}
               </div>
               {selectedDept ? (
                 <div style={{ fontWeight: 600, fontSize: 11, color: "var(--color-blue-500)" }}>
-                  {selectedDept.knowledgeCount}件のナレッジを学習済み
+                  登録ナレッジ {selectedDept.knowledgeCount}件・テンプレートによる自動回答
                 </div>
               ) : null}
             </div>
@@ -87,6 +88,7 @@ export function OjtThreePanePage() {
           </div>
           <ChatMessageList messages={messages} botIconBg="var(--color-blue-200)" botIconColor="var(--color-blue-500)" meBg="var(--color-blue-400)" />
           <div style={{ padding: "15px 22px", background: "var(--color-panel)", borderTop: "1px solid var(--color-border-soft)" }}>
+            <QuickQuestionChips questions={quickAsks} onSelect={sendMessage} hoverColor="var(--color-blue-500)" />
             {error && <Alert severity="error">{error}</Alert>}
           <MuiButton disabled={sending || escalated} onClick={() => void escalate()}>{escalated ? "講師に相談済み" : "講師に相談"}</MuiButton>
           <ChatComposer
