@@ -24,7 +24,7 @@ class CandidateInput(BaseModel):
 
 
 class AgentTrace(BaseModel):
-    provider: Literal["codex_agent"]
+    provider: Literal["codex_agent", "openai"]
     model: Text
     promptVersion: Text
 
@@ -54,3 +54,4 @@ class ProposalAgentResult(BaseModel):
     messageForMember: str = ""
     rationale: Text
     estimateMinutes: int = Field(ge=5, le=480)
+    evidence: list[Evidence] = Field(default_factory=list, max_length=10)

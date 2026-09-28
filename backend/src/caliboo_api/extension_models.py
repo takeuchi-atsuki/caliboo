@@ -98,6 +98,22 @@ class StrengthCandidate(Base):
     decided_at = Column(String, nullable=True)
 
 
+class AgentJobContext(Base):
+    __tablename__ = "agent_job_contexts"
+    job_id = Column(Integer, ForeignKey("agent_jobs.id"), primary_key=True)
+    context = Column(JSON, nullable=False)
+
+
+class AgentJobExecution(Base):
+    __tablename__ = "agent_job_executions"
+    job_id = Column(Integer, ForeignKey("agent_jobs.id"), primary_key=True)
+    attempts = Column(Integer, nullable=False, default=0)
+    lease_token = Column(String, nullable=True)
+    leased_until = Column(Integer, nullable=False, default=0)
+    next_attempt_at = Column(Integer, nullable=False, default=0)
+    last_error = Column(String, nullable=True)
+
+
 class StrengthEvaluation(Base):
     __tablename__ = "strength_evaluations"
     __table_args__ = (UniqueConstraint("job_id", "reviewer_id"),)

@@ -9,11 +9,14 @@ from caliboo_api.auth.deps import get_current_user, require_admin
 from caliboo_api.data.account_data import is_active, now_iso
 from caliboo_api.data.agent_jobs import candidate_view, enqueue_strength, job_view
 from caliboo_api.db import get_session
-from caliboo_api.extension_models import AgentJob, StrengthCandidate, StrengthEvaluation
+from caliboo_api.extension_models import (
+    AgentJob, AgentJobContext, AgentJobExecution, StrengthCandidate, StrengthEvaluation,
+)
 from caliboo_api.models import User
 from caliboo_api.schemas.agent_jobs import EvaluationInput, StrengthDecision, StrengthResult
 from caliboo_api.schemas.strength_materials import StrengthAnalysisMaterials
 from caliboo_api.services.strength_materials import normalize_strength_materials
+from caliboo_api.services.llm import provider_name
 
 router = APIRouter(prefix="/api/development", tags=["development"])
 
@@ -69,7 +72,9 @@ def list_strengths(
     )
     return {
         "candidates": [candidate_view(row) for row in query.order_by(StrengthCandidate.id.desc())],
-        "jobs": [job_view(job) for job in jobs],
+        "jobs": [job_view(job, execution=session.get(AgentJobExecution, job.id)) for job in jobs],
+        "reviewPending": session.query(StrengthCandidate).filter_by(
+            user_id=target, status="pending").count() > 0,
     }
 
 
@@ -88,8 +93,28 @@ def request_strength(
 def list_jobs(
     _admin: User = Depends(require_admin), session: Session = Depends(get_session)
 ) -> dict:
-    rows = session.query(AgentJob).filter_by(status="pending").order_by(AgentJob.id).all()
-    return {"jobs": [job_view(row) for row in rows]}
+    rows = session.query(AgentJob).filter(AgentJob.status.in_(["pending", "failed"])).order_by(
+        AgentJob.id).all()
+    return {"jobs": [job_view(row, execution=session.get(AgentJobExecution, row.id))
+                     for row in rows], "provider": provider_name()}
+
+
+@router.post("/jobs/{job_id}/retry")
+def retry_job(job_id: int, _admin: User = Depends(require_admin),
+              session: Session = Depends(get_session)) -> dict:
+    job = session.get(AgentJob, job_id)
+    if job is None:
+        raise HTTPException(404, "job not found")
+    member_or_404(session, job.user_id)
+    updated = session.query(AgentJob).filter_by(id=job_id, status="failed").update(
+        {"status": "pending"}, synchronize_session=False)
+    if not updated:
+        raise HTTPException(409, "only failed jobs can be retried")
+    session.query(AgentJobExecution).filter_by(job_id=job_id).update(dict(
+        attempts=0, lease_token=None, leased_until=0, next_attempt_at=0, last_error=None))
+    session.commit()
+    session.refresh(job)
+    return job_view(job)
 
 
 @router.get("/jobs/{job_id}")
@@ -102,6 +127,9 @@ def get_job(
     result = job_view(job, True)
     if job.kind == "strength":
         result["materials"] = validated_strength_materials(job)
+    context = session.get(AgentJobContext, job_id)
+    if context is not None:
+        result["context"] = context.context
     return result
 
 
@@ -112,6 +140,10 @@ def import_strength(
     _admin: User = Depends(require_admin),
     session: Session = Depends(get_session),
 ) -> dict:
+    return complete_strength_result(job_id, payload, session)
+
+
+def complete_strength_result(job_id: int, payload: StrengthResult, session: Session) -> dict:
     job = pending_job(session, job_id, "strength")
     sources = {item["id"]: item for item in validated_strength_materials(job)["sources"]}
     codes = [item.skillCode for item in payload.candidates]

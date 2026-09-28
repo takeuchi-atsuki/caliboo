@@ -36,6 +36,7 @@ export default defineConfig({
         "src/lib/useResource.ts",
         "src/lib/useAutoRefresh.ts",
         "src/features/development/LearningActions.tsx",
+        "src/features/admin/AgentJobQueue.tsx",
         "src/features/assignment/AssignmentCreateDialog.tsx",
         "src/features/assignment/AssignmentFeedbackForm.tsx",
         "src/features/assignment/ProposalRegenerate.tsx",

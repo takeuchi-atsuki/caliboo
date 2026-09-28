@@ -535,11 +535,12 @@ print(opener.open("http://localhost:8000/api/home/summary").read().decode("utf-8
 | POST | /api/ojt/departments/{dept_id}/escalate | member本人。保存済み会話がある課を相談。重複依頼は冪等。発言なし409 |
 | GET | /api/ojt/escalations | admin。任意departmentId。threadsとpendingCount。明示相談された履歴のみ |
 | POST | /api/ojt/escalations/{thread_id}/reply | admin。`{text}`。同じ履歴に講師名付き回答を保存。未相談404、回答済み409 |
-| GET | /api/development/strengths | 本人/講師。任意userId（他人指定はadminのみ）。candidatesとjobs。memberには承認済み候補のみ |
+| GET | /api/development/strengths | 本人/講師。任意userId（他人指定はadminのみ）。candidates・jobs・reviewPending。memberには承認済み候補本文のみ。reviewPendingは講師確認待ちの有無 |
 | POST | /api/development/strengths/{user_id}/request | admin。提出材料をスナップショット化。材料なし409、対象不在404。同じ材料は同じジョブ |
-| GET | /api/development/jobs | admin。処理待ちjobs |
+| GET | /api/development/jobs | admin。待ち/失敗jobsとprovider（manual/openai）。各jobにattempts・lastError・nextAttemptAt（Unix秒）・processing |
+| POST | /api/development/jobs/{job_id}/retry | admin。失敗ジョブをpendingに戻し実行情報を初期化。対象不在/無効404、failed以外409 |
 | GET | /api/development/strength-materials/schema | admin。強み解析入力 `StrengthAnalysisMaterials` のJSON Schema |
-| GET | /api/development/jobs/{job_id} | admin。ジョブ情報・materials・result。強み材料はv1へ検証・整形。不正な保存済み材料/未対応版は409 |
+| GET | /api/development/jobs/{job_id} | admin。ジョブ情報・materials・result、存在すればcontext（進捗）。強み材料はv1へ検証・整形。不正な保存済み材料/未対応版は409 |
 | POST | /api/development/jobs/{job_id}/strength-result | admin。StrengthResultを取り込み候補を確認待ちで保存。引用/材料ID/skillCode重複を検証。古い/完了済み409、形式422 |
 | POST | /api/development/strengths/{candidate_id}/decision | admin。`{status:approved/rejected,label,growthAction}`。確認待ちのみ。既決409 |
 | GET | /api/development/evaluations/{job_id}/materials | admin。人間ラベル付け用のv1材料（解析結果を含めない）。不正な保存済み材料/未対応版は409 |
@@ -565,7 +566,7 @@ StrengthResultの形:
 
 候補は最大10件、根拠は候補ごとに1〜10件、confidenceは0〜100整数。ジョブのsourcesから原文を引用する。`evidenceEligible=false`（Problem/Try/気分コメント）を根拠にすると422。入力なしを推測して補完せず空候補を保存できる。traceはモデル・プロンプト版の追跡情報であり、サーバーがモデル実行を証明する署名ではない。取込は認証済み講師専用。
 
-ProposalAgentResultはtrace/title/body/messageForMember/rationale/estimateMinutes（5〜480）。再生成結果の自動配信はしない。
+ProposalAgentResultはtrace/title/body/messageForMember/rationale/estimateMinutes（5〜480）と任意のevidence。trace.providerはcodex_agent/openai。openai再生成はevidence必須で、materialId（material:0からの添字）と元資料quoteの連続部分を検証し、不一致は422。旧Codex取込のevidence省略は互換維持する。再生成結果の自動配信はしない。
 
 ## 本人の行動サイクル（2026-09-28追加）
 
@@ -585,3 +586,10 @@ ProposalAgentResultはtrace/title/body/messageForMember/rationale/estimateMinute
 `POST /api/assignment-proposals`は明示設定されたproviderを使う。`manual`（既定）は従来のルールベース、`openai`は検証済みの引用を含む生成AI案を確認待ちとして保存する。入力材料不足・設定不備・外部障害・不正出力は503で、配信可能な課題案を保存しない。確認待ちが既にある場合はproviderを呼ばず200で返す。同時生成でも確認待ちを重複させない。無効化済み対象者は404。
 
 入出力・配信承認の形式は変更しない。`generator`には`openai:<model>:proposal-2026-09-29.1`を記録する。設定・上限・再試行は [生成AI provider仕様](ai-provider.md) を参照。
+
+
+## 自動ジョブ処理（2026-09-29）
+
+ジョブ種別は`strength`（強み）・`proposal`（再生成）・`proposal_initial`（自動初回課題案）。保存状態は`pending/completed/superseded/failed`。`processing`は有効な取得権があるpending、`lastError`のあるpendingは再試行待ちを示す。待ち時間と復旧は [ワーカー仕様](ai-worker.md) を参照。認証済み講師以外に全体キュー・原文・失敗再試行APIを公開しない。
+
+明示設定したopenaiモードで、日報提出・課題回答・講師コメントの保存後に非同期登録する。初回案は本人の日報か講師コメントがある場合に作成し、確認待ちの重複と日本時間で同日の生成成功後の追加を防ぐ。失敗で提出内容を取り消さない。強みと再生成にはサーバーがprovider/model/promptVersionを記録する。既存の講師専用取込APIも引き続き利用できる。

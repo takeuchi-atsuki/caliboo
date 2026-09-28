@@ -14,6 +14,7 @@ from caliboo_api.data.assignment_data import (
 )
 from caliboo_api.db import get_session
 from caliboo_api.data.agent_jobs import enqueue_strength
+from caliboo_api.data.proposal_extensions import auto_propose
 from caliboo_api.models import User
 from caliboo_api.schemas.assignment import (
     AssignmentCreateRequest,
@@ -67,6 +68,7 @@ def submit_assignment_answer(
             status_code=409, detail=f"assignment already reviewed: {assignment_id}"
         )
     enqueue_strength(session, member.id)
+    auto_propose(session, member.id, "submission")
     return result
 
 
@@ -98,4 +100,5 @@ def submit_member_feedback(
     if result is FeedbackSaveError.NOT_SUBMITTED:
         raise HTTPException(status_code=409, detail=f"assignment not submitted: {assignment_id}")
     enqueue_strength(session, user_id)
+    auto_propose(session, user_id, "feedback")
     return result

@@ -435,8 +435,9 @@ export interface ManagedUser extends CurrentUser {
 }
 
 export interface AgentJob {
-  id: number; userId: number; kind: "strength" | "proposal";
+  id: number; userId: number; kind: "strength" | "proposal" | "proposal_initial";
   status: string; createdAt: string; completedAt: string | null;
+  attempts?: number; lastError?: string | null; nextAttemptAt?: number; processing?: boolean;
 }
 
 export interface LearningAction {
