@@ -5,15 +5,17 @@ import { PageContainer } from "../../components/layout/PageContainer";
 import { useAuth } from "../../components/auth/AuthProvider";
 import { useResource } from "../../lib/useResource";
 import type { AgentJob, ManagedUser, StrengthCandidate } from "../../lib/types";
+import { LearningActions } from "./LearningActions";
 
 export function DevelopmentPage() {
   const { user } = useAuth();
   const [target, setTarget] = useState("");
   const members = useResource<{ users: ManagedUser[] }>(user?.role === "admin" ? "/api/users" : null);
   const resource = useResource<{ candidates: StrengthCandidate[]; jobs: AgentJob[] }>(
-    `/api/development/strengths${target ? `?userId=${target}` : ""}`);
+    `/api/development/strengths${target ? `?userId=${target}` : ""}`, 5000);
   return <PageContainer><Stack spacing={2} sx={{ p: { xs: 2, md: 4 } }}>
     <Typography component="h1" variant="h5">強みと成長のヒント</Typography>
+    <Typography variant="body2">表示中は5秒ごとに更新します。講師が確認した強みを、次の行動に活かしましょう。</Typography>
     {resource.error && <Alert severity="error">{resource.error}</Alert>}
     <Button onClick={() => void resource.reload()}>更新する</Button>
     {user?.role === "admin" && <>
@@ -30,6 +32,7 @@ export function DevelopmentPage() {
     {resource.data?.candidates.length === 0 && <Typography>表示できる強みはまだありません。日報や課題の取り組みが材料になります。</Typography>}
     {resource.data?.candidates.map((candidate) => <Candidate key={candidate.id} candidate={candidate}
       admin={user?.role === "admin"} busy={resource.busy} decide={(body) => resource.act(`/api/development/strengths/${candidate.id}/decision`, body)} />)}
+    <LearningActions key={target} target={target} admin={user?.role === "admin"} candidates={resource.data?.candidates ?? []} />
   </Stack></PageContainer>;
 }
 

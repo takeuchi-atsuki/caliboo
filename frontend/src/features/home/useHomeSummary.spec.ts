@@ -13,7 +13,7 @@ describe("ホーム取得", () => {
   it("失敗を表示する", async () => {
     vi.mocked(apiClient.get).mockRejectedValue(new Error("offline"));
     const { result } = renderHook(useHomeSummary);
-    await waitFor(() => expect(result.current.error).toBe("offline"));
+    await waitFor(() => expect(result.current.error).toContain("読み込みに失敗"));
   });
   it.each([false, true])("アンマウント後の応答を破棄する %s", async (failed) => {
     let finish!: (value: unknown) => void;

@@ -32,6 +32,7 @@ from caliboo_api.routers import (
     users,
     development,
     proposal_agent,
+    learning_actions,
 )
 
 
@@ -58,6 +59,7 @@ app.include_router(poc_strength.router, dependencies=[Depends(get_current_user)]
 app.include_router(users.router, dependencies=[Depends(get_current_user)])
 app.include_router(development.router, dependencies=[Depends(get_current_user)])
 app.include_router(proposal_agent.router, dependencies=[Depends(get_current_user)])
+app.include_router(learning_actions.router, dependencies=[Depends(get_current_user)])
 
 app.mount("/quiz-assets", StaticFiles(directory=Path(__file__).parent / "quiz_assets"),
           name="quiz-assets")

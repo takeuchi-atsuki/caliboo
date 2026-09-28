@@ -439,6 +439,21 @@ export interface AgentJob {
   status: string; createdAt: string; completedAt: string | null;
 }
 
+export interface LearningAction {
+  id: number;
+  userId: number;
+  candidateId: number | null;
+  strengthSnapshot: { label: string; growthAction: string } | null;
+  title: string;
+  successCriteria: string;
+  dueDate: string | null;
+  status: "planned" | "in_progress" | "completed" | "cancelled";
+  reflection: string;
+  revision: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface StrengthCandidate {
   id: number; jobId: number; userId: number; label: string; skillCode: string;
   confidence: number; growthAction: string; status: string;

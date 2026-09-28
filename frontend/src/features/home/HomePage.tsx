@@ -22,9 +22,8 @@ export function HomePage() {
           <Typography color="text.secondary" variant="body2">今日も、自分のペースで。一歩ずつ進めていこう。</Typography>
         </Box>
 
-        {error ? (
-          <Alert severity="error">データの取得に失敗しました: {error}</Alert>
-        ) : !summary ? (
+        {error && <Alert severity="error">データの取得に失敗しました: {error}</Alert>}
+        {!summary ? (!error &&
           <Box role="status" aria-label="ホームを読み込み中">
             <Typography color="text.secondary" sx={{ mb: 2 }}>読み込み中…</Typography>
             <Skeleton variant="rounded" height={260} sx={{ borderRadius: "var(--radius-lg)", mb: 3 }} />
@@ -45,7 +44,7 @@ export function HomePage() {
                   {summary.strengths.map((strength) => <Tag key={strength.label} label={strength.label} tone={strength.tone} />)}
                 </Box>
                 <Button component={Link} to="/strengths" variant="contained" color="secondary" endIcon={<PhosphorIcon name="ph ph-arrow-right" size={18} />} sx={{ minHeight: 48, width: { xs: "100%", sm: "auto" } }}>強みを詳しく見る</Button>
-                <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>強みの根拠と、成長のヒントを確認できます。</Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>強みの根拠から次の行動を決め、振り返りを残せます。表示中は5秒ごとに更新します。</Typography>
               </Box>
               <Box aria-hidden="true" sx={{ display: { xs: "none", sm: "block" }, flexShrink: 0, transform: "rotate(-7deg)", px: { sm: 1, md: 4 } }}>
                 <Mascot size={112} color="var(--color-green-300)" mood="happy" />

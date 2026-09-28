@@ -129,3 +129,19 @@ class ProposalAutomation(Base):
     __tablename__ = "proposal_automation"
     user_id = Column(Integer, ForeignKey("users.id"), primary_key=True)
     last_date = Column(String, nullable=False)
+
+
+class LearningAction(Base):
+    __tablename__ = "learning_actions"
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    candidate_id = Column(Integer, ForeignKey("strength_candidates.id"), nullable=True)
+    strength_snapshot = Column(JSON, nullable=True)
+    title = Column(String, nullable=False)
+    success_criteria = Column(String, nullable=False)
+    due_date = Column(String, nullable=True)
+    status = Column(String, nullable=False, default="planned")
+    reflection = Column(String, nullable=False, default="")
+    revision = Column(Integer, nullable=False, default=1)
+    created_at = Column(String, nullable=False)
+    updated_at = Column(String, nullable=False)

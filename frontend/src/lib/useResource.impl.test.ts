@@ -57,3 +57,27 @@ it.each([false, true])("別対象へ移動後の保存応答を混ぜない %s",
   expect(apiClient.get).toHaveBeenCalledTimes(2);
   expect(result.current.error).toBeNull();
 });
+
+it("定期取得は初回取得・保存中に重ならず、障害から復帰する (PL-3)", async () => {
+  let finishGet!: (value: unknown) => void;
+  let finishPost!: (value: unknown) => void;
+  vi.mocked(apiClient.get).mockImplementationOnce(() => new Promise((resolve) => { finishGet = resolve; }));
+  const { result } = renderHook(() => useResource("/items", 5000));
+  await act(async () => document.dispatchEvent(new Event("visibilitychange")));
+  expect(apiClient.get).toHaveBeenCalledTimes(1);
+  await act(async () => finishGet("initial"));
+  vi.mocked(apiClient.get).mockRejectedValueOnce(new Error("offline"));
+  await act(async () => document.dispatchEvent(new Event("visibilitychange")));
+  expect(result.current.data).toBe("initial"); expect(result.current.error).toContain("読み込み");
+  vi.mocked(apiClient.get).mockResolvedValue("recovered");
+  await act(async () => document.dispatchEvent(new Event("visibilitychange")));
+  expect(result.current.data).toBe("recovered"); expect(result.current.error).toBeNull();
+  vi.mocked(apiClient.post).mockImplementationOnce(() => new Promise((resolve) => { finishPost = resolve; }));
+  let saving!: Promise<boolean>;
+  act(() => { saving = result.current.act("/items", {}); });
+  const count = vi.mocked(apiClient.get).mock.calls.length;
+  await act(async () => document.dispatchEvent(new Event("visibilitychange")));
+  expect(apiClient.get).toHaveBeenCalledTimes(count);
+  await act(async () => { finishPost({}); await saving; });
+  expect(apiClient.get).toHaveBeenCalledTimes(count + 1);
+});
