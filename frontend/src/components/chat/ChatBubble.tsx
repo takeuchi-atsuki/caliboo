@@ -69,10 +69,10 @@ export function ChatBubble({
         </Box>
         {message.references.length > 0 ? (
           <Box sx={{ display: "flex", gap: "8px", marginTop: "6px", flexWrap: "wrap" }}>
-            {message.references.map((ref) => (
+            {message.references.map((ref, index) => (
               <Box
-                component="span"
-                key={ref.label}
+                component="div"
+                key={`${ref.knowledgeId ?? ref.label}-${index}`}
                 sx={{
                   background: "var(--color-green-100)",
                   borderRadius: "11px",
@@ -80,9 +80,11 @@ export function ChatBubble({
                   fontWeight: 600,
                   fontSize: 11.5,
                   color: "var(--color-green-500)",
+                  maxWidth: "100%", overflowWrap: "anywhere",
                 }}
               >
                 {ref.label}
+                {ref.quote && <Box component="blockquote" sx={{ m: 0, mt: 0.5, fontWeight: 400, whiteSpace: "pre-wrap" }}>{ref.quote}</Box>}
               </Box>
             ))}
           </Box>

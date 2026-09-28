@@ -3,7 +3,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from caliboo_api.auth.deps import get_current_user, require_admin, require_member
-from caliboo_api.data.account_data import now_iso
+from caliboo_api.data.account_data import is_active, now_iso
 from caliboo_api.data.ojt_configuration import (
     configuration_view, create_department, update_configuration,
 )
@@ -30,7 +30,8 @@ from caliboo_api.schemas.ojt import (
     OjtConfigurationView,
     OjtDepartmentCreate,
 )
-from caliboo_api.services.chat_reply import build_ojt_reply
+from caliboo_api.services.grounded_ojt import build_grounded_reply
+from caliboo_api.services.llm import LLMError
 
 router = APIRouter(prefix="/api/ojt", tags=["ojt"])
 
@@ -97,9 +98,26 @@ def post_chat(payload: OjtChatRequest, user: User = Depends(get_current_user),
     if dept is None:
         raise HTTPException(status_code=404, detail=f"department not found: {payload.deptId}")
     thread = thread_for(session, user.id, payload.deptId)
-    append_message(session, thread, "me", payload.text)
     config = session.get(OjtConfiguration, payload.deptId)
-    reply = build_ojt_reply(dept.name, payload.text, config.reply_guidance)
+    history = messages_for(session, thread)[-12:]
+    knowledge = get_knowledge(payload.deptId)
+    thread_id, user_id = thread.id, user.id
+    revision, guidance = config.revision, config.reply_guidance
+    # !NOTE: 推論中に書込ロックを保持すると、他の提出や講師の設定変更まで待たせてしまう。
+    session.commit()
+    try:
+        reply = build_grounded_reply(dept.name, payload.text, guidance, knowledge, history)
+    except LLMError:
+        raise HTTPException(503, "回答を生成できませんでした。入力を保ったまま再送してください。") from None
+    current = session.query(OjtConfiguration).filter_by(
+        department_id=payload.deptId, revision=revision).update(
+            {"revision": revision}, synchronize_session=False)
+    if not current:
+        raise HTTPException(409, "部署資料が更新されました。もう一度送信してください。")
+    if not is_active(session, user_id):
+        raise HTTPException(403, "inactive user")
+    thread = session.get(OjtThread, thread_id)
+    append_message(session, thread, "me", payload.text)
     saved = append_message(session, thread, "bot", reply.text,
                            [item.model_dump() for item in reply.references])
     session.commit()

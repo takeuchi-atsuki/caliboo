@@ -5,6 +5,8 @@ from pydantic import BaseModel
 
 class ChatReference(BaseModel):
     label: str
+    knowledgeId: str | None = None
+    quote: str | None = None
 
 
 class ChatMessage(BaseModel):

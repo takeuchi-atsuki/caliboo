@@ -272,3 +272,8 @@ PL-1/2は`tests/integration/test_learning_cycle.py`と`tests/unit/test_learning_
 ### PL-4/5: 自動ワーカー（2026-09-29）
 
 承認済み観点の実装対応。`backend/tests/unit/test_ai_worker.py`で進捗スナップショット、同時取得、期限切れ・再起動、古い所有権・無効化後の結果、不正引用、再試行上限、日次制限、起動停止を確認する。`backend/tests/integration/test_ai_worker.py`では実際のlifespanワーカーと外部HTTPの契約モックを接続し、日報・課題提出・講師コメント→解析→承認→本人の行動・個人宛て課題、未承認非公開、再試行認可、再生成と旧版検証を確認する。`AgentJobQueue.spec.tsx`で処理状態・失敗・再試行・二重操作・自動取得を検証する。実provider接続、実日報による精度と教育効果は別途評価する。
+
+
+### PL-6: 部署資料に基づくOJT（2026-09-29）
+
+承認済み観点に対応し、`tests/unit/test_grounded_ojt.py`で検索順位・件数・追質問・原文引用・モデルの根拠不足を検証する。`tests/integration/test_grounded_ojt.py`でHTTP契約、部署/本人の分離、履歴と講師相談、失敗後の再送、生成中の資料更新・対象無効化を確認する。`ChatBubble.spec.tsx`で引用の平文表示と旧参照互換、既存`useOjt.spec.ts`で失敗時の入力保持・二重送信・課変更後の古い結果破棄を確認する。
