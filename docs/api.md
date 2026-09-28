@@ -116,10 +116,33 @@ FastAPIアプリ本体: `backend/src/caliboo_api/main.py`。CORS設定は持た�
 
 | Method | Path | 説明 |
 |---|---|---|
-| GET | /api/ojt/departments | 課一覧(6件)を返す |
-| GET | /api/ojt/departments/{dept_id}/messages | 指定課の初期チャット履歴。存在しないdept_idは404 |
+| GET | /api/ojt/departments | 部署一覧（初期6件、追加可能）。各部署はid/name/icon/color/knowledgeCount/quickAsks。件数は登録ナレッジの実件数 |
+| POST | /api/ojt/departments | adminのみ。部署を追加して設定を返す（201）。ID重複は409 |
+| GET | /api/ojt/departments/{dept_id}/configuration | adminのみ。部署設定とrevisionを取得。未知の部署は404 |
+| POST | /api/ojt/departments/{dept_id}/configuration | adminのみ。revision一致時に設定を一括更新（200）。未知の部署は404、競合は409 |
+| GET | /api/ojt/departments/{dept_id}/messages | 指定部署の現在の初期案内＋本人の保存済み履歴、escalated。存在しないdept_idは404 |
 | GET | /api/ojt/departments/{dept_id}/knowledge | 指定課の参照ナレッジ一覧。存在しないdept_idは404 |
 | POST | /api/ojt/chat | `{"deptId": "...", "text": "..."}` を受け取りダミー応答を返す。存在しないdeptIdは404 |
+
+部署設定の共通入力は次のとおり。作成時は `id`、更新時は取得済みの `revision`（1以上の整数）を加える。更新時に `id` は送らない。応答は共通入力に `id` と保存後の `revision` を加えたもの。
+
+```json
+{
+  "name": "研究課",
+  "icon": "ph ph-code",
+  "color": "#d6ebff",
+  "welcomeMessage": "研究課の相談窓口です。",
+  "quickAsks": ["記録の残し方は？", "相談先は？"],
+  "replyGuidance": "判断に迷う場合は担当講師に確認してください。",
+  "knowledge": [{"title": "実験記録", "description": "条件と結果を記録してください。"}]
+}
+```
+
+全フィールド必須。`quickAsks`・`knowledge` は空配列、`replyGuidance` は空文字を許可する。部署IDは `^[a-z][a-z0-9-]{0,39}$`、部署名1〜100文字、初期案内1〜4000文字、補足案内0〜4000文字。質問候補は最大8件（各1〜200文字）、ナレッジは最大100件（タイトル1〜200文字・説明1〜4000文字）。必須テキストの前後空白を除去し、空白だけの入力を拒否する。
+
+アイコンは `ph ph-code` / `ph ph-shield-check` / `ph ph-handshake` / `ph ph-compass-tool` / `ph ph-factory` / `ph ph-briefcase`、色は `#d6ebff` / `#cdeede` / `#ffd9e6` / `#e3ddff` / `#ffe9c7` / `#f4f0ec`。不正値・未知のフィールドは422。管理APIの未認証は401、memberは403。
+
+保存は全設定を単一トランザクションで更新し、成功ごとに `revision` を1増やす。更新競合では一部の項目も変更しない。起動時に不足設定だけを追加し、履歴・返信・配属と保存済み設定を保持する。実装は `data/ojt_configuration.py`・`schemas/ojt.py`。設計理由は [部署別OJTフレームワーク](ojt-framework.md) を参照。自動回答は従来のテンプレートに `replyGuidance` を平文で追加するだけで、ナレッジ検索やLLM連携は行わない。
 
 ## 資格勉強
 

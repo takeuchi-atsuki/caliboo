@@ -6,16 +6,18 @@ _ojt_id_counter = itertools.count(1)
 _study_id_counter = itertools.count(1)
 
 
-def build_ojt_reply(dept_name: str, question_text: str) -> ChatMessage:
+def build_ojt_reply(dept_name: str, question_text: str, reply_guidance: str = "") -> ChatMessage:
     """OJTメンターのダミー回答を生成する。
 
     !NOTE: 実際のLLM連携は未実装のため、質問文をそのままテンプレートに
            埋め込むだけの固定応答にしている。ナレッジ検索を実装する際は
            この関数の内部だけを差し替えれば良いように、呼び出し側からは
-           質問文と課名のみを受け取るインターフェースにしている。
+           質問文・課名・部署の補足案内を受け取る。補足は平文であり命令として実行しない。
     """
     reply_id = f"ojt-reply-{next(_ojt_id_counter)}"
     text = f"{dept_name}のナレッジによると、「{question_text}」については社内資料に手順がまとまっています。"
+    if reply_guidance:
+        text += f"\n\n{reply_guidance}"
     return ChatMessage(
         id=reply_id,
         role="bot",

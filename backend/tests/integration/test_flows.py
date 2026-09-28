@@ -12,6 +12,54 @@ from caliboo_api.extension_models import AgentJob
 from caliboo_api.models import Assignment, AssignmentSubmission, PocRun, Report
 
 
+def test_department_ojt_configuration_and_history_flow(client, admin_client, other_member_client):
+    """OJT-F1〜F5: 部署設定→相談→返信→設定変更→再起動でも履歴・配属を保持。"""
+    create = dict(id="research", name="研究課", icon="ph ph-code", color="#cdeede",
+                  welcomeMessage="研究課の案内", quickAsks=["手順は？", "資料は？"],
+                  replyGuidance="担当講師へ確認してください。",
+                  knowledge=[dict(title="手順", description="記録を残す"),
+                             dict(title="資料", description="担当者に確認する")])
+    dev_before = admin_client.get("/api/ojt/departments/dev/configuration").json()
+    created = admin_client.post("/api/ojt/departments", json=create)
+    assert created.status_code == 201
+    user = client.get("/api/auth/me").json()
+    assigned = admin_client.post(f"/api/users/{user['id']}", json=dict(
+        displayName=user["displayName"], role="member", active=True, departmentId="research",
+    )).json()
+    base = "/api/ojt/departments/research"
+    messages = client.get(base + "/messages").json()["messages"]
+    assert messages[0]["text"] == create["welcomeMessage"]
+    assert client.post("/api/ojt/chat", json=dict(deptId="research", text="記録方法は？")).json()[
+        "text"].endswith(create["replyGuidance"])
+    assert client.post(base + "/escalate").status_code == 200
+    thread = admin_client.get("/api/ojt/escalations?departmentId=research").json()["threads"][0]
+    assert admin_client.post(f"/api/ojt/escalations/{thread['id']}/reply",
+                             json=dict(text="所定の様式を使ってください。")).status_code == 200
+    history = client.get(base + "/messages").json()["messages"][1:]
+    updated = {key: value for key, value in created.json().items() if key != "id"}
+    updated.update(name="研究室", welcomeMessage="変更した案内", quickAsks=["新しい質問"],
+                   knowledge=[dict(title="新資料", description="新しい手順")])
+    saved = admin_client.post(base + "/configuration", json=updated)
+    assert saved.status_code == 200
+    assert admin_client.post(base + "/configuration", json=updated).status_code == 409
+    db.bootstrap_db()
+    assert admin_client.get(base + "/configuration").json() == saved.json()
+    restored = client.get(base + "/messages").json()["messages"]
+    assert restored[0]["text"] == "変更した案内"
+    assert restored[1:] == history
+    assert len(other_member_client.get(base + "/messages").json()["messages"]) == 1
+    dept = next(item for item in client.get("/api/ojt/departments").json()["departments"]
+                if item["id"] == "research")
+    assert dept["knowledgeCount"] == 1
+    assert dept["quickAsks"] == ["新しい質問"]
+    assert client.get(base + "/knowledge").json()["items"][0]["title"] == "新資料"
+    assert admin_client.get("/api/ojt/departments/dev/configuration").json() == dev_before
+    account = next(item for item in admin_client.get("/api/users").json()["users"]
+                   if item["id"] == user["id"])
+    assert account["departmentId"] == "research"
+    assert account["history"] == assigned["history"]
+
+
 def test_home_screen_flow(client):
     """観点: ホーム画面(1b)の初期表示データが正しく返る。"""
     response = client.get("/api/home/summary")

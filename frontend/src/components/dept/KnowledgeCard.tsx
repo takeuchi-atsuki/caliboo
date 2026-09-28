@@ -9,6 +9,7 @@ export function KnowledgeCard({ item }: { item: KnowledgeItem }) {
         border: "1px solid var(--color-border-soft)",
         borderRadius: "14px",
         padding: "13px",
+        overflowWrap: "anywhere",
         cursor: "pointer",
         "@media (hover: hover) and (pointer: fine)": {
           "&:hover": {
@@ -20,7 +21,7 @@ export function KnowledgeCard({ item }: { item: KnowledgeItem }) {
     >
       <Box sx={{ display: "flex", alignItems: "center", gap: "8px" }}>
         <i className="ph ph-file-text" style={{ color: "var(--color-blue-500)", fontSize: 15 }} />
-        <Box component="span" sx={{ fontWeight: 700, fontSize: 13, color: "var(--color-text)" }}>
+        <Box component="span" sx={{ minWidth: 0, fontWeight: 700, fontSize: 13, color: "var(--color-text)" }}>
           {item.title}
         </Box>
       </Box>

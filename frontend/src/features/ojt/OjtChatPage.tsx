@@ -84,13 +84,13 @@ export function OjtChatPage() {
             <PhosphorIcon name="ph ph-caret-left" size={18} color="var(--color-text)" />
           </IconButton>
           <Mascot size={40} color="var(--color-green-200)" mood="happy" />
-          <div>
+          <div style={{ flex: 1, minWidth: 0, overflowWrap: "anywhere" }}>
             <div style={{ fontWeight: 800, fontSize: 16, color: "var(--color-text)" }}>
               {selectedDept.name} メンター
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 5, fontWeight: 600, fontSize: 11, color: "var(--color-green-500)" }}>
               <span style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--color-green-400)" }} />
-              ナレッジベース接続中
+              テンプレートによる自動回答
             </div>
           </div>
         </div>

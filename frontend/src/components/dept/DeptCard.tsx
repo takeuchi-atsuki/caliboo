@@ -52,6 +52,8 @@ export function DeptCard({ dept, selected, onSelect, layout = "grid" }: DeptCard
           component="span"
           sx={{
             fontWeight: selected ? 700 : 600,
+            minWidth: 0,
+            overflowWrap: "anywhere",
             fontSize: 13.5,
             color: selected ? "var(--color-green-500)" : "var(--color-text-sub2)",
           }}
@@ -99,7 +101,7 @@ export function DeptCard({ dept, selected, onSelect, layout = "grid" }: DeptCard
           </Box>
           <PhosphorIcon name="ph-bold ph-arrow-right" size={20} color="var(--color-text)" />
         </Box>
-        <Box sx={{ fontWeight: 800, fontSize: 19, color: "var(--color-text)", marginTop: "16px" }}>{dept.name}</Box>
+        <Box sx={{ fontWeight: 800, fontSize: 19, color: "var(--color-text)", marginTop: "16px", overflowWrap: "anywhere" }}>{dept.name}</Box>
         <Box sx={{ display: "flex", alignItems: "center", gap: "6px", marginTop: "6px" }}>
           <PhosphorIcon name="ph-fill ph-books" size={14} color="var(--color-text)" />
           <Box component="span" sx={{ fontWeight: 600, fontSize: 12, color: "var(--color-text)" }}>

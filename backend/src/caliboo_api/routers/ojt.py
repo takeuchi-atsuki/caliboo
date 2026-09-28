@@ -4,11 +4,14 @@ from sqlalchemy.orm import Session
 
 from caliboo_api.auth.deps import get_current_user, require_admin, require_member
 from caliboo_api.data.account_data import now_iso
+from caliboo_api.data.ojt_configuration import (
+    configuration_view, create_department, update_configuration,
+)
 from caliboo_api.data.ojt_history import (
     append_message, escalation_view, messages_for, thread_for,
 )
 from caliboo_api.db import get_session
-from caliboo_api.extension_models import OjtThread
+from caliboo_api.extension_models import OjtConfiguration, OjtThread
 from caliboo_api.models import User
 
 from caliboo_api.data.ojt_data import (
@@ -23,6 +26,9 @@ from caliboo_api.schemas.ojt import (
     DepartmentMessagesResponse,
     DepartmentsResponse,
     OjtChatRequest,
+    OjtConfigurationUpdate,
+    OjtConfigurationView,
+    OjtDepartmentCreate,
 )
 from caliboo_api.services.chat_reply import build_ojt_reply
 
@@ -32,6 +38,25 @@ router = APIRouter(prefix="/api/ojt", tags=["ojt"])
 @router.get("/departments", response_model=DepartmentsResponse)
 def list_departments() -> DepartmentsResponse:
     return DepartmentsResponse(departments=fetch_departments())
+
+
+@router.post("/departments", response_model=OjtConfigurationView, status_code=201)
+def post_department(payload: OjtDepartmentCreate, _admin: User = Depends(require_admin),
+                    session: Session = Depends(get_session)) -> OjtConfigurationView:
+    return create_department(session, payload)
+
+
+@router.get("/departments/{dept_id}/configuration", response_model=OjtConfigurationView)
+def get_configuration(dept_id: str, _admin: User = Depends(require_admin),
+                      session: Session = Depends(get_session)) -> OjtConfigurationView:
+    return configuration_view(session, dept_id)
+
+
+@router.post("/departments/{dept_id}/configuration", response_model=OjtConfigurationView)
+def post_configuration(dept_id: str, payload: OjtConfigurationUpdate,
+                       _admin: User = Depends(require_admin),
+                       session: Session = Depends(get_session)) -> OjtConfigurationView:
+    return update_configuration(session, dept_id, payload)
 
 
 @router.get(
@@ -73,7 +98,8 @@ def post_chat(payload: OjtChatRequest, user: User = Depends(get_current_user),
         raise HTTPException(status_code=404, detail=f"department not found: {payload.deptId}")
     thread = thread_for(session, user.id, payload.deptId)
     append_message(session, thread, "me", payload.text)
-    reply = build_ojt_reply(dept.name, payload.text)
+    config = session.get(OjtConfiguration, payload.deptId)
+    reply = build_ojt_reply(dept.name, payload.text, config.reply_guidance)
     saved = append_message(session, thread, "bot", reply.text,
                            [item.model_dump() for item in reply.references])
     session.commit()

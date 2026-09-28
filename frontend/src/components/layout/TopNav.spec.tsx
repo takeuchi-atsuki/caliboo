@@ -56,6 +56,7 @@ describe("共通ナビゲーション (docs/ui-refresh.md)", () => {
     const menu = within(screen.getByRole("navigation", { name: "すべてのメニュー" }));
     expect(menu.getByRole("link", { name: "強み" })).toHaveAttribute("aria-current", "page");
     expect(menu.queryByRole("link", { name: "ユーザー" })).not.toBeInTheDocument();
+    expect(menu.queryByRole("link", { name: "OJT設定" })).not.toBeInTheDocument();
     await user.click(menu.getByRole("link", { name: "OJT" }));
     expect(screen.getByTestId("location")).toHaveTextContent("/ojt");
     await waitFor(() => expect(screen.queryByRole("navigation", { name: "すべてのメニュー" })).not.toBeInTheDocument());
@@ -104,6 +105,7 @@ describe("共通ナビゲーション (docs/ui-refresh.md)", () => {
     expect(menu.getByRole("link", { name: "解析管理" })).toHaveAttribute("aria-current", "page");
     expect(menu.getByRole("link", { name: "ユーザー" })).toHaveAttribute("href", "/admin/users");
     expect(menu.getByRole("link", { name: "相談" })).toHaveAttribute("href", "/admin/ojt");
+    expect(menu.getByRole("link", { name: "OJT設定" })).toHaveAttribute("href", "/admin/ojt-settings");
   });
 
   it("ストリークの明示値を優先し、未設定の場合は0日を表示する", () => {

@@ -58,6 +58,19 @@ export interface Department {
   icon: string;
   color: string;
   knowledgeCount: number;
+  quickAsks: string[];
+}
+
+export interface OjtConfiguration {
+  id: string;
+  name: string;
+  icon: string;
+  color: string;
+  welcomeMessage: string;
+  quickAsks: string[];
+  replyGuidance: string;
+  knowledge: { title: string; description: string }[];
+  revision: number;
 }
 
 export interface KnowledgeItem {

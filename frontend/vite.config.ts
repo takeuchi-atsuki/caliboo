@@ -38,6 +38,8 @@ export default defineConfig({
         "src/features/assignment/AssignmentFeedbackForm.tsx",
         "src/features/assignment/ProposalRegenerate.tsx",
         "src/features/ojt/useOjt.ts",
+        "src/features/ojt/useOjtConfiguration.ts",
+        "src/features/ojt/OjtSettingsPage.tsx",
         "src/features/study/useQuiz.ts",
         "src/features/home/useHomeSummary.ts",
         "src/features/report/useReportForm.ts",

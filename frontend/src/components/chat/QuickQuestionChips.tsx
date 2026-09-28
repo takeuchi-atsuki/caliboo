@@ -9,10 +9,10 @@ export interface QuickQuestionChipsProps {
 
 export function QuickQuestionChips({ questions, onSelect, hoverColor = "var(--color-blue-500)" }: QuickQuestionChipsProps) {
   return (
-    <Box sx={{ display: "flex", gap: "8px", marginBottom: "11px", flexWrap: "wrap" }}>
-      {questions.map((question) => (
+    <Box role="group" aria-label="質問候補" sx={{ display: "flex", gap: "8px", marginBottom: "11px", flexWrap: "wrap", maxHeight: 160, overflowY: "auto" }}>
+      {questions.map((question, index) => (
         <Chip
-          key={question}
+          key={index}
           label={question}
           onClick={() => onSelect(question)}
           sx={{
@@ -24,7 +24,7 @@ export function QuickQuestionChips({ questions, onSelect, hoverColor = "var(--co
             fontWeight: 600,
             fontSize: 12,
             color: "var(--color-text-sub2)",
-            "& .MuiChip-label": { padding: "8px 14px", whiteSpace: "normal" },
+            "& .MuiChip-label": { padding: "8px 14px", whiteSpace: "normal", overflowWrap: "anywhere" },
             "@media (hover: hover) and (pointer: fine)": {
               "&:hover": { background: "var(--color-bg-alt)", color: hoverColor },
             },

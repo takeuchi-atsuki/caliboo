@@ -42,6 +42,14 @@ class QuizSuccess(Base):
     question_id = Column(String, ForeignKey("quiz_questions.id"), primary_key=True)
 
 
+class OjtConfiguration(Base):
+    __tablename__ = "ojt_configurations"
+    department_id = Column(String, ForeignKey("departments.id"), primary_key=True)
+    quick_asks = Column(JSON, nullable=False)
+    reply_guidance = Column(String, nullable=False, default="")
+    revision = Column(Integer, nullable=False, default=1)
+
+
 class OjtThread(Base):
     __tablename__ = "ojt_threads"
     __table_args__ = (UniqueConstraint("user_id", "department_id"),)

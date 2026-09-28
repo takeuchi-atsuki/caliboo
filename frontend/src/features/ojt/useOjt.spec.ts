@@ -3,7 +3,7 @@ import { beforeEach, expect, it, vi } from "vitest";
 import { apiClient } from "../../lib/apiClient";
 import { useOjt } from "./useOjt";
 vi.mock("../../lib/apiClient", () => ({ apiClient: { get: vi.fn(), post: vi.fn() } }));
-const departments = [{ id: "dev", name: "開発" }, { id: "sales", name: "営業" }];
+const departments = [{ id: "dev", name: "開発", quickAsks: ["開発の質問", "規約は？"] }, { id: "sales", name: "営業", quickAsks: [] }];
 beforeEach(() => {
   vi.resetAllMocks();
   vi.mocked(apiClient.get).mockImplementation(async (path) => path.endsWith("departments") ? { departments } : path.endsWith("messages") ? { messages: [], escalated: false } : { items: [] });
@@ -16,6 +16,7 @@ it("課選択・送信・相談・復元・一覧へ戻る", async () => {
   expect(apiClient.post).not.toHaveBeenCalled();
   await act(async () => result.current.selectDept("dev"));
   expect(result.current.selectedDept?.id).toBe("dev");
+  expect(result.current.quickAsks).toEqual(["開発の質問", "規約は？"]);
   act(() => result.current.setInput("質問"));
   await act(async () => result.current.sendMessage(" "));
   await act(async () => result.current.sendMessage("質問"));
@@ -28,6 +29,7 @@ it("課選択・送信・相談・復元・一覧へ戻る", async () => {
   act(() => result.current.backToDeptList());
   expect(result.current.selectedDept).toBeNull();
   expect(result.current.messages).toEqual([]);
+  expect(result.current.quickAsks).toEqual([]);
 });
 it("取得と送信・相談失敗を表示し入力を保持", async () => {
   vi.mocked(apiClient.get).mockRejectedValueOnce(new Error());
@@ -55,6 +57,7 @@ it.each([false, true])("古い課選択を破棄 %s", async (failed) => {
   await act(async () => result.current.selectDept("sales"));
   await act(async () => { finish(failed ? new Error() : { messages: [{ id: "old" }], escalated: false }); await selection; });
   expect(result.current.selectedDept?.id).toBe("sales");
+  expect(result.current.quickAsks).toEqual([]);
   expect(result.current.messages).toEqual([]);
   expect(result.current.error).toBeNull();
 });

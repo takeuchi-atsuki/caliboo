@@ -2,7 +2,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { apiClient } from "../../lib/apiClient";
 import type { ChatMessage, Department, KnowledgeItem } from "../../lib/types";
 
-const QUICK_ASKS = ["よく聞かれる質問は？", "参考資料はどこにある？", "初日にやることは？"];
 export function useOjt() {
   const [departments, setDepartments] = useState<Department[]>([]);
   const [selectedDeptId, setSelectedDeptId] = useState<string | null>(null);
@@ -69,5 +68,6 @@ export function useOjt() {
   };
   return { departments, selectedDept: departments.find((d) => d.id === selectedDeptId) ?? null,
     messages, knowledge, input, setInput, sending, error, escalated, escalate, selectDept,
-    backToDeptList, sendMessage, quickAsks: QUICK_ASKS };
+    backToDeptList, sendMessage,
+    quickAsks: departments.find((d) => d.id === selectedDeptId)?.quickAsks ?? [] };
 }

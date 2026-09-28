@@ -6,6 +6,7 @@ import { HomePage } from "./features/home/HomePage";
 import { ReportPage } from "./features/report/ReportPage";
 import { OjtChatPage } from "./features/ojt/OjtChatPage";
 import { OjtThreePanePage } from "./features/ojt/OjtThreePanePage";
+import { OjtSettingsPage } from "./features/ojt/OjtSettingsPage";
 import { QuizPage } from "./features/study/QuizPage";
 import { StudyChatPage } from "./features/study/StudyChatPage";
 import { AssignmentListPage } from "./features/assignment/AssignmentListPage";
@@ -51,6 +52,7 @@ export default function App() {
               <Route path="/strengths/poc" element={<StrengthsPage />} />
               <Route path="/admin/users" element={<UsersPage />} />
               <Route path="/admin/ojt" element={<OjtInboxPage />} />
+              <Route path="/admin/ojt-settings" element={<OjtSettingsPage />} />
               <Route path="/admin/agents" element={<AgentJobsPage />} />
               <Route path="*" element={<Navigate to="/home" replace />} />
             </Route>

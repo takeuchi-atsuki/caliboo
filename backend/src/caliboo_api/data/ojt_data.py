@@ -1,6 +1,7 @@
 """OJT画面データのDBアクセス層。"""
 
 from caliboo_api.db import session_scope
+from caliboo_api.extension_models import OjtConfiguration
 from caliboo_api.models import Department as DepartmentModel
 from caliboo_api.models import DepartmentMessage, KnowledgeItem as KnowledgeItemModel
 from caliboo_api.schemas.common import ChatMessage
@@ -16,7 +17,9 @@ def fetch_departments() -> list[Department]:
                 name=row.name,
                 icon=row.icon,
                 color=row.color,
-                knowledgeCount=row.knowledge_count,
+                knowledgeCount=session.query(KnowledgeItemModel).filter_by(
+                    department_id=row.id).count(),
+                quickAsks=session.get(OjtConfiguration, row.id).quick_asks,
             )
             for row in rows
         ]
@@ -32,7 +35,9 @@ def get_department(dept_id: str) -> Department | None:
             name=row.name,
             icon=row.icon,
             color=row.color,
-            knowledgeCount=row.knowledge_count,
+            knowledgeCount=session.query(KnowledgeItemModel).filter_by(
+                department_id=row.id).count(),
+            quickAsks=session.get(OjtConfiguration, row.id).quick_asks,
         )
 
 
