@@ -367,7 +367,7 @@ OJTの作業ログ・日報・レビューから強みを解析するPoC(`docs/s
 
 ### POST /api/poc/runs/import
 
-`docs/architecture.md`が述べる通り、アプリ実行時にLLMを呼ぶ経路は無いが、開発セッションのClaude自身が①〜③(生成)を担い、その結果を投入する経路として用意している(`.claude/skills/caliboo-strength-run/`から起動)。Fan-in統合・④解析・永続化は`POST /runs`(台本経由)と同じ実装(`services/poc_strength/pipeline.py`の`_assemble_run()`)を通るため、解析ロジック自体は共有する。
+`docs/architecture.md`が述べる通り、強み解析PoCのアプリ実行時にLLMを呼ぶ経路は無いが、開発セッションのClaude自身が①〜③(生成)を担い、その結果を投入する経路として用意している(`.claude/skills/caliboo-strength-run/`から起動)。Fan-in統合・④解析・永続化は`POST /runs`(台本経由)と同じ実装(`services/poc_strength/pipeline.py`の`_assemble_run()`)を通るため、解析ロジック自体は共有する。
 
 リクエスト例:
 
@@ -580,3 +580,8 @@ ProposalAgentResultはtrace/title/body/messageForMember/rationale/estimateMinute
 行動のレスポンスは`id, userId, candidateId, strengthSnapshot, title, successCriteria, dueDate, status, reflection, revision, createdAt, updatedAt`。
 `strengthSnapshot`は選択時の`label, growthAction`（自由入力の場合null）。状態は`planned/in_progress/completed/cancelled`。
 完了時の振り返り未入力・不正な日付・空欄は422、他人または未承認の強みの関連付け・他人の行動更新は404、古い版の編集は409。新入社員による他人の一覧取得と講師の作成・更新は403。
+## 課題案の外部生成provider（2026-09-29）
+
+`POST /api/assignment-proposals`は明示設定されたproviderを使う。`manual`（既定）は従来のルールベース、`openai`は検証済みの引用を含む生成AI案を確認待ちとして保存する。入力材料不足・設定不備・外部障害・不正出力は503で、配信可能な課題案を保存しない。確認待ちが既にある場合はproviderを呼ばず200で返す。同時生成でも確認待ちを重複させない。無効化済み対象者は404。
+
+入出力・配信承認の形式は変更しない。`generator`には`openai:<model>:proposal-2026-09-29.1`を記録する。設定・上限・再試行は [生成AI provider仕様](ai-provider.md) を参照。

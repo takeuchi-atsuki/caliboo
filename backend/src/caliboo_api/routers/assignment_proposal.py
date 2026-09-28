@@ -11,6 +11,7 @@ from caliboo_api.data.assignment_proposal_data import (
     reject_proposal,
 )
 from caliboo_api.models import User
+from caliboo_api.services.llm import LLMError
 from caliboo_api.schemas.assignment_proposal import (
     ProposalApproveRequest,
     ProposalCreateRequest,
@@ -41,7 +42,10 @@ def create_assignment_proposal(
 ) -> ProposalDetail:
     """課題案を生成する。対象の新入社員に確認待ちの課題案が既にあれば、
     新規作成せずそれを200で返す(冪等)。"""
-    result = create_or_get_pending_proposal(payload.userId)
+    try:
+        result = create_or_get_pending_proposal(payload.userId)
+    except LLMError:
+        raise HTTPException(503, "課題案を生成できませんでした。設定と材料を確認し再試行してください。") from None
     if result is ProposalCreateError.TARGET_NOT_FOUND:
         raise HTTPException(status_code=404, detail=f"member not found: {payload.userId}")
 

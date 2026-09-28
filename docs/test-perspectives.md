@@ -109,7 +109,7 @@
 
 - 講師が新入社員を選んで課題案をつくると「確認待ち」の課題案ができ、ねらい・提案した理由・生成時点の状況・分析した材料(日報・講師フィードバックからの引用と日付)が付く
 - 日報の内容に合うテーマが選ばれる(Problem・Try・講師フィードバックの記述がKeep・きもちより強く効く)。どのテーマにも当てはまらなければふりかえりの汎用課題になる
-- 同じ入力なら同じ課題案が生成される
+- 既定のルールベースでは同じ入力なら同じ課題案が生成される（外部providerはPL-4/5で検証）
 - 直近5件の日報のうち3件以上が「もやもや/つかれた」なら気分の材料が、未提出の課題があれば進捗の材料が加わる
 - 確認待ちがある新入社員に再度つくると、新規作成せず既存の確認待ちが返る
 - その新入社員に配信済み・見送り済みのテーマは次の課題案で選ばれない(ふりかえりの汎用課題は除く)
@@ -264,3 +264,6 @@ API横断の確認は `backend/tests/integration/test_flows.py`、型・分類�
 - PL-7: 復習は本人の誤答・期限を優先し、分野・連続同問抑制・問題数が少ない場合・正解済み重複集計・既存進捗を維持する。
 
 PL-1/2は`tests/integration/test_learning_cycle.py`と`tests/unit/test_learning_actions.py`、PL-3は`useAutoRefresh.impl.test.ts`・`useResource.impl.test.ts`・`LearningActions.spec.tsx`・ホームのテスト・手動テストに対応付ける。PL-4〜7は続く実装でテストを対応付け、現時点で検証済みとは扱わない。
+### PL-4/5: 初回課題案の生成provider（2026-09-29）
+
+上記の承認済みPL-4/5を、課題案の初回生成に対応付ける。外部通信の契約・拒否・未完了・入力/応答上限・認証設定は`backend/tests/unit/test_llm.py`、材料と引用・テーマ・同時作成は`backend/tests/unit/test_llm_proposals.py`、講師配信・所有者分離・障害時の保存抑止と再試行は`backend/tests/integration/test_llm_proposals.py`で検証する。強みワーカーと実provider接続の検証は未完了。

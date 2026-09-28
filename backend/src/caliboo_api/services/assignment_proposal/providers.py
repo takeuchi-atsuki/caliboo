@@ -1,7 +1,7 @@
 """課題案生成のプラガブルな抽象化層(`services/poc_strength/providers.py`の構成を踏襲)。
 
-将来ルールベースから実LLMへ差し替える場合は、`ProposalGenerator`を満たす実装を
-追加して`pipeline.py`のモジュール変数を差し替えるだけで済む。
+`ProposalGenerator`を満たすルールベースと`llm_provider.py`の外部生成器を、
+`pipeline.py`の設定選択から利用する。
 """
 
 from typing import Protocol

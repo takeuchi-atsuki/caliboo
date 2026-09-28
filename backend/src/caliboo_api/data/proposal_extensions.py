@@ -10,6 +10,7 @@ from caliboo_api.data.account_data import is_active
 from caliboo_api.data.assignment_data import fetch_visible_assignment_statuses
 from caliboo_api.data.assignment_proposal_data import create_or_get_pending_proposal
 from caliboo_api.extension_models import ProposalAutomation
+from caliboo_api.services.llm import LLMError
 
 
 def auto_propose(session: Session, user_id: int) -> None:
@@ -26,4 +27,10 @@ def auto_propose(session: Session, user_id: int) -> None:
     ).update({"last_date": today})
     session.commit()
     if updated:
-        create_or_get_pending_proposal(user_id)
+        try:
+            create_or_get_pending_proposal(user_id)
+        except LLMError:
+            # !NOTE: 日報は既に保存済み。推論障害で提出まで失敗とせず、同日再試行を許す。
+            session.query(ProposalAutomation).filter_by(user_id=user_id, last_date=today).update(
+                {"last_date": ""})
+            session.commit()

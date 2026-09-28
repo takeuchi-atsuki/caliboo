@@ -16,7 +16,7 @@ docs/      本ディレクトリ（仕様書）
 
 バックエンドはSQLiteでDB永続化を行う。DB本体は`backend/var/caliboo.db`(`CALIBOO_SQLITE_PATH`環境変数で変更可能)に保存され、アプリ起動時(`main.py`の`lifespan`)に`init_engine()`→`bootstrap_db()`でテーブル作成・初回シード投入を行う。`POST /api/report`等の書き込み系エンドポイントは、DBの`reports`テーブルへINSERTする。`GET /api/report/history`により、提出済み日報の全文(Keep/Problem/Try/きもち/きもちコメント)を一覧取得できる。下書き(`status: "draft"`)は`GET /api/report/drafts`で一覧取得・`DELETE /api/report/drafts/{id}`で削除でき、一覧から選んだ内容をフロントのフォームへ反映することで編集を実現している(専用の更新APIは無く、編集後の再保存も既存の`POST /api/report`への新規INSERTで行う。詳細は`docs/screens/report.md`を参照)。
 
-課題演習機能(`assignments`/`assignment_submissions`テーブル)は、講師による課題(タイトル・課題文)の作成、新入社員によるテキスト回答の提出、講師によるコメントフィードバックという一連のワークフローを永続化する(詳細は`docs/screens/assignment.md`を参照)。個人宛ての課題は`assignment_recipients`(課題ごとに0〜1行。行なし=全員宛て)で配信先と講師のひとことを持つ。AIの課題案は`assignment_proposals`に生成時の内容・分析した材料・生成器名を記録し、配信すると作成した課題を`assignment_id`で指す。生成は`services/assignment_proposal/`のルールベース生成器(`RuleBasedProposalGenerator`)で行い、強み解析PoCの`providers.py`と同じくProtocolで差し替え可能にしている。
+課題演習機能(`assignments`/`assignment_submissions`テーブル)は、講師による課題(タイトル・課題文)の作成、新入社員によるテキスト回答の提出、講師によるコメントフィードバックという一連のワークフローを永続化する(詳細は`docs/screens/assignment.md`を参照)。個人宛ての課題は`assignment_recipients`(課題ごとに0〜1行。行なし=全員宛て)で配信先と講師のひとことを持つ。AIの課題案は`assignment_proposals`に生成時の内容・分析した材料・生成器名を記録し、配信すると作成した課題を`assignment_id`で指す。既定の生成は`services/assignment_proposal/`のルールベース生成器(`RuleBasedProposalGenerator`)で行い、強み解析PoCの`providers.py`と同じくProtocolで差し替え可能にしている。
 
 !NOTE: MySQL/PostgreSQL等の外部DBMSではなくSQLiteを選んだ理由は、DevContainerだけで完結し追加のミドルウェアインストールが不要な点(移植性)、依存関係を最小限に保つ方針、および今回のスコープが「デザイン案の動作確認」であり本格的な同時接続・スケールを想定しないためである。
 
@@ -67,7 +67,7 @@ services/poc_strength/
 
 !NOTE: 「生成」を担うエージェント(Run Task / OJT Trainer / 3職種レビュー)は、実行時に外部LLM APIを呼ばず、開発時にClaudeがペルソナ別に執筆した台本(`data/poc_persona_scripts.py`)を返す`AuthoredMockProvider`として実装している。このdevcontainerには`claude` CLIバイナリが無く(VS Code拡張としてのみ導入されている)、アプリケーションから実行時にClaudeを呼び出す経路が存在しないため。基本仕様書§6が求めるプロバイダ非依存の抽象化層(`providers.py`)は用意してあり、実LLM連携へ差し替える際は実装を追加するだけで済む。その際は`POST /api/poc/runs`の非同期化(基本仕様書§6が想定するジョブ投入+ポーリング)もあわせて必要になる。
 
-!NOTE: 上記の制約は「アプリ実行時にLLMを呼ぶ経路が無い」ことのみを述べており、「開発セッションのClaude自身が生成を担い、結果をアプリへ投入する」経路までは塞いでいない。`POST /api/poc/runs/import`(`.claude/skills/caliboo-strength-run/`から起動)がその経路で、Claude Codeセッションが4種のエージェント定義(`.claude/agents/strength-*.md`)としてRun Task・OJT Trainer・3職種レビュー・解析を演じ、組み立てたtrajectory・日報・レビューを投入する。
+!NOTE: 上記の制約は「強み解析PoCのアプリ実行時にLLMを呼ぶ経路が無い」ことのみを述べており、「開発セッションのClaude自身が生成を担い、結果をアプリへ投入する」経路までは塞いでいない。`POST /api/poc/runs/import`(`.claude/skills/caliboo-strength-run/`から起動)がその経路で、Claude Codeセッションが4種のエージェント定義(`.claude/agents/strength-*.md`)としてRun Task・OJT Trainer・3職種レビュー・解析を演じ、組み立てたtrajectory・日報・レビューを投入する。
 
 サーバー側はFan-in統合以降(`services/poc_strength/pipeline.py`の`_assemble_run()`)を台本経由と共有するため、解析(`RuleBasedAnalysisProvider`)・確信度・循環評価回避の境界はいずれも変わらない。解析エージェント(`strength-analyst`)の結果はルールベース解析とは別に`trace.externalAnalysis`へ格納し、突き合わせ材料として保持する(仕様書§2「評価者の分離」)。
 
@@ -181,3 +181,6 @@ OJTの共通処理（本人×部署の会話保存、講師への明示相談と
 ホームと強み画面の定期取得は`useAutoRefresh`と`useResource`が担う。表示中のみ5秒間隔で実行し、取得処理中・保存中には重ねず、非表示時に停止する。画面復帰時に取得し、対象変更・アンマウント後の古い応答を破棄する。フォームの下書きは取得結果から独立し、更新番号不一致をサーバー側の条件付きUPDATEで拒否する。
 
 詳細は [個別学習仕様](personalized-learning.md) を参照。
+## 外部生成provider（2026-09-29）
+
+`services/llm.py`は明示設定した場合だけResponses APIへ接続する共通境界。モデルの型・引用は`services/assignment_proposal/llm_provider.py`が検証し、既存pipelineがproviderを切り替える。DBに認証情報を保存しない。`assignment_proposal_data`は確認待ちを原子的な条件付きINSERTで作り、長い推論中の同時依頼による重複を防ぐ。既存データの移行は不要。詳細は [生成AI provider仕様](ai-provider.md) を参照。
