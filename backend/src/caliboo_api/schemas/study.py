@@ -1,6 +1,6 @@
-from typing import Literal
+from typing import Annotated, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field, StringConstraints
 
 QuizCategory = Literal["technology", "management", "strategy"]
 
@@ -61,5 +61,24 @@ class RelatedQuestionsResponse(BaseModel):
     items: list[RelatedQuestionItem]
 
 
+StudyChatText = Annotated[str, StringConstraints(min_length=1, max_length=10000, pattern=r"\S")]
+
+
+class StudyChatTurn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    role: Literal["me", "bot"]
+    text: StudyChatText
+
+
+class StudyQuestionContext(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    text: StudyChatText
+    choices: list[Annotated[str, StringConstraints(min_length=1, max_length=2500)]] = Field(
+        min_length=1, max_length=10)
+
+
 class StudyChatRequest(BaseModel):
-    text: str
+    model_config = ConfigDict(extra="forbid")
+    text: StudyChatText
+    history: list[StudyChatTurn] = Field(default_factory=list, max_length=12)
+    question: StudyQuestionContext | None = None

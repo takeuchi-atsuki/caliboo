@@ -1,4 +1,4 @@
-import type { ChatMessage, QuizChoice } from "../../lib/types";
+import type { QuizChoice } from "../../lib/types";
 
 /**
  * 2a(過去問演習ドリル)から2b(質問チャット)へ画面遷移時のstateで引き継ぐ問題。
@@ -13,19 +13,6 @@ export interface QuizHandoff {
 
 // !NOTE: 出題は4択前提(seedの全問題が4択)。2aの選択肢ラベルと引き継ぎ文のラベルを揃えるため共有する。
 export const CHOICE_LETTERS = ["A", "B", "C", "D"];
-
-/**
- * 引き継いだ問題に対するAI回答。
- *
- * !NOTE: 引き継ぎ時の回答はAPI(`POST /api/study/chat`)を呼ばないフロントのモック
- *        固定文にしている。フロントは正解を知らないため、答えに触れない汎用文にする。
- */
-export const QUIZ_HANDOFF_REPLY: ChatMessage = {
-  id: "study-handoff-reply",
-  role: "bot",
-  text: "この問題だね！一緒に考えよう。まずは問題文のキーワードを確認して、選択肢を1つずつ見比べてみよう。どこでつまずいたか教えてね。",
-  references: [],
-};
 
 /**
  * `location.state`から引き継ぎ問題を取り出す。
@@ -50,4 +37,13 @@ export function readQuizHandoff(state: unknown): QuizHandoff | null {
 export function buildQuizQuestionPrompt(question: QuizHandoff): string {
   const choiceLines = question.choices.map((choice, index) => `${CHOICE_LETTERS[index]}. ${typeof choice === "string" ? choice : `${choice.text}（図: ${choice.alt}）`}`);
   return ["この問題がわからない：", question.text, "", ...choiceLines].join("\n");
+}
+
+
+/** モデルに必要な公開本文だけを選ぶ。画像URLや採点情報は渡さない。 */
+export function buildStudyQuestionContext(question: QuizHandoff) {
+  return {
+    text: question.text,
+    choices: question.choices.map((choice) => typeof choice === "string" ? choice : `${choice.text}（図: ${choice.alt}）`),
+  };
 }

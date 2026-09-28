@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import IconButton from "@mui/material/IconButton";
+import { Alert, Button, Typography } from "@mui/material";
 
 import { PageContainer } from "../../components/layout/PageContainer";
 import { CollapsibleAside } from "../../components/layout/CollapsibleAside";
@@ -16,7 +17,8 @@ export function StudyChatPage() {
   const location = useLocation();
   const navigate = useNavigate();
   const handoff = readQuizHandoff(location.state);
-  const { relatedQuestions, messages, input, setInput, sendMessage, quickQuestions } = useStudyChat(handoff);
+  const { relatedQuestions, relatedError, messages, input, setInput, sendMessage, quickQuestions,
+    sending, error, canRetry, retry } = useStudyChat(handoff);
 
   // !NOTE: location.stateはリロード後も履歴に残るため、受け取った時点で消す。
   //        消さないとリロードのたびに同じ問題の質問が再表示される。
@@ -49,6 +51,7 @@ export function StudyChatPage() {
             関連する過去問
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
+            {relatedError && <Alert severity="warning">{relatedError}</Alert>}
             {relatedQuestions.map((item) => (
               <div
                 key={item.id}
@@ -125,6 +128,8 @@ export function StudyChatPage() {
               </div>
             </div>
           </div>
+          {error && <Alert severity="error" action={canRetry && <Button disabled={sending} onClick={() => void retry()}>再送する</Button>}>{error}</Alert>}
+          {sending && <Typography role="status" sx={{ px: 3, py: 1 }}>回答を考えています…</Typography>}
           <ChatMessageList messages={messages} botIconBg="var(--color-blue-200)" botIconColor="var(--color-blue-500)" meBg="var(--color-blue-400)" />
           <div style={{ padding: "16px 24px", background: "var(--color-panel)", borderTop: "1px solid var(--color-border-soft)" }}>
             <QuickQuestionChips questions={quickQuestions} onSelect={sendMessage} hoverColor="var(--color-blue-500)" />
