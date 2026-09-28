@@ -9,17 +9,49 @@ from sqlalchemy.orm import Session
 from caliboo_api.data.account_data import is_active
 from caliboo_api.data.assignment_data import fetch_visible_assignment_statuses
 from caliboo_api.data.assignment_proposal_data import create_or_get_pending_proposal
-from caliboo_api.extension_models import ProposalAutomation
-from caliboo_api.services.llm import LLMError
+from caliboo_api.data.assignment_proposal_data import _find_pending_proposal, proposal_inputs
+from caliboo_api.data.agent_jobs import create_job
+from caliboo_api.extension_models import AgentJob, ProposalAutomation
+from caliboo_api.services.llm import LLMError, provider_name
 
 
-def auto_propose(session: Session, user_id: int) -> None:
+def today_jst() -> str:
+    return datetime.now(ZoneInfo("Asia/Tokyo")).date().isoformat()
+
+
+def enqueue_proposal(session: Session, user_id: int) -> AgentJob | None:
+    today = today_jst()
+    session.execute(insert(ProposalAutomation).values(user_id=user_id, last_date="").
+                    on_conflict_do_nothing())
+    automation = session.get(ProposalAutomation, user_id)
+    if automation.last_date == today or _find_pending_proposal(session, user_id) is not None:
+        session.commit()
+        return None
+    inputs = proposal_inputs(session, user_id)
+    if not inputs["reports"] and not inputs["feedbacks"]:
+        session.commit()
+        return None
+    job = create_job(session, user_id, "proposal_initial", {"inputs": inputs, "date": today})
+    session.query(AgentJob).filter(
+        AgentJob.user_id == user_id, AgentJob.kind == "proposal_initial", AgentJob.id < job.id,
+        AgentJob.status.in_(["pending", "failed"]),
+    ).update({"status": "superseded"}, synchronize_session=False)
+    session.commit()
+    return job
+
+
+def auto_propose(session: Session, user_id: int, event: str = "report") -> None:
     if not is_active(session, user_id):
+        return
+    if provider_name() == "openai":
+        enqueue_proposal(session, user_id)
+        return
+    if event != "report":
         return
     statuses = fetch_visible_assignment_statuses(session, user_id)
     if statuses.count("not_submitted") < 3:
         return
-    today = datetime.now(ZoneInfo("Asia/Tokyo")).date().isoformat()
+    today = today_jst()
     session.execute(insert(ProposalAutomation).values(user_id=user_id, last_date="").
                     on_conflict_do_nothing())
     updated = session.query(ProposalAutomation).filter(

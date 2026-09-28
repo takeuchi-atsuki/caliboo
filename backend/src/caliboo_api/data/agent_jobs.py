@@ -2,12 +2,16 @@
 
 import hashlib
 import json
+import time
 
 from sqlalchemy.dialects.sqlite import insert
 from sqlalchemy.orm import Session
 
 from caliboo_api.data.account_data import now_iso
-from caliboo_api.extension_models import AgentJob, StrengthCandidate
+from caliboo_api.data.assignment_data import fetch_visible_assignment_statuses
+from caliboo_api.extension_models import (
+    AgentJob, AgentJobContext, AgentJobExecution, StrengthCandidate,
+)
 from caliboo_api.models import AssignmentSubmission, Report
 from caliboo_api.services.strength_materials import normalize_strength_materials
 
@@ -30,19 +34,29 @@ def strength_materials(session: Session, user_id: int) -> list[dict]:
                             ("feedback", submission.feedback_comment)):
             if text and text.strip():
                 materials.append(dict(id=f"submission:{submission.id}:{field}", text=text,
-                                      date=submission.submitted_at, kind="submission",
+                                      date=(submission.feedback_at or submission.submitted_at)
+                                      if field == "feedback" else submission.submitted_at,
+                                      kind="submission",
                                       field=field, evidenceEligible=True))
     return materials
 
 
-def create_job(session: Session, user_id: int, kind: str, materials: dict) -> AgentJob:
-    encoded = json.dumps([user_id, kind, materials], ensure_ascii=False, sort_keys=True)
+def create_job(session: Session, user_id: int, kind: str, materials: dict,
+               context: dict | None = None) -> AgentJob:
+    fingerprint_input = [user_id, kind, materials]
+    if context is not None:
+        fingerprint_input.append(context)
+    encoded = json.dumps(fingerprint_input, ensure_ascii=False, sort_keys=True)
     fingerprint = hashlib.sha256(encoded.encode()).hexdigest()
     session.execute(insert(AgentJob).values(
         user_id=user_id, kind=kind, materials=materials, fingerprint=fingerprint,
         status="pending", created_at=now_iso(),
     ).on_conflict_do_nothing(index_elements=["fingerprint"]))
-    return session.query(AgentJob).filter_by(fingerprint=fingerprint).one()
+    job = session.query(AgentJob).filter_by(fingerprint=fingerprint).one()
+    if context is not None:
+        session.execute(insert(AgentJobContext).values(job_id=job.id, context=context).
+                        on_conflict_do_nothing())
+    return job
 
 
 def enqueue_strength(session: Session, user_id: int) -> AgentJob | None:
@@ -50,11 +64,14 @@ def enqueue_strength(session: Session, user_id: int) -> AgentJob | None:
     if not materials:
         return None
     snapshot = normalize_strength_materials({"sources": materials})
-    job = create_job(session, user_id, "strength", snapshot)
+    statuses = fetch_visible_assignment_statuses(session, user_id)
+    context = {"progress": {status: statuses.count(status)
+                            for status in ("not_submitted", "submitted", "reviewed")}}
+    job = create_job(session, user_id, "strength", snapshot, context)
     # !NOTE: 古い材料で後から返ってきた解析が最新の結果を上書きしないようにする。
     session.query(AgentJob).filter(
         AgentJob.user_id == user_id, AgentJob.kind == "strength", AgentJob.id < job.id,
-        AgentJob.status == "pending",
+        AgentJob.status.in_(["pending", "failed"]),
     ).update({"status": "superseded"}, synchronize_session=False)
     session.commit()
     return job
@@ -67,9 +84,15 @@ def candidate_view(row: StrengthCandidate) -> dict:
                 decidedAt=row.decided_at)
 
 
-def job_view(row: AgentJob, include_materials: bool = False) -> dict:
+def job_view(row: AgentJob, include_materials: bool = False,
+             execution: AgentJobExecution | None = None) -> dict:
     result = dict(id=row.id, userId=row.user_id, kind=row.kind, status=row.status,
                   createdAt=row.created_at, completedAt=row.completed_at)
     if include_materials:
         result.update(materials=row.materials, result=row.result)
+    if execution is not None:
+        result.update(attempts=execution.attempts, lastError=execution.last_error,
+                      nextAttemptAt=execution.next_attempt_at,
+                      processing=(row.status == "pending" and
+                                  execution.leased_until > time.time()))
     return result

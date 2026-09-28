@@ -139,7 +139,7 @@ services/poc_strength/
 
 追加モデルは `extension_models.py` に集約する。既存DBに破壊的な列変更をせず、`account_states`・`department_history`・`login_attempts`・`user_progress_categories`・`quiz_successes`・`ojt_threads/messages`・`agent_jobs`・`strength_candidates/evaluations`・`proposal_revisions/automation`・`submission_scores`を作成する。既存ユーザーの状態と共有進捗は起動時に欠けた行だけ移行し、変更済み行は上書きしない。アイコン補正と独自画像問題追加も既存DBへ適用する。この拡張のためにDBを削除する必要はない。
 
-強み解析は永続ジョブによるセッション連携。Webプロセス内からCodexやChatGPT APIを呼び出さない。`data/agent_jobs.py`がスナップショットとハッシュによる重複防止、`routers/development.py`が検証・状態更新・講師承認を担う。課題再生成は `routers/proposal_agent.py` で旧版との整合性を確認する。読み込み中の画面切替による古い応答の混入を `useResource`・`useOjt`・`useQuiz` で防ぐ。
+強み解析は永続ジョブで管理する。既定のmanualモードはCodexセッション連携、明示設定したopenaiモードはアプリ内の非同期ワーカーから外部APIを使う。`data/agent_jobs.py`がスナップショットとハッシュによる重複防止、`routers/development.py`が検証・状態更新・講師承認を担う。課題再生成は `routers/proposal_agent.py` で旧版との整合性を確認する。読み込み中の画面切替による古い応答の混入を `useResource`・`useOjt`・`useQuiz` で防ぐ。
 
 実日報の強み解析入力は `schemas/strength_materials.py` の `StrengthAnalysisMaterials` を正本とし、`services/strength_materials.py` で旧形式の変換と検証を行う。新規ジョブは版付きの材料を保存してハッシュ化し、詳細・評価材料の取得と結果取込でも検証する。原文を変えずに出典と役割を固定し、日報の保存用スキーマから解析用の入力契約を分離する。旧ジョブは保存済みスナップショットから変換するため、DB移行・再シードは不要。詳細は [強み解析入力の仕様](strength-analysis-input.md) を参照。
 
@@ -184,3 +184,12 @@ OJTの共通処理（本人×部署の会話保存、講師への明示相談と
 ## 外部生成provider（2026-09-29）
 
 `services/llm.py`は明示設定した場合だけResponses APIへ接続する共通境界。モデルの型・引用は`services/assignment_proposal/llm_provider.py`が検証し、既存pipelineがproviderを切り替える。DBに認証情報を保存しない。`assignment_proposal_data`は確認待ちを原子的な条件付きINSERTで作り、長い推論中の同時依頼による重複を防ぐ。既存データの移行は不要。詳細は [生成AI provider仕様](ai-provider.md) を参照。
+
+
+## 生成AIの自動ジョブ処理（2026-09-29）
+
+`agent_job_contexts`に課題進捗のスナップショット、`agent_job_executions`に試行回数・期限付き取得権・再試行時刻・エラーコードを保存する。既存DBへテーブルを追加し、既存の材料形式と手動取込を維持する。強みの進捗は重複判定に含め、達成の引用材料とは分離する。
+
+`main.lifespan`が明示設定時だけ`services/ai_worker.py`を起動し、停止時は進行中の処理を待つ。`data/job_execution.py`が条件付きUPDATEで取得権を確保し、`services/job_inference.py`は取得済みスナップショットだけをモデルへ渡す。推論中はDBトランザクションを開かず、保存直前の取得権とジョブ状態を同じトランザクション内で検証する。期限切れ・別処理済み・対象無効化の結果は公開しない。
+
+詳細な状態、タイミング、運用手順は [生成AIワーカー](ai-worker.md) を参照。

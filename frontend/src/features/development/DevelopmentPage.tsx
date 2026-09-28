@@ -11,7 +11,7 @@ export function DevelopmentPage() {
   const { user } = useAuth();
   const [target, setTarget] = useState("");
   const members = useResource<{ users: ManagedUser[] }>(user?.role === "admin" ? "/api/users" : null);
-  const resource = useResource<{ candidates: StrengthCandidate[]; jobs: AgentJob[] }>(
+  const resource = useResource<{ candidates: StrengthCandidate[]; jobs: AgentJob[]; reviewPending?: boolean }>(
     `/api/development/strengths${target ? `?userId=${target}` : ""}`, 5000);
   return <PageContainer><Stack spacing={2} sx={{ p: { xs: 2, md: 4 } }}>
     <Typography component="h1" variant="h5">強みと成長のヒント</Typography>
@@ -29,6 +29,8 @@ export function DevelopmentPage() {
       <Link to="/strengths/poc">解析PoCと比較結果</Link>
     </>}
     {resource.data?.jobs.some((job) => job.status === "pending") && <Alert severity="info">解析待ちです。結果の到着後に講師が確認します。</Alert>}
+    {resource.data?.jobs.some((job) => job.status === "failed") && <Alert severity="warning">解析を完了できませんでした。講師が状況を確認できます。提出した内容は保存されています。</Alert>}
+    {resource.data?.reviewPending && user?.role !== "admin" && <Alert severity="info">解析結果を講師が確認しています。承認後にここへ届きます。</Alert>}
     {resource.data?.candidates.length === 0 && <Typography>表示できる強みはまだありません。日報や課題の取り組みが材料になります。</Typography>}
     {resource.data?.candidates.map((candidate) => <Candidate key={candidate.id} candidate={candidate}
       admin={user?.role === "admin"} busy={resource.busy} decide={(body) => resource.act(`/api/development/strengths/${candidate.id}/decision`, body)} />)}

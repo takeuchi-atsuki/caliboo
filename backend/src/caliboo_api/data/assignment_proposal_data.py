@@ -280,25 +280,40 @@ def create_or_get_pending_proposal(
             return _to_detail(existing, session), False
 
         result = _run_generator(session, target_user)
-        values = dict(
-            target_user_id=target_user.id, title=result["title"], body=result["body"],
-            message_for_member=_normalize_message(result["messageForMember"]),
-            aim=result["aim"], rationale=result["rationale"],
-            estimate_minutes=result["estimateMinutes"], materials=result["materials"],
-            progress=result["progress"], theme_key=result["themeKey"],
-            generator=pipeline.generator_name(), created_at=datetime.now(timezone.utc).isoformat(),
-        )
-        pending = select(AssignmentProposal.id).where(
-            AssignmentProposal.target_user_id == user_id,
-            AssignmentProposal.assignment_id.is_(None), AssignmentProposal.decided_at.is_(None),
-        ).exists()
-        # !NOTE: 推論中に別リクエストが生成した確認待ちを増やさない。判定とINSERTを一文にする。
-        source = select(*[literal(value, type_=AssignmentProposal.__table__.c[key].type)
-                          for key, value in values.items()]).where(~pending)
-        inserted = session.execute(insert(AssignmentProposal).from_select(list(values), source))
-        proposal = _find_pending_proposal(session, user_id)
+        proposal, is_new = save_generated_proposal(
+            session, user_id, result, pipeline.generator_name())
         session.commit()
-        return _to_detail(proposal, session), bool(inserted.rowcount)
+        return _to_detail(proposal, session), is_new
+
+
+def proposal_inputs(session: Session, user_id: int) -> dict:
+    return dict(reports=_recent_reports(session, user_id),
+                submission_statuses=fetch_visible_assignment_statuses(session, user_id),
+                feedbacks=_all_feedbacks(session, user_id)[-20:],
+                excluded_themes=sorted(_excluded_themes(session, user_id)))
+
+
+def save_generated_proposal(session: Session, user_id: int, result: dict,
+                            generator: str) -> tuple[AssignmentProposal, bool]:
+    """検証済みの出力を保存する。ジョブ完了と同じトランザクションで利用できる。"""
+    values = dict(
+        target_user_id=user_id, title=result["title"], body=result["body"],
+        message_for_member=_normalize_message(result["messageForMember"]),
+        aim=result["aim"], rationale=result["rationale"],
+        estimate_minutes=result["estimateMinutes"], materials=result["materials"],
+        progress=result["progress"], theme_key=result["themeKey"],
+        generator=generator, created_at=datetime.now(timezone.utc).isoformat(),
+    )
+    pending = select(AssignmentProposal.id).where(
+        AssignmentProposal.target_user_id == user_id,
+        AssignmentProposal.assignment_id.is_(None), AssignmentProposal.decided_at.is_(None),
+    ).exists()
+    # !NOTE: 推論中に別リクエストが生成した確認待ちを増やさない。判定とINSERTを一文にする。
+    source = select(*[literal(value, type_=AssignmentProposal.__table__.c[key].type)
+                      for key, value in values.items()]).where(~pending)
+    inserted = session.execute(insert(AssignmentProposal).from_select(list(values), source))
+    proposal = _find_pending_proposal(session, user_id)
+    return proposal, bool(inserted.rowcount)
 
 
 def get_proposal_detail(proposal_id: int) -> ProposalDetail | None:

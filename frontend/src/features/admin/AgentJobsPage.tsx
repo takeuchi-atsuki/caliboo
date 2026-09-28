@@ -1,27 +1,21 @@
 import { useState } from "react";
 import { Navigate } from "react-router-dom";
-import { Alert, Button, Paper, Stack, TextField, Typography } from "@mui/material";
+import { Alert, Button, Stack, TextField, Typography } from "@mui/material";
 import { PageContainer } from "../../components/layout/PageContainer";
 import { useAuth } from "../../components/auth/AuthProvider";
 import { useResource } from "../../lib/useResource";
-import type { AgentJob } from "../../lib/types";
+import { AgentJobQueue } from "./AgentJobQueue";
 
 interface Evaluation { evaluatedJobs: number; requiredJobs: number; agreement: number; acceptance: number; status: string }
 export function AgentJobsPage() {
   const { user } = useAuth();
   const enabled = user?.role === "admin";
-  const queue = useResource<{ jobs: AgentJob[] }>(enabled ? "/api/development/jobs" : null);
   const evaluation = useResource<Evaluation>(enabled ? "/api/development/evaluations" : null);
   if (!enabled) return <Navigate to="/home" replace />;
   return <PageContainer><Stack spacing={2} sx={{ p: 3 }}>
     <Typography component="h1" variant="h5">解析管理</Typography>
-    <Alert severity="info">Codexで「caliboo-strength-run の実日報モードで待ちジョブを処理」と依頼してください。APIキーは不要です。</Alert>
-    <Button onClick={() => { void queue.reload(); void evaluation.reload(); }}>更新する</Button>
-    {queue.error && <Alert severity="error">{queue.error}</Alert>}
-    {queue.data?.jobs.map((job) => <Paper key={job.id} sx={{ p: 2 }}>
-      #{job.id} / ユーザー {job.userId} / {job.kind === "strength" ? "強み解析" : "課題案の再生成"} / 解析待ち
-    </Paper>)}
-    {queue.data?.jobs.length === 0 && <Typography>処理待ちはありません。</Typography>}
+    <AgentJobQueue enabled={enabled} />
+    <Button onClick={() => void evaluation.reload()}>評価を更新する</Button>
     <Typography component="h2" variant="h6">実日報による妥当性評価</Typography>
     <Typography>目安: 20件・各2名、部分一致以上80%・受容80%。独立した人間ラベルを入力します。</Typography>
     {evaluation.data && <Alert severity={evaluation.data.status === "passed" ? "success" : "info"}>

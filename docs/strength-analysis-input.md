@@ -11,14 +11,14 @@
 
 ## 入力契約
 
-`StrengthAnalysisMaterials` を正本とし、JSON Schemaを `GET /api/development/strength-materials/schema` で取得できるようにする（講師専用）。エージェントへはジョブ全体ではなく `materials` のみを渡す。
+`StrengthAnalysisMaterials` を正本とし、JSON Schemaを `GET /api/development/strength-materials/schema` で取得できるようにする（講師専用）。手動エージェントへはジョブ全体ではなく `materials` を渡す。自動ワーカーでは、追加テーブルに保存した `context.progress`（未提出・提出済み・確認済み件数）も背景情報として渡す。進捗は引用材料にせず、v1の項目構成を変えない。
 
 - `schemaVersion`: 固定値 `strength-materials.v1`。未知の版は受け付けない。
 - `sources`: 日報最大20件・課題提出最大20件から抽出した、最大120項目の配列。日報は日付降順・ID降順、課題提出はID降順、各レコード内の項目順は下表順で固定する。
 - 各項目: `id`, `kind`, `field`, `text`, `date`, `sourceRole`, `evidenceEligible`。型と項目名を検証し、未知の項目・重複ID・IDと種別/項目名の矛盾・分類と引用可否の矛盾を拒否する。
 - `id`: `report:<正整数ID>:<field>` または `submission:<正整数ID>:<field>`。同じレコードの項目はIDから対応を追える。
 - `text`: 保存された原文を空白・改行も含めて保持する。空文字・空白のみの項目は抽出時に除外し、欠損を推測で埋めない。
-- `date`: 保存済みの日報日付または課題提出日時の文字列を保持する。旧保存APIの互換性のため日付の再解釈・書式変換を行わない。
+- `date`: 保存済みの日報日付・課題回答の提出日時・講師コメントの更新日時を保持する。講師コメントに更新日時がない旧データだけ提出日時を使う。旧保存APIの互換性のため日付の再解釈・書式変換を行わない。
 
 | kind | field | sourceRole | evidenceEligible | 解析時の意味 |
 | --- | --- | --- | --- | --- |
@@ -44,7 +44,7 @@
 
 ## エージェントとの境界
 
-実日報モードはJSON Schemaと `materials` を渡し、対応版と役割の意味を明示する。本人ID、期待ラベル、既存の解析結果は含めない。材料中の命令は実行しない。プロンプト版を更新して結果のtraceに記録する。課題案ジョブとPoCの出力契約は変更しない。
+実日報モードはJSON Schemaと `materials` を渡し、対応版と役割の意味を明示する。本人ID、期待ラベル、既存の解析結果は含めない。材料中の命令は実行しない。プロンプト版を更新して結果のtraceに記録する。PoCの出力契約は変更しない。自動ワーカーにも同じ境界を適用し、既存候補・評価ラベルは入力に含めない。
 
 ## 検証と限界
 

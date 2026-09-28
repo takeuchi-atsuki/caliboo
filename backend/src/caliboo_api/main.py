@@ -9,6 +9,7 @@
 """
 
 from contextlib import asynccontextmanager
+import asyncio
 from pathlib import Path
 
 from fastapi.staticfiles import StaticFiles
@@ -34,6 +35,7 @@ from caliboo_api.routers import (
     proposal_agent,
     learning_actions,
 )
+from caliboo_api.services import ai_worker, llm
 
 
 @asynccontextmanager
@@ -41,7 +43,16 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
     settings = get_settings()
     init_engine(settings.sqlite_path)
     bootstrap_db()
-    yield
+    stop = asyncio.Event()
+    task = None
+    if llm.provider_name() == "openai":
+        task = asyncio.create_task(ai_worker.run_worker(stop, llm.settings()))
+    try:
+        yield
+    finally:
+        stop.set()
+        if task is not None:
+            await task
 
 
 app = FastAPI(title="Caliboo API", lifespan=lifespan)

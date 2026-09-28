@@ -6,9 +6,10 @@ from io import BytesIO
 import pytest
 
 from caliboo_api.db import session_scope
-from caliboo_api.extension_models import ProposalAutomation
+from caliboo_api.extension_models import AgentJobExecution, ProposalAutomation
 from caliboo_api.models import AssignmentProposal
 from caliboo_api.services import llm
+from caliboo_api.services.ai_worker import process_next
 from caliboo_api.services.assignment_proposal.theme_catalog import FALLBACK_THEME_KEY
 
 
@@ -19,7 +20,12 @@ def provider(monkeypatch):
     monkeypatch.setenv("OPENAI_API_KEY", "test-only-secret")
 
     def respond(request, timeout):
-        inputs = json.loads(json.loads(request.data)["input"][0]["content"])
+        body = json.loads(request.data)
+        inputs = json.loads(body["input"][0]["content"])
+        if body["text"]["format"]["name"] == "CandidateBatch":
+            return BytesIO(json.dumps(dict(status="completed", output=[dict(
+                type="message", content=[dict(type="output_text", text=json.dumps(dict(
+                    candidates=[], notes="材料から十分な強みは確定できない")))])])).encode())
         source = inputs["sources"][0]
         assert any(item["kind"] == "feedback" for item in inputs["sources"])
         assert "progress" in inputs
@@ -97,11 +103,18 @@ def test_automatic_failure_preserves_report_and_daily_retry(
 
     monkeypatch.setattr(llm, "urlopen", fail)
     report(client)
+    config = llm.settings()
+    assert process_next(config)  # 強み解析の1回目
+    assert process_next(config)  # 初回課題案の1回目
     with session_scope() as session:
         assert session.get(ProposalAutomation, user_id).last_date == ""
         assert session.query(AssignmentProposal).filter_by(target_user_id=user_id).count() == 0
     monkeypatch.setattr(llm, "urlopen", valid)
-    report(client)
+    with session_scope() as session:
+        session.query(AgentJobExecution).update({"next_attempt_at": 0})
+        session.commit()
+    assert process_next(config)
+    assert process_next(config)
     with session_scope() as session:
         assert session.get(ProposalAutomation, user_id).last_date != ""
         assert session.query(AssignmentProposal).filter_by(target_user_id=user_id).count() == 1

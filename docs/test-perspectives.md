@@ -266,4 +266,9 @@ API横断の確認は `backend/tests/integration/test_flows.py`、型・分類�
 PL-1/2は`tests/integration/test_learning_cycle.py`と`tests/unit/test_learning_actions.py`、PL-3は`useAutoRefresh.impl.test.ts`・`useResource.impl.test.ts`・`LearningActions.spec.tsx`・ホームのテスト・手動テストに対応付ける。PL-4〜7は続く実装でテストを対応付け、現時点で検証済みとは扱わない。
 ### PL-4/5: 初回課題案の生成provider（2026-09-29）
 
-上記の承認済みPL-4/5を、課題案の初回生成に対応付ける。外部通信の契約・拒否・未完了・入力/応答上限・認証設定は`backend/tests/unit/test_llm.py`、材料と引用・テーマ・同時作成は`backend/tests/unit/test_llm_proposals.py`、講師配信・所有者分離・障害時の保存抑止と再試行は`backend/tests/integration/test_llm_proposals.py`で検証する。強みワーカーと実provider接続の検証は未完了。
+上記の承認済みPL-4/5を、課題案の初回生成に対応付ける。外部通信の契約・拒否・未完了・入力/応答上限・認証設定は`backend/tests/unit/test_llm.py`、材料と引用・テーマ・同時作成は`backend/tests/unit/test_llm_proposals.py`、講師配信・所有者分離・障害時の保存抑止と再試行は`backend/tests/integration/test_llm_proposals.py`で検証する。強みワーカーの検証は下記に対応付ける。実provider接続は未実施。
+
+
+### PL-4/5: 自動ワーカー（2026-09-29）
+
+承認済み観点の実装対応。`backend/tests/unit/test_ai_worker.py`で進捗スナップショット、同時取得、期限切れ・再起動、古い所有権・無効化後の結果、不正引用、再試行上限、日次制限、起動停止を確認する。`backend/tests/integration/test_ai_worker.py`では実際のlifespanワーカーと外部HTTPの契約モックを接続し、日報・課題提出・講師コメント→解析→承認→本人の行動・個人宛て課題、未承認非公開、再試行認可、再生成と旧版検証を確認する。`AgentJobQueue.spec.tsx`で処理状態・失敗・再試行・二重操作・自動取得を検証する。実provider接続、実日報による精度と教育効果は別途評価する。

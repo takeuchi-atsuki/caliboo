@@ -1,4 +1,4 @@
-"""講師指示による再生成。推論はCodexセッションで実行する。"""
+"""講師指示による再生成。手動取込と自動ワーカーで共通の検証を使う。"""
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
@@ -61,7 +61,19 @@ def revisions(proposal_id: int, _admin: User = Depends(require_admin),
 def import_proposal(job_id: int, payload: ProposalAgentResult,
                     _admin: User = Depends(require_admin),
                     session: Session = Depends(get_session)) -> dict:
+    return complete_proposal_result(job_id, payload, session)
+
+
+def complete_proposal_result(job_id: int, payload: ProposalAgentResult, session: Session) -> dict:
     job = pending_job(session, job_id, "proposal")
+    if payload.trace.provider == "openai":
+        sources = {f"material:{index}": item["quote"]
+                   for index, item in enumerate(job.materials["sources"])}
+        if not payload.evidence or any(
+            evidence.materialId not in sources or
+            evidence.quote not in sources[evidence.materialId] for evidence in payload.evidence
+        ):
+            raise HTTPException(422, "evidence must quote a proposal source")
     proposal_id = job.materials["proposalId"]
     previous = job.materials["previous"]
     # !NOTE: 配信済み/見送り済み、または別の再生成で変わった課題案へ上書きしない。
@@ -73,7 +85,7 @@ def import_proposal(job_id: int, payload: ProposalAgentResult,
     ).update(dict(title=payload.title, body=payload.body,
                   message_for_member=payload.messageForMember or None,
                   rationale=payload.rationale, estimate_minutes=payload.estimateMinutes,
-                  generator=f"codex_agent:{payload.trace.model}:{job_id}"),
+                  generator=f"{payload.trace.provider}:{payload.trace.model}:{job_id}"),
              synchronize_session=False)
     if not updated:
         raise HTTPException(409, "proposal changed; request a fresh regeneration")

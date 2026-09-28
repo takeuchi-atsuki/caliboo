@@ -21,7 +21,7 @@ class _Source(BaseModel):
 
     id: str = Field(pattern=r"^(report|submission):[1-9][0-9]*:[A-Za-z]+$")
     text: str = Field(min_length=1, description="引用用の原文。空白・改行も変更しない。")
-    date: str = Field(description="保存済み日付/提出日時。書式変換せず保持する。")
+    date: str = Field(description="保存済み日付/提出日時/講師コメント更新日時。書式変換せず保持する。")
     evidenceEligible: bool = Field(description="引用候補にできる項目か。達成の保証ではない。")
 
     @field_validator("text")
