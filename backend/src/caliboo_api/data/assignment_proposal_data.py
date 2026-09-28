@@ -4,9 +4,12 @@ from datetime import datetime, timezone
 from enum import Enum, auto
 from zoneinfo import ZoneInfo
 
+from sqlalchemy import literal, select
+from sqlalchemy.dialects.sqlite import insert
 from sqlalchemy.orm import Session
 
 from caliboo_api.data.assignment_data import fetch_visible_assignment_statuses, insert_assignment
+from caliboo_api.data.account_data import is_active
 from caliboo_api.db import session_scope
 from caliboo_api.models import (
     Assignment,
@@ -269,7 +272,7 @@ def create_or_get_pending_proposal(
     """
     with session_scope() as session:
         target_user = session.get(User, user_id)
-        if target_user is None or target_user.role != "member":
+        if target_user is None or target_user.role != "member" or not is_active(session, user_id):
             return ProposalCreateError.TARGET_NOT_FOUND
 
         existing = _find_pending_proposal(session, user_id)
@@ -277,24 +280,25 @@ def create_or_get_pending_proposal(
             return _to_detail(existing, session), False
 
         result = _run_generator(session, target_user)
-        proposal = AssignmentProposal(
-            target_user_id=target_user.id,
-            title=result["title"],
-            body=result["body"],
+        values = dict(
+            target_user_id=target_user.id, title=result["title"], body=result["body"],
             message_for_member=_normalize_message(result["messageForMember"]),
-            aim=result["aim"],
-            rationale=result["rationale"],
-            estimate_minutes=result["estimateMinutes"],
-            materials=result["materials"],
-            progress=result["progress"],
-            theme_key=result["themeKey"],
-            generator=pipeline.generator_name(),
-            created_at=datetime.now(timezone.utc).isoformat(),
+            aim=result["aim"], rationale=result["rationale"],
+            estimate_minutes=result["estimateMinutes"], materials=result["materials"],
+            progress=result["progress"], theme_key=result["themeKey"],
+            generator=pipeline.generator_name(), created_at=datetime.now(timezone.utc).isoformat(),
         )
-        session.add(proposal)
+        pending = select(AssignmentProposal.id).where(
+            AssignmentProposal.target_user_id == user_id,
+            AssignmentProposal.assignment_id.is_(None), AssignmentProposal.decided_at.is_(None),
+        ).exists()
+        # !NOTE: 推論中に別リクエストが生成した確認待ちを増やさない。判定とINSERTを一文にする。
+        source = select(*[literal(value, type_=AssignmentProposal.__table__.c[key].type)
+                          for key, value in values.items()]).where(~pending)
+        inserted = session.execute(insert(AssignmentProposal).from_select(list(values), source))
+        proposal = _find_pending_proposal(session, user_id)
         session.commit()
-        session.refresh(proposal)
-        return _to_detail(proposal, session), True
+        return _to_detail(proposal, session), bool(inserted.rowcount)
 
 
 def get_proposal_detail(proposal_id: int) -> ProposalDetail | None:
