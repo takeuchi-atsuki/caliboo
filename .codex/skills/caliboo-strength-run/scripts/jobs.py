@@ -44,7 +44,15 @@ def main() -> None:
         else:
             job = call(f"/api/development/jobs/{args.job_id}")
             if args.action == "export":
-                args.file.write_text(json.dumps(job, ensure_ascii=False, indent=2), encoding="utf-8")
+                packet = job
+                if job["kind"] == "strength":
+                    # !NOTE: 解析に不要な本人ID・既存結果をエージェントへ渡さない。
+                    packet = {
+                        "inputSchema": call("/api/development/strength-materials/schema"),
+                        "materials": job["materials"],
+                    }
+                args.file.write_text(
+                    json.dumps(packet, ensure_ascii=False, indent=2), encoding="utf-8")
                 result = {"exported": args.job_id, "file": str(args.file)}
             else:
                 payload = json.loads(args.file.read_text(encoding="utf-8"))

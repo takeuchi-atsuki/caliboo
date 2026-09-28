@@ -515,21 +515,24 @@ print(opener.open("http://localhost:8000/api/home/summary").read().decode("utf-8
 | GET | /api/development/strengths | 本人/講師。任意userId（他人指定はadminのみ）。candidatesとjobs。memberには承認済み候補のみ |
 | POST | /api/development/strengths/{user_id}/request | admin。提出材料をスナップショット化。材料なし409、対象不在404。同じ材料は同じジョブ |
 | GET | /api/development/jobs | admin。処理待ちjobs |
-| GET | /api/development/jobs/{job_id} | admin。ジョブ情報・materials・result |
+| GET | /api/development/strength-materials/schema | admin。強み解析入力 `StrengthAnalysisMaterials` のJSON Schema |
+| GET | /api/development/jobs/{job_id} | admin。ジョブ情報・materials・result。強み材料はv1へ検証・整形。不正な保存済み材料/未対応版は409 |
 | POST | /api/development/jobs/{job_id}/strength-result | admin。StrengthResultを取り込み候補を確認待ちで保存。引用/材料ID/skillCode重複を検証。古い/完了済み409、形式422 |
 | POST | /api/development/strengths/{candidate_id}/decision | admin。`{status:approved/rejected,label,growthAction}`。確認待ちのみ。既決409 |
-| GET | /api/development/evaluations/{job_id}/materials | admin。人間ラベル付け用の材料（解析結果を含めない） |
+| GET | /api/development/evaluations/{job_id}/materials | admin。人間ラベル付け用のv1材料（解析結果を含めない）。不正な保存済み材料/未対応版は409 |
 | POST | /api/development/evaluations/{job_id} | admin。`{skillCodes,accepted,comment}`。完了した強みジョブのみ。本人の評価を更新しmatch(exact/partial/none)を返す |
 | GET | /api/development/evaluations | admin。evaluatedJobs/requiredJobs=20/requiredReviewers=2/agreement/acceptance/threshold=0.8/status。statusはinsufficient_data/passed/failed |
 | POST | /api/assignment-proposals/{proposal_id}/regenerate | admin。`{instruction}`。確認待ち課題案に再生成ジョブを登録 |
 | GET | /api/assignment-proposals/{proposal_id}/revisions | admin。調整指示とprevious（旧課題内容）の履歴 |
 | POST | /api/assignment-proposals/agent-jobs/{job_id}/result | admin。ProposalAgentResultを保存。配信済み・見送り済み・旧版不一致409 |
 
+強みジョブの `materials` は `{schemaVersion:"strength-materials.v1", sources:[...]}`。各sourceは `id,kind,field,text,date,sourceRole,evidenceEligible` を持つ。分類・上限・原文保持・旧ジョブ変換は [強み解析入力の仕様](strength-analysis-input.md) を参照。ジョブ作成、材料取得、結果取込に同じスキーマを適用する。結果取込時も不正な保存済み材料/未対応版は409。旧ジョブのDB内容を読み取り時に書き換えない。
+
 StrengthResultの形:
 
 ```json
 {
-  "trace": {"provider":"codex_agent","model":"gpt-6-astra","promptVersion":"live-2026-09-28.1"},
+  "trace": {"provider":"codex_agent","model":"gpt-6-astra","promptVersion":"live-2026-09-28.2"},
   "candidates": [{"label":"確認する力","skillCode":"TEST","confidence":75,
     "evidence":[{"materialId":"report:1:keep","quote":"原文の引用"}],
     "growthAction":"次の小さな取り組み"}],

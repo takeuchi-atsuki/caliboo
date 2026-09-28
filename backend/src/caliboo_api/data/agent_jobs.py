@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from caliboo_api.data.account_data import now_iso
 from caliboo_api.extension_models import AgentJob, StrengthCandidate
 from caliboo_api.models import AssignmentSubmission, Report
+from caliboo_api.services.strength_materials import normalize_strength_materials
 
 
 def strength_materials(session: Session, user_id: int) -> list[dict]:
@@ -48,7 +49,8 @@ def enqueue_strength(session: Session, user_id: int) -> AgentJob | None:
     materials = strength_materials(session, user_id)
     if not materials:
         return None
-    job = create_job(session, user_id, "strength", {"sources": materials})
+    snapshot = normalize_strength_materials({"sources": materials})
+    job = create_job(session, user_id, "strength", snapshot)
     # !NOTE: 古い材料で後から返ってきた解析が最新の結果を上書きしないようにする。
     session.query(AgentJob).filter(
         AgentJob.user_id == user_id, AgentJob.kind == "strength", AgentJob.id < job.id,

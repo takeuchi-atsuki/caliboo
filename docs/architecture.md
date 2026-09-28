@@ -141,6 +141,8 @@ services/poc_strength/
 
 強み解析は永続ジョブによるセッション連携。Webプロセス内からCodexやChatGPT APIを呼び出さない。`data/agent_jobs.py`がスナップショットとハッシュによる重複防止、`routers/development.py`が検証・状態更新・講師承認を担う。課題再生成は `routers/proposal_agent.py` で旧版との整合性を確認する。読み込み中の画面切替による古い応答の混入を `useResource`・`useOjt`・`useQuiz` で防ぐ。
 
+実日報の強み解析入力は `schemas/strength_materials.py` の `StrengthAnalysisMaterials` を正本とし、`services/strength_materials.py` で旧形式の変換と検証を行う。新規ジョブは版付きの材料を保存してハッシュ化し、詳細・評価材料の取得と結果取込でも検証する。原文を変えずに出典と役割を固定し、日報の保存用スキーマから解析用の入力契約を分離する。旧ジョブは保存済みスナップショットから変換するため、DB移行・再シードは不要。詳細は [強み解析入力の仕様](strength-analysis-input.md) を参照。
+
 > [!NOTE]
 > 人間評価は運用で収集するデータであり、エージェント出力を人間ラベルとして埋めてはならない。実データ・2名の評価がない状態は「評価データ不足」のまま表示する。
 
