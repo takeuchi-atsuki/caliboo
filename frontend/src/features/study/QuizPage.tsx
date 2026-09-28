@@ -18,6 +18,7 @@ import { PhosphorIcon } from "../../components/icon/PhosphorIcon";
 import { NUMERIC_FONT_FAMILY } from "../../theme";
 import { useQuiz } from "./useQuiz";
 import { CHOICE_LETTERS } from "./quizHandoff";
+import { QuizPracticeReason } from "./QuizPracticeReason";
 
 // !NOTE: 選択肢の状態色(未選択/選択中/正解/不正解)はtheme.palette.accentの
 //        3段階(main/light/wash)に収まらない専用の中間シェードを含むため、
@@ -195,6 +196,7 @@ export function QuizPage() {
           {question.source ? (
             <div style={{ fontWeight: 600, fontSize: 12, color: "var(--color-text-sub)", marginBottom: 20 }}>{question.source}</div>
           ) : null}
+          <QuizPracticeReason reason={question.practiceReason} />
           <RadioGroup
             aria-label={question.text}
             value={selectedIndex === null ? "" : String(selectedIndex)}

@@ -37,6 +37,7 @@ class QuizQuestion(BaseModel):
     choices: list[str | ImageChoice]
     timeLimitSec: int
     source: str | None = None
+    practiceReason: Literal["mistake_review", "scheduled_review", "new", "practice"] = "practice"
 
 
 class QuizAnswerRequest(BaseModel):

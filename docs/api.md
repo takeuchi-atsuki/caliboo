@@ -151,7 +151,7 @@ FastAPIアプリ本体: `backend/src/caliboo_api/main.py`。CORS設定は持た�
 | GET | /api/study/progress | 資格名・分野別進捗・連続学習日数 |
 | GET | /api/study/related-questions | 関連過去問一覧(タグ付き) |
 | POST | /api/study/chat | 質問text、任意のhistoryと公開問題questionから回答。旧形式のtextだけも受け付ける。入力不正422、設定・生成失敗503 |
-| GET | /api/quiz/next?category=&excludeId= | 次の出題。`category`一致する問題群からランダムに1問返す。正解・解説は含まない。`excludeId`を指定すると、除外後に候補が残る限りそのIDの問題は返さない(直前の問題の連続出題を防ぐ) |
+| GET | /api/quiz/next?category=&excludeId= | 次の出題。`category`一致する問題群から本人の誤答・復習期限・未解答を優先して1問返す。正解・解説は含まない。`excludeId`を指定すると、除外後に候補が残る限りそのIDの問題は返さない(直前の問題の連続出題を防ぐ) |
 | POST | /api/quiz/answer | `{"questionId": "...", "selectedIndex": 0}` を受け取り正誤判定結果を返す。存在しないquestionIdは404 |
 
 ## 課題演習
@@ -607,3 +607,10 @@ ProposalAgentResultはtrace/title/body/messageForMember/rationale/estimateMinute
 `POST /api/study/chat`は認証必須。`text`は1〜10000文字（空白のみ不可）、任意の`history`は最大12件の`{role: me|bot, text}`（各1〜10000文字）。任意の`question`は`{text, choices}`で、問題文1〜10000文字、選択肢1〜10件（各1〜2500文字）。画像選択肢はクライアントで表示用本文と代替文を文字列へ整形する。
 
 未知の項目・systemなどの役割・correctIndex/explanation/imageUrlは受け付けない。サーバーは採点DBを読まず、タブから渡された公開問題と会話だけを使う。応答は既存の`ChatMessage`（bot、referencesは空）。履歴のDB保存は追加せず、他人の会話を検索しない。長い履歴は古い発言から180KB以内へ絞り、共通の200KB送信上限も適用する。手順と限界は [学習チャット仕様](contextual-study-chat.md) を参照。
+
+
+## 資格クイズの個人別復習（2026-09-29）
+
+`GET /api/quiz/next`は認証中の本人の履歴を使い、他人のuserId指定を受け付けない。既存の公開問題に`practiceReason`（mistake_review/scheduled_review/new/practice）を追加する。正解・解説・他人の履歴は含めない。分野で絞り、excludeIdを可能なら除外してから、期限到来した誤答、期限到来した正解、未解答、その他の順で選ぶ。期限到来分は古い期限、同順位はランダム。その他は未スケジュールの旧正解済み問題、早い将来期限の順。
+
+`POST /api/quiz/answer`は入力・応答形式を維持し、採点と同じトランザクションで解答イベント・復習予定・本人の進捗を保存する。不正な問題404、選択肢範囲外422では保存しない。取得だけでは履歴を増やさず、各解答POSTを1回の学習として記録する。達成率の正解済み件数は繰り返し解答でも一度だけ数える。間隔と互換方針は [復習仕様](quiz-review.md) を参照。

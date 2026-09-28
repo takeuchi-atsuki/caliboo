@@ -282,3 +282,8 @@ PL-1/2は`tests/integration/test_learning_cycle.py`と`tests/unit/test_learning_
 ### PL-6: 問題と会話を使う学習チャット（2026-09-29）
 
 承認済み観点に対応し、`tests/unit/test_study_chat.py`で公開問題と履歴の入力・上限・手動モード・長い履歴の除外を検証する。`tests/integration/test_study_chat.py`で公開問題引継ぎと追質問のHTTP契約、正解データ非送信、他人の文脈非参照、障害からの再送と不正出力拒否を確認する。`useStudyChat.spec.ts`・`quizHandoff.spec.ts`・`StudyChatPage.spec.tsx`で1回だけの自動送信、StrictMode、問題文脈の保持、失敗と再送、二重操作・離脱・入力保持・待ち表示を確認する。
+
+
+### PL-7: 本人の誤答と復習期限（2026-09-29）
+
+承認済み観点に対応し、`tests/unit/test_quiz_review.py`で期限前後の優先順位・分野から渡された候補・同問除外/1問だけの継続・旧正解済みと進捗の保持・間隔上限と誤答リセット・同時更新・ロールバックを確認する。`tests/integration/test_quiz_review.py`で誤答→別問題→期限到来→復習→正解と再起動、本人分離、再回答の非重複集計、不正入力時の非保存、正解データ非公開を確認する。既存`test_quiz.py`の分野・除外・問題なしも維持し、`QuizPracticeReason.spec.tsx`で出題理由を確認する。
