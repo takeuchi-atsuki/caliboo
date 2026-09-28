@@ -77,3 +77,9 @@ describe("ホーム (docs/screens/home.md)", () => {
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
   });
 });
+
+it("定期取得に失敗しても前回の強みを保持する (PL-3)", () => {
+  vi.mocked(useHomeSummary).mockReturnValue({ summary, error: "更新失敗" }); renderHome();
+  expect(screen.getByRole("alert")).toHaveTextContent("更新失敗");
+  expect(screen.getByText("課題を整理する力")).toBeInTheDocument();
+});

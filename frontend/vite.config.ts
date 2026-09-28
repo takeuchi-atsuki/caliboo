@@ -34,6 +34,8 @@ export default defineConfig({
       include: [
         "src/lib/apiClient.ts",
         "src/lib/useResource.ts",
+        "src/lib/useAutoRefresh.ts",
+        "src/features/development/LearningActions.tsx",
         "src/features/assignment/AssignmentCreateDialog.tsx",
         "src/features/assignment/AssignmentFeedbackForm.tsx",
         "src/features/assignment/ProposalRegenerate.tsx",

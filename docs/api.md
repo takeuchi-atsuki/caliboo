@@ -566,3 +566,17 @@ StrengthResultの形:
 候補は最大10件、根拠は候補ごとに1〜10件、confidenceは0〜100整数。ジョブのsourcesから原文を引用する。`evidenceEligible=false`（Problem/Try/気分コメント）を根拠にすると422。入力なしを推測して補完せず空候補を保存できる。traceはモデル・プロンプト版の追跡情報であり、サーバーがモデル実行を証明する署名ではない。取込は認証済み講師専用。
 
 ProposalAgentResultはtrace/title/body/messageForMember/rationale/estimateMinutes（5〜480）。再生成結果の自動配信はしない。
+
+## 本人の行動サイクル（2026-09-28追加）
+
+仕様は [個別学習と強みを育てるサイクル](personalized-learning.md) を参照。
+
+| メソッド・パス | 認可 | 内容 |
+| --- | --- | --- |
+| `GET /api/development/actions?userId=<id>` | 本人または講師 | `actions`と対象者に配信された`assignments`。本人はuserId省略可、講師は対象者を指定する |
+| `POST /api/development/actions` | 新入社員本人 | `title`・`successCriteria`（空白除去後1〜1000文字）、任意の`dueDate`（YYYY-MM-DD）、任意の`candidateId`を受け、201で作成した行動を返す |
+| `POST /api/development/actions/{id}` | 行動の所有者 | `title`・`successCriteria`・任意の`dueDate`・`status`・`reflection`（0〜5000文字）・`revision`（1以上）を受け、更新した行動を返す |
+
+行動のレスポンスは`id, userId, candidateId, strengthSnapshot, title, successCriteria, dueDate, status, reflection, revision, createdAt, updatedAt`。
+`strengthSnapshot`は選択時の`label, growthAction`（自由入力の場合null）。状態は`planned/in_progress/completed/cancelled`。
+完了時の振り返り未入力・不正な日付・空欄は422、他人または未承認の強みの関連付け・他人の行動更新は404、古い版の編集は409。新入社員による他人の一覧取得と講師の作成・更新は403。
