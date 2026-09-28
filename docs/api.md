@@ -150,7 +150,7 @@ FastAPIアプリ本体: `backend/src/caliboo_api/main.py`。CORS設定は持た�
 |---|---|---|
 | GET | /api/study/progress | 資格名・分野別進捗・連続学習日数 |
 | GET | /api/study/related-questions | 関連過去問一覧(タグ付き) |
-| POST | /api/study/chat | `{"text": "..."}` を受け取りダミー応答を返す |
+| POST | /api/study/chat | 質問text、任意のhistoryと公開問題questionから回答。旧形式のtextだけも受け付ける。入力不正422、設定・生成失敗503 |
 | GET | /api/quiz/next?category=&excludeId= | 次の出題。`category`一致する問題群からランダムに1問返す。正解・解説は含まない。`excludeId`を指定すると、除外後に候補が残る限りそのIDの問題は返さない(直前の問題の連続出題を防ぐ) |
 | POST | /api/quiz/answer | `{"questionId": "...", "selectedIndex": 0}` を受け取り正誤判定結果を返す。存在しないquestionIdは404 |
 
@@ -600,3 +600,10 @@ ProposalAgentResultはtrace/title/body/messageForMember/rationale/estimateMinute
 `POST /api/ojt/chat`のtextは1〜10000文字（空白のみ不可）。成功時は既存の`ChatMessage`を返し、`references`に`{label, knowledgeId, quote}`を保存・返却する。labelは登録資料名、quoteは原文の連続部分、knowledgeIdはその部署の取得時点のk1等。旧履歴ではknowledgeId/quoteはnullとなる。資料の変更後も過去の参照名・引用を保存し、現在の資料へ自動置換しない。
 
 検索結果なし/根拠不足では参照なしの相談案内を200で返す。接続・設定・形式・引用検証の失敗は503、推論中の資料更新は409、対象者の無効化は403。資料検索そのもののDB障害は5xxとして失敗し、回答を保存しない。成功時だけ質問と回答を同時保存するため、失敗後の再送で失敗した質問行を重複作成しない。詳細は [OJT回答仕様](grounded-ojt.md) を参照。
+
+
+## 文脈付き学習チャット（2026-09-29）
+
+`POST /api/study/chat`は認証必須。`text`は1〜10000文字（空白のみ不可）、任意の`history`は最大12件の`{role: me|bot, text}`（各1〜10000文字）。任意の`question`は`{text, choices}`で、問題文1〜10000文字、選択肢1〜10件（各1〜2500文字）。画像選択肢はクライアントで表示用本文と代替文を文字列へ整形する。
+
+未知の項目・systemなどの役割・correctIndex/explanation/imageUrlは受け付けない。サーバーは採点DBを読まず、タブから渡された公開問題と会話だけを使う。応答は既存の`ChatMessage`（bot、referencesは空）。履歴のDB保存は追加せず、他人の会話を検索しない。長い履歴は古い発言から180KB以内へ絞り、共通の200KB送信上限も適用する。手順と限界は [学習チャット仕様](contextual-study-chat.md) を参照。

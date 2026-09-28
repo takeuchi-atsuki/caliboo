@@ -263,7 +263,7 @@ API横断の確認は `backend/tests/integration/test_flows.py`、型・分類�
 - PL-6: OJTは部署内の根拠、学習チャットは対象問題と会話文脈を使う。根拠不足・障害から再試行でき、採点前に正解情報を渡さない。
 - PL-7: 復習は本人の誤答・期限を優先し、分野・連続同問抑制・問題数が少ない場合・正解済み重複集計・既存進捗を維持する。
 
-PL-1/2は`tests/integration/test_learning_cycle.py`と`tests/unit/test_learning_actions.py`、PL-3は`useAutoRefresh.impl.test.ts`・`useResource.impl.test.ts`・`LearningActions.spec.tsx`・ホームのテスト・手動テストに対応付ける。PL-4〜7は続く実装でテストを対応付け、現時点で検証済みとは扱わない。
+PL-1/2は`tests/integration/test_learning_cycle.py`と`tests/unit/test_learning_actions.py`、PL-3は`useAutoRefresh.impl.test.ts`・`useResource.impl.test.ts`・`LearningActions.spec.tsx`・ホームのテスト・手動テストに対応付ける。PL-4〜7は後述の実装ごとの記録に対応付ける。対応テストのない観点や実provider接続を検証済みとは扱わない。
 ### PL-4/5: 初回課題案の生成provider（2026-09-29）
 
 上記の承認済みPL-4/5を、課題案の初回生成に対応付ける。外部通信の契約・拒否・未完了・入力/応答上限・認証設定は`backend/tests/unit/test_llm.py`、材料と引用・テーマ・同時作成は`backend/tests/unit/test_llm_proposals.py`、講師配信・所有者分離・障害時の保存抑止と再試行は`backend/tests/integration/test_llm_proposals.py`で検証する。強みワーカーの検証は下記に対応付ける。実provider接続は未実施。
@@ -277,3 +277,8 @@ PL-1/2は`tests/integration/test_learning_cycle.py`と`tests/unit/test_learning_
 ### PL-6: 部署資料に基づくOJT（2026-09-29）
 
 承認済み観点に対応し、`tests/unit/test_grounded_ojt.py`で検索順位・件数・追質問・原文引用・モデルの根拠不足を検証する。`tests/integration/test_grounded_ojt.py`でHTTP契約、部署/本人の分離、履歴と講師相談、失敗後の再送、生成中の資料更新・対象無効化を確認する。`ChatBubble.spec.tsx`で引用の平文表示と旧参照互換、既存`useOjt.spec.ts`で失敗時の入力保持・二重送信・課変更後の古い結果破棄を確認する。
+
+
+### PL-6: 問題と会話を使う学習チャット（2026-09-29）
+
+承認済み観点に対応し、`tests/unit/test_study_chat.py`で公開問題と履歴の入力・上限・手動モード・長い履歴の除外を検証する。`tests/integration/test_study_chat.py`で公開問題引継ぎと追質問のHTTP契約、正解データ非送信、他人の文脈非参照、障害からの再送と不正出力拒否を確認する。`useStudyChat.spec.ts`・`quizHandoff.spec.ts`・`StudyChatPage.spec.tsx`で1回だけの自動送信、StrictMode、問題文脈の保持、失敗と再送、二重操作・離脱・入力保持・待ち表示を確認する。

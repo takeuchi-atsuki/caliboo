@@ -96,7 +96,7 @@
 
 #### ステータス
 
-実装完了 — 2aの「わからない → AIに聞く」で表示中の問題文と選択肢を画面遷移時のstateに載せて2bへ渡し、2bでは自分の質問として初期表示したうえでフロントのモック回答を続けて表示するようにした（`POST /api/study/chat`は呼ばない）。仕様は`docs/screens/study.md`、実装は`frontend/src/features/study/quizHandoff.ts`・`useStudyChat.ts`・`StudyChatPage.tsx`。問題内容に応じた解説（実AI回答）は対象外。
+実装完了 — 2aから公開問題をstateで引き継ぎ、APIへ1回送信する。openai設定時は問題と直近会話に沿った生成解説、manual時は考え方の整理を返す。正解・解説は渡さず、失敗時の入力保持と再送に対応。GitHub #5、[学習チャット仕様](docs/contextual-study-chat.md)を参照。
 
 ---
 
