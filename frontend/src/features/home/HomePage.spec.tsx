@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { ThemeProvider } from "@mui/material/styles";
 import type { ReactNode } from "react";
@@ -17,7 +18,11 @@ const summary: HomeSummary = {
   hero: { message: "おかえり、ユウキさん！" },
   certification: { name: "基本情報技術者試験", achievementPercent: 42 },
   strengths: [{ label: "課題を整理する力", tone: "purple" }],
-  shortcuts: [{ icon: "ph ph-book-open", title: "資格勉強", description: "少しずつ学ぼう", to: "/study", tone: "blue" }],
+  shortcuts: [
+    { icon: "ph-bold ph-clipboard-text", title: "課題に取り組む", description: "課題・フィードバックを確認", to: "/assignments", tone: "orange" },
+    { icon: "ph-bold ph-graduation-cap", title: "資格勉強", description: "過去問・質問", to: "/study", tone: "blue" },
+    { icon: "ph-bold ph-users-three", title: "OJT", description: "AIメンターに相談", to: "/ojt", tone: "green" },
+  ],
 };
 function renderHome() {
   return render(<ThemeProvider theme={createAppTheme("light")}><MemoryRouter><HomePage /></MemoryRouter></ThemeProvider>);
@@ -27,15 +32,31 @@ beforeEach(() => vi.mocked(useHomeSummary).mockReturnValue({ summary, error: nul
 describe("ホーム (docs/screens/home.md)", () => {
   it("APIの挨拶・達成率・強みと既存画面への導線を表示する", () => {
     renderHome();
-    expect(screen.getByRole("heading", { name: summary.hero.message })).toBeInTheDocument();
+    expect(screen.getByText(summary.hero.message)).toBeInTheDocument();
     expect(screen.getByText("42%")).toBeInTheDocument();
-    expect(screen.getByText(summary.certification.name)).toBeInTheDocument();
+    expect(screen.getByRole("progressbar", { name: `${summary.certification.name}の学習度` })).toHaveAttribute("aria-valuenow", "42");
     expect(screen.getByText("課題を整理する力")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "日報を書く" })).toHaveAttribute("href", "/report");
     expect(screen.getByRole("link", { name: "学習を続ける" })).toHaveAttribute("href", "/study");
     const shortcuts = within(screen.getByRole("region", { name: "今日は何をしよう？" }));
+    expect(shortcuts.getAllByRole("link")).toHaveLength(3);
+    expect(shortcuts.getByRole("link", { name: /課題に取り組む/ })).toHaveAttribute("href", "/assignments");
     expect(shortcuts.getByRole("link", { name: /資格勉強/ })).toHaveAttribute("href", "/study");
-    expect(screen.getByRole("link", { name: "根拠と成長のヒントを見る" })).toHaveAttribute("href", "/strengths");
+    expect(shortcuts.getByRole("link", { name: /OJT/ })).toHaveAttribute("href", "/ojt");
+    expect(screen.getByRole("link", { name: "強みを詳しく見る" })).toHaveAttribute("href", "/strengths");
+    expect(screen.getAllByRole("link").filter((link) => link.getAttribute("href") === "/report")).toHaveLength(1);
+  });
+
+  it("情報の優先順位と見出し・キーボード操作の順序が一致する", async () => {
+    const user = userEvent.setup();
+    renderHome();
+    expect(screen.getAllByRole("heading", { level: 2 }).map((heading) => heading.textContent)).toEqual([
+      "今のあなたの強み", "今日のふり返り", "今日は何をしよう？", `${summary.certification.name}の学習度`,
+    ]);
+    for (const destination of ["/strengths", "/report", "/assignments", "/study", "/ojt", "/study"]) {
+      await user.tab();
+      expect(document.activeElement).toHaveAttribute("href", destination);
+    }
   });
 
   it("強みなしは案内を表示し、架空のタグを作らない", () => {

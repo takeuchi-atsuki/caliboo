@@ -32,6 +32,8 @@ FastAPIアプリ本体: `backend/src/caliboo_api/main.py`。CORS設定は持た�
 
 レスポンス例は`backend/src/caliboo_api/schemas/home.py`の`HomeSummary`、DBアクセス実装は`data/home_data.py`(`fetch_home_summary()`)、初期シード値は`data/seed/home_seed.py`を参照。
 
+`shortcuts`はユーザー共通の固定値で、「課題に取り組む」（`/assignments`）・「資格勉強」（`/study`）・「OJT」（`/ojt`）の順に返す。日報への導線はホームのふり返りパネルに置く。
+
 ## 日報
 
 ### POST /api/report
