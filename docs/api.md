@@ -544,8 +544,8 @@ print(opener.open("http://localhost:8000/api/home/summary").read().decode("utf-8
 | POST | /api/development/jobs/{job_id}/strength-result | admin。StrengthResultを取り込み候補を確認待ちで保存。引用/材料ID/skillCode重複を検証。古い/完了済み409、形式422 |
 | POST | /api/development/strengths/{candidate_id}/decision | admin。`{status:approved/rejected,label,growthAction}`。確認待ちのみ。既決409 |
 | GET | /api/development/evaluations/{job_id}/materials | admin。人間ラベル付け用のv1材料（解析結果を含めない）。不正な保存済み材料/未対応版は409 |
-| POST | /api/development/evaluations/{job_id} | admin。`{skillCodes,accepted,comment}`。完了した強みジョブのみ。本人の評価を更新しmatch(exact/partial/none)を返す |
-| GET | /api/development/evaluations | admin。evaluatedJobs/requiredJobs=20/requiredReviewers=2/agreement/acceptance/threshold=0.8/status。statusはinsufficient_data/passed/failed |
+| POST | /api/development/evaluations/{job_id} | admin。`{skillCodes,accepted,comment}`。旧方式の参考評価。完了した強みジョブのみ。本人の評価を更新しmatch(exact/partial/none)を返す。合格集計対象外 |
+| GET | /api/development/evaluations | admin。evaluatedJobs/requiredJobs=20/requiredReviewers=2/agreement/acceptance/threshold=0.8/status/trace/legacyEvaluations。新方式のみ集計。最新ケースのtraceと同一条件に限定。statusはinsufficient_data/passed/failed |
 | POST | /api/assignment-proposals/{proposal_id}/regenerate | admin。`{instruction}`。確認待ち課題案に再生成ジョブを登録 |
 | GET | /api/assignment-proposals/{proposal_id}/revisions | admin。調整指示とprevious（旧課題内容）の履歴 |
 | POST | /api/assignment-proposals/agent-jobs/{job_id}/result | admin。ProposalAgentResultを保存。配信済み・見送り済み・旧版不一致409 |
@@ -614,3 +614,19 @@ ProposalAgentResultはtrace/title/body/messageForMember/rationale/estimateMinute
 `GET /api/quiz/next`は認証中の本人の履歴を使い、他人のuserId指定を受け付けない。既存の公開問題に`practiceReason`（mistake_review/scheduled_review/new/practice）を追加する。正解・解説・他人の履歴は含めない。分野で絞り、excludeIdを可能なら除外してから、期限到来した誤答、期限到来した正解、未解答、その他の順で選ぶ。期限到来分は古い期限、同順位はランダム。その他は未スケジュールの旧正解済み問題、早い将来期限の順。
 
 `POST /api/quiz/answer`は入力・応答形式を維持し、採点と同じトランザクションで解答イベント・復習予定・本人の進捗を保存する。不正な問題404、選択肢範囲外422では保存しない。取得だけでは履歴を増やさず、各解答POSTを1回の学習として記録する。達成率の正解済み件数は繰り返し解答でも一度だけ数える。間隔と互換方針は [復習仕様](quiz-review.md) を参照。
+
+
+## 独立ラベルによる実日報評価
+
+[運用手順と集計基準](strength-holdout.md)。すべてadmin限定。材料・ラベル・結果を固定し、本人への強み配信や自動ワーカーには接続しない。
+
+| メソッド | パス | 挙動 |
+| --- | --- | --- |
+| POST | /api/development/holdout/cases | `{reportId,realAndUnseen:true}`。提出済み日報の原文を固定し201。不存在/下書き404、重複/空材料409、確認なし422 |
+| GET | /api/development/holdout/cases | `{cases:[{id,reportId,status}]}`。statusはlabeling/result_ready |
+| GET | /api/development/holdout/cases/{case_id} | 材料とSHA-256、作成者/日時、labelCount、ownLabelSubmitted、labels、result/登録者/日時。結果登録前は他者のラベル非公開。不在404 |
+| POST | /api/development/holdout/cases/{case_id}/labels | `{skillCodes,comment,outputUnseen:true}`。スキル6種、該当なし可。別アカウント2名まで。確定済み/受付終了409 |
+| POST | /api/development/holdout/cases/{case_id}/result | `{materialsDigest,result:StrengthResult}`。2名のラベル確定後のみ。材料ハッシュ違い/結果固定済み/人数不足409、引用・コード違反422 |
+| POST | /api/development/holdout/cases/{case_id}/acceptance | `{accepted,comment}`。結果登録後、本人のラベルに受容性を1回確定。未解析/ラベルなし/記録済み409 |
+
+ラベルにはreviewerId/skillCodes/comment/labeledAt、結果登録後にはmatch、受容記録後にはaccepted/acceptanceComment/acceptedAtが含まれる。結果登録前に他者のラベルを返さず、結果登録後はラベルの追加・変更を受け付けない。

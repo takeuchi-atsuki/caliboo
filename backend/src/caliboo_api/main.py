@@ -34,6 +34,7 @@ from caliboo_api.routers import (
     development,
     proposal_agent,
     learning_actions,
+    holdout,
 )
 from caliboo_api.services import ai_worker, llm
 
@@ -74,3 +75,5 @@ app.include_router(learning_actions.router, dependencies=[Depends(get_current_us
 
 app.mount("/quiz-assets", StaticFiles(directory=Path(__file__).parent / "quiz_assets"),
           name="quiz-assets")
+
+app.include_router(holdout.router, dependencies=[Depends(get_current_user)])
