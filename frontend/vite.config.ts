@@ -63,6 +63,7 @@ export default defineConfig({
         // 操作ロジック(キー入力の判定・イベント伝播・フォーカス移動)を持つコンポーネント
         "src/components/layout/TopNav.tsx",
         "src/components/chat/ChatComposer.tsx",
+        "src/components/chat/ChatBubble.tsx",
         "src/features/report/ReportHistoryTable.tsx",
       ],
       thresholds: {

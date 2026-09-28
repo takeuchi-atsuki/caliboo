@@ -72,7 +72,7 @@ function OjtSettingsEditor() {
           onChange={(event) => edit("welcomeMessage", event.target.value)} slotProps={{ htmlInput: { maxLength: 4000 } }} />
         <TextField label="回答の補足案内" multiline minRows={2} value={draft.replyGuidance}
           onChange={(event) => edit("replyGuidance", event.target.value)} slotProps={{ htmlInput: { maxLength: 4000 } }}
-          helperText="テンプレート回答の末尾に表示する文章です。AIへの指示ではありません。" />
+          helperText="回答に添える案内・方針です。事実の根拠は登録ナレッジに記載してください。" />
         <Typography component="h2" variant="h6">質問候補（最大8件）</Typography>
         {draft.quickAsks.map((question, index) => <Stack key={index} direction="row" spacing={1}>
           <TextField fullWidth required label={`質問候補 ${index + 1}`} value={question} slotProps={{ htmlInput: { maxLength: 200 } }}

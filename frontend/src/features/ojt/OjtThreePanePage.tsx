@@ -74,7 +74,7 @@ export function OjtThreePanePage() {
               </div>
               {selectedDept ? (
                 <div style={{ fontWeight: 600, fontSize: 11, color: "var(--color-blue-500)" }}>
-                  登録ナレッジ {selectedDept.knowledgeCount}件・テンプレートによる自動回答
+                  登録ナレッジ {selectedDept.knowledgeCount}件・資料の根拠を確認しながら相談
                 </div>
               ) : null}
             </div>

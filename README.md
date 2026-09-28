@@ -21,7 +21,7 @@ Calibooは、新人研修向けのパーソナライズ学習支援アプリで�
 新入社員は`member`、講師は`admin`のロールで利用します。
 
 > [!NOTE]
-> OJT・学習サポートチャットの自動回答は、現在はテンプレートによるダミー応答です。既定の手動モードはCodexセッションの結果を取り込む方式で、外部LLM APIキーは不要です。`CALIBOO_AI_PROVIDER=openai`とモデル・キーを起動環境に設定すると、強み解析と個人別課題案・再生成を自動処理します。本人への公開は講師承認後です。[設定](docs/ai-provider.md)・[自動処理と復旧](docs/ai-worker.md)を参照してください。詳しくは[追加機能の実装仕様](docs/backlog-implementation.md)を参照してください。
+> OJTは部署資料の検索と原文引用に対応しています。既定は資料の抜粋、openai設定時は文脈に沿った回答を生成します（[仕様](docs/grounded-ojt.md)）。学習サポートチャットは現在テンプレート応答です。既定の手動モードはCodexセッションの結果を取り込む方式で、外部LLM APIキーは不要です。`CALIBOO_AI_PROVIDER=openai`とモデル・キーを起動環境に設定すると、強み解析と個人別課題案・再生成を自動処理します。本人への公開は講師承認後です。[設定](docs/ai-provider.md)・[自動処理と復旧](docs/ai-worker.md)を参照してください。詳しくは[追加機能の実装仕様](docs/backlog-implementation.md)を参照してください。
 
 初回の個人別課題案には、明示設定でOpenAI Responses APIを利用できます。材料の引用を検証し、講師の確認後に配信します。設定・送信材料・失敗時の再試行は [生成AI provider仕様](docs/ai-provider.md) を参照してください。
 

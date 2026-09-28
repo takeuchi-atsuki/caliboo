@@ -90,7 +90,7 @@ export function OjtChatPage() {
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 5, fontWeight: 600, fontSize: 11, color: "var(--color-green-500)" }}>
               <span style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--color-green-400)" }} />
-              テンプレートによる自動回答
+              資料の根拠を確認しながら相談
             </div>
           </div>
         </div>

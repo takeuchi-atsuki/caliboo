@@ -122,7 +122,7 @@ FastAPIアプリ本体: `backend/src/caliboo_api/main.py`。CORS設定は持た�
 | POST | /api/ojt/departments/{dept_id}/configuration | adminのみ。revision一致時に設定を一括更新（200）。未知の部署は404、競合は409 |
 | GET | /api/ojt/departments/{dept_id}/messages | 指定部署の現在の初期案内＋本人の保存済み履歴、escalated。存在しないdept_idは404 |
 | GET | /api/ojt/departments/{dept_id}/knowledge | 指定課の参照ナレッジ一覧。存在しないdept_idは404 |
-| POST | /api/ojt/chat | `{"deptId": "...", "text": "..."}` を受け取りダミー応答を返す。存在しないdeptIdは404 |
+| POST | /api/ojt/chat | `{"deptId": "...", "text": "..."}` を受け取り部署資料の引用付き回答を返す。未知部署404、生成失敗503、生成中の資料更新409 |
 
 部署設定の共通入力は次のとおり。作成時は `id`、更新時は取得済みの `revision`（1以上の整数）を加える。更新時に `id` は送らない。応答は共通入力に `id` と保存後の `revision` を加えたもの。
 
@@ -142,7 +142,7 @@ FastAPIアプリ本体: `backend/src/caliboo_api/main.py`。CORS設定は持た�
 
 アイコンは `ph ph-code` / `ph ph-shield-check` / `ph ph-handshake` / `ph ph-compass-tool` / `ph ph-factory` / `ph ph-briefcase`、色は `#d6ebff` / `#cdeede` / `#ffd9e6` / `#e3ddff` / `#ffe9c7` / `#f4f0ec`。不正値・未知のフィールドは422。管理APIの未認証は401、memberは403。
 
-保存は全設定を単一トランザクションで更新し、成功ごとに `revision` を1増やす。更新競合では一部の項目も変更しない。起動時に不足設定だけを追加し、履歴・返信・配属と保存済み設定を保持する。実装は `data/ojt_configuration.py`・`schemas/ojt.py`。設計理由は [部署別OJTフレームワーク](ojt-framework.md) を参照。自動回答は従来のテンプレートに `replyGuidance` を平文で追加するだけで、ナレッジ検索やLLM連携は行わない。
+保存は全設定を単一トランザクションで更新し、成功ごとに `revision` を1増やす。更新競合では一部の項目も変更しない。起動時に不足設定だけを追加し、履歴・返信・配属と保存済み設定を保持する。実装は `data/ojt_configuration.py`・`schemas/ojt.py`。設計理由は [部署別OJTフレームワーク](ojt-framework.md) を参照。回答は選択部署の資料だけを検索し、manualでは原文抜粋、openaiでは本人の会話に沿って生成する。`replyGuidance`は補足方針であり事実の引用根拠には使わない。
 
 ## 資格勉強
 
@@ -593,3 +593,10 @@ ProposalAgentResultはtrace/title/body/messageForMember/rationale/estimateMinute
 ジョブ種別は`strength`（強み）・`proposal`（再生成）・`proposal_initial`（自動初回課題案）。保存状態は`pending/completed/superseded/failed`。`processing`は有効な取得権があるpending、`lastError`のあるpendingは再試行待ちを示す。待ち時間と復旧は [ワーカー仕様](ai-worker.md) を参照。認証済み講師以外に全体キュー・原文・失敗再試行APIを公開しない。
 
 明示設定したopenaiモードで、日報提出・課題回答・講師コメントの保存後に非同期登録する。初回案は本人の日報か講師コメントがある場合に作成し、確認待ちの重複と日本時間で同日の生成成功後の追加を防ぐ。失敗で提出内容を取り消さない。強みと再生成にはサーバーがprovider/model/promptVersionを記録する。既存の講師専用取込APIも引き続き利用できる。
+
+
+## OJTの引用付き回答（2026-09-29）
+
+`POST /api/ojt/chat`のtextは1〜10000文字（空白のみ不可）。成功時は既存の`ChatMessage`を返し、`references`に`{label, knowledgeId, quote}`を保存・返却する。labelは登録資料名、quoteは原文の連続部分、knowledgeIdはその部署の取得時点のk1等。旧履歴ではknowledgeId/quoteはnullとなる。資料の変更後も過去の参照名・引用を保存し、現在の資料へ自動置換しない。
+
+検索結果なし/根拠不足では参照なしの相談案内を200で返す。接続・設定・形式・引用検証の失敗は503、推論中の資料更新は409、対象者の無効化は403。資料検索そのもののDB障害は5xxとして失敗し、回答を保存しない。成功時だけ質問と回答を同時保存するため、失敗後の再送で失敗した質問行を重複作成しない。詳細は [OJT回答仕様](grounded-ojt.md) を参照。

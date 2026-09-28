@@ -43,6 +43,8 @@ export interface ReportResponse {
 
 export interface ChatReference {
   label: string;
+  knowledgeId?: string | null;
+  quote?: string | null;
 }
 
 export interface ChatMessage {

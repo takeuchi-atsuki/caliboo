@@ -52,7 +52,8 @@ def test_post_chat(client):
     body = response.json()
     assert body["role"] == "bot"
     assert "開発課" in body["text"]
-    assert body["references"][0]["label"] == "開発課 ナレッジ資料"
+    assert body["references"][0]["label"] == "コーディング規約 2026"
+    assert body["references"][0]["quote"]
 
 
 def test_post_chat_department_not_found(client):
