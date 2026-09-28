@@ -42,6 +42,27 @@ class QuizSuccess(Base):
     question_id = Column(String, ForeignKey("quiz_questions.id"), primary_key=True)
 
 
+class QuizAttempt(Base):
+    __tablename__ = "quiz_attempts"
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    question_id = Column(String, ForeignKey("quiz_questions.id"), nullable=False)
+    selected_index = Column(Integer, nullable=False)
+    correct = Column(Boolean, nullable=False)
+    answered_at = Column(Integer, nullable=False)
+
+
+class QuizReview(Base):
+    __tablename__ = "quiz_reviews"
+    user_id = Column(Integer, ForeignKey("users.id"), primary_key=True)
+    question_id = Column(String, ForeignKey("quiz_questions.id"), primary_key=True)
+    attempts = Column(Integer, nullable=False)
+    correct_streak = Column(Integer, nullable=False)
+    last_correct = Column(Boolean, nullable=False)
+    last_answered_at = Column(Integer, nullable=False)
+    due_at = Column(Integer, nullable=False)
+
+
 class OjtConfiguration(Base):
     __tablename__ = "ojt_configurations"
     department_id = Column(String, ForeignKey("departments.id"), primary_key=True)

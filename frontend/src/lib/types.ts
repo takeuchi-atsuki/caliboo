@@ -101,6 +101,7 @@ export interface QuizQuestion {
   text: string;
   choices: QuizChoice[];
   timeLimitSec: number;
+  practiceReason?: "mistake_review" | "scheduled_review" | "new" | "practice";
   source?: string | null;
 }
 

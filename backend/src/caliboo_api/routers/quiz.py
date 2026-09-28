@@ -1,5 +1,3 @@
-import random
-
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.dialects.sqlite import insert
 from sqlalchemy.orm import Session
@@ -10,6 +8,7 @@ from caliboo_api.extension_models import QuizSuccess, UserProgress
 from caliboo_api.models import Certification, HomeProfile, QuizQuestion as QuestionModel, User
 
 from caliboo_api.data.study_data import get_question, list_questions
+from caliboo_api.data.quiz_review import choose_question, record_attempt
 from caliboo_api.schemas.study import (
     QuizAnswerRequest,
     QuizAnswerResponse,
@@ -24,14 +23,15 @@ router = APIRouter(prefix="/api/quiz", tags=["quiz"])
 def get_next_quiz(
     category: QuizCategory | None = None,
     exclude_id: str | None = Query(default=None, alias="excludeId"),
+    user: User = Depends(get_current_user), session: Session = Depends(get_session),
 ) -> QuizQuestion:
     candidates = list_questions(category)
     if not candidates:
         raise HTTPException(status_code=404, detail=f"no question for category: {category}")
-    pool = [candidate for candidate in candidates if candidate.id != exclude_id]
-    if not pool:
-        pool = candidates
-    return random.choice(pool).to_public_question()
+    selected, reason = choose_question(session, user.id, candidates, exclude_id)
+    result = selected.to_public_question()
+    result.practiceReason = reason
+    return result
 
 
 @router.post("/answer", response_model=QuizAnswerResponse)
@@ -42,7 +42,9 @@ def answer_quiz(payload: QuizAnswerRequest, user: User = Depends(get_current_use
         raise HTTPException(status_code=404, detail=f"question not found: {payload.questionId}")
     if payload.selectedIndex >= len(record.choices):
         raise HTTPException(422, "choice index out of range")
-    if payload.selectedIndex == record.correct_index:
+    correct_answer = payload.selectedIndex == record.correct_index
+    record_attempt(session, user.id, record.id, payload.selectedIndex, correct_answer)
+    if correct_answer:
         session.execute(insert(QuizSuccess).values(
             user_id=user.id, question_id=record.id,
         ).on_conflict_do_nothing())
