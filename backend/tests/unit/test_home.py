@@ -7,7 +7,7 @@ def test_get_home_summary(client):
     assert body["certification"]["achievementPercent"] == 68
     assert body["strengths"] == []
     assert len(body["shortcuts"]) == 3
-    assert {s["to"] for s in body["shortcuts"]} == {"/report", "/study", "/ojt"}
+    assert [s["to"] for s in body["shortcuts"]] == ["/assignments", "/study", "/ojt"]
     assert body["hero"]["message"] == "おかえり、ユウキさん！今日の振り返りをしよう"
 
 

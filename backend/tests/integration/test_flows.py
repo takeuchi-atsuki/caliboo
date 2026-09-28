@@ -19,8 +19,9 @@ def test_home_screen_flow(client):
     body = response.json()
     assert body["user"]["streakDays"] > 0
     assert len(body["shortcuts"]) == 3
-    for shortcut in body["shortcuts"]:
-        assert shortcut["to"] in {"/report", "/study", "/ojt"}
+    assert [shortcut["to"] for shortcut in body["shortcuts"]] == [
+        "/assignments", "/study", "/ojt",
+    ]
 
 
 def test_report_draft_then_submit_flow(client):

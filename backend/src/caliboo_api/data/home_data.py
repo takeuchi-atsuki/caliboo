@@ -17,12 +17,13 @@ from caliboo_api.schemas.home import (
 )
 
 _SHORTCUTS = [
+    # !NOTE: 日報はホームのふり返りパネルに専用導線があるため、ここは課題への入口にする。
     HomeShortcut(
-        icon="ph-bold ph-note-pencil",
-        title="日報作成",
-        description="今日を振り返る",
-        to="/report",
-        tone="pink",
+        icon="ph-bold ph-clipboard-text",
+        title="課題に取り組む",
+        description="課題・フィードバックを確認",
+        to="/assignments",
+        tone="orange",
     ),
     HomeShortcut(
         icon="ph-bold ph-graduation-cap",

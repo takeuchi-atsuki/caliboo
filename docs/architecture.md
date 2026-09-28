@@ -90,7 +90,7 @@ services/poc_strength/
 - ログイン状態: `components/auth/AuthProvider.tsx`が起動時に`GET /api/auth/me`でログイン中のユーザーを取得し、`useAuth()`で各画面へ提供する。`components/auth/RequireAuth.tsx`が`/login`以外の全ルートを保護する。APIが401を返した場合(セッション期限切れ等)は`lib/apiClient.ts`の401ハンドラ経由で未ログイン状態へ戻し、`/login`へ遷移させる(`/api/auth/*`自体の401は、ログイン失敗の表示と競合させないため対象外)。
 - 日報入力内容の自動保存: `features/report/reportAutosave.ts`がlocalStorage(キー`caliboo:report-autosave`)への読み書きを担う。プライベートモード等でlocalStorageが例外を投げても日報の入力・送信という本来の機能を止めないよう、読み書きをすべて`try/catch`で囲み失敗時は「自動保存なし」として扱う(テーマ設定は表示設定の保持のみで、`try/catch`は入れていない)(仕様は`docs/screens/report.md`「入力内容の自動保存・復元」参照)。
 - Tailwind CSSは採用しない。アクセントカラー・角丸のユーティリティクラス生成という役割はMUIのテーマ機能と重複するため、`devDependencies`・`postcss.config.js`のプラグイン登録を外している。`tailwind.config.ts`/`postcss.config.js`のファイル自体はビルドに関与しない状態で残置されている(削除コマンドの実行権限上の制約による)。
-- React Router: 画面間遷移（ホーム→日報/OJT/資格勉強）をURLベースで表現するため採用。
+- React Router: 画面間遷移（ホーム→強み/日報/課題/OJT/資格勉強）をURLベースで表現するため採用。
 
 !NOTE: ダーク版の配色は単純な明度反転ではなく、色相(green/blue/purple/pink/orange)を保ったまま「淡い背景+彩度のある文字色」というライト版の役割を「沈んだ背景+浮き上がる文字色」に再設計している(詳細は`src/styles/tokens.css`のコメント参照)。`--color-orange-600`はライトでは「文字色専用に濃くした値」だが、ダークでは逆に「明るくした値」になり、階調が担う調整方向がモードによって反転する点に注意。
 
@@ -114,7 +114,7 @@ services/poc_strength/
 
 ## レイアウト・レスポンシブ方針
 
-`src/theme.ts`で定義済みのMUI標準`breakpoints`(`xs:0, sm:600, md:900, lg:1200, xl:1536`)をそのまま採用し、**`md`(900px)未満を「コンパクト表示」に切り替える原則の閾値**としてアプリ全体で統一している(例外はReport・課題一覧(`/assignments`)のヘッダー行と`TopNav`右側のユーザー表示で、いずれも`sm`を境界にする)。OJT三ペイン(`/ojt/panel`)・Quiz(`/study`)・StudyChat(`/study/chat`)の固定幅サイドバー/ペインは、`components/layout/CollapsibleAside.tsx`により`md`未満でMUI`Drawer`のオーバーレイ表示(ドロワー化)に切り替わり、`TopNav`のナビゲーションは管理者向け項目を含むため`lg`未満でハンバーガーメニュー+Drawerに切り替わる。Home(`/home`)・Report(`/report`)の複数カラム行(ヒーロー2カラム・ショートカット3枚・KPT3カラム)は、同じく`md`(Reportのヘッダーボタン行のみ`sm`)を境に縦積みへ変わる。`TopNav`右側のユーザー表示(表示名・ロール・アバター)も例外的に`sm`未満で隠し、ログアウトボタンが画面内に収まるようにしている(対象とする最小幅は320px。`sm`未満でロゴ文字も省略)。
+`src/theme.ts`で定義済みのMUI標準`breakpoints`(`xs:0, sm:600, md:900, lg:1200, xl:1536`)をそのまま採用し、**`md`(900px)未満を「コンパクト表示」に切り替える原則の閾値**としてアプリ全体で統一している(例外はReport・課題一覧(`/assignments`)のヘッダー行と`TopNav`右側のユーザー表示で、いずれも`sm`を境界にする)。OJT三ペイン(`/ojt/panel`)・Quiz(`/study`)・StudyChat(`/study/chat`)の固定幅サイドバー/ペインは、`components/layout/CollapsibleAside.tsx`により`md`未満でMUI`Drawer`のオーバーレイ表示(ドロワー化)に切り替わり、`TopNav`のナビゲーションは管理者向け項目を含むため`lg`未満でハンバーガーメニュー+Drawerに切り替わる。Home(`/home`)は強み・ふり返り・ショートカット・学習度を全幅で縦に並べ、ショートカット3枚と、ふり返り・学習度の本文とボタンを`md`未満で縦積みにする。Report(`/report`)のKPT3カラムも`md`、ヘッダーボタン行のみ`sm`を境に縦積みへ変わる。`TopNav`右側のユーザー表示(表示名・ロール・アバター)も例外的に`sm`未満で隠し、ログアウトボタンが画面内に収まるようにしている(対象とする最小幅は320px。`sm`未満でロゴ文字も省略)。
 
 !NOTE: 境界を原則`md`に統一した理由は、OJT三ペインの固定幅(左230px+右382px=612px)だけで`sm`(600px)を超えてしまい、`sm`を境界にするとタブレット縦持ち幅(768px前後)でも中央チャットが極端に狭くなるため。画面ごとに閾値がバラバラだと挙動を覚えにくくなる点も踏まえ、`md`をアプリ全体の判断基準としている。例外(Report・課題一覧のヘッダー行、`TopNav`右側のユーザー表示)は、レイアウト全体の切替ではなく、`sm`未満の狭い画面で個別の要素を画面内に収めるための調整に限っている。
 
