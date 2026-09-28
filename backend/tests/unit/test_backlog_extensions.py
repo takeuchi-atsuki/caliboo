@@ -410,7 +410,7 @@ def test_extension_bootstrap_keeps_progress(client):
     )
 
 
-def test_evaluation_thresholds(admin_client):
+def test_legacy_evaluations_cannot_pass_holdout_thresholds(admin_client):
     with session_scope() as session:
         user = session.query(User).first()
         reviewers = session.query(User).limit(2).all()
@@ -437,11 +437,12 @@ def test_evaluation_thresholds(admin_client):
                 )
         session.commit()
     summary = admin_client.get("/api/development/evaluations").json()
-    assert summary["status"] == "passed" and summary["evaluatedJobs"] == 20
+    assert summary["status"] == "insufficient_data" and summary["evaluatedJobs"] == 0
+    assert summary["legacyEvaluations"] == 40
     with session_scope() as session:
         session.query(StrengthEvaluation).update({"accepted": False})
         session.commit()
-    assert admin_client.get("/api/development/evaluations").json()["status"] == "failed"
+    assert admin_client.get("/api/development/evaluations").json()["status"] == "insufficient_data"
 
 
 def test_inactive_session_state_even_with_token(client):

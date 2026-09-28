@@ -212,7 +212,7 @@ def test_expired_session_returns_401_and_logout_still_succeeds(client, expire_se
 
 _EXEMPT_PATHS = {"/api/auth/login", "/api/auth/logout"}
 _DUMMY_PATH_PARAMS = {
-    "action_id": "1",
+    "action_id": "1", "case_id": "1",
     "job_id": "1", "candidate_id": "1", "thread_id": "1",
     "assignment_id": "1",
     "proposal_id": "1",

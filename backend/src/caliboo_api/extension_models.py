@@ -146,6 +146,32 @@ class StrengthEvaluation(Base):
     comment = Column(String, nullable=False)
 
 
+class StrengthHoldoutCase(Base):
+    __tablename__ = "strength_holdout_cases"
+    id = Column(Integer, primary_key=True)
+    report_id = Column(Integer, ForeignKey("reports.id"), nullable=False, unique=True)
+    materials = Column(JSON, nullable=False)
+    digest = Column(String, nullable=False)
+    created_by = Column(Integer, ForeignKey("users.id"), nullable=False)
+    created_at = Column(String, nullable=False)
+    status = Column(String, nullable=False, default="labeling")
+    result = Column(JSON, nullable=True)
+    result_at = Column(String, nullable=True)
+    result_by = Column(Integer, ForeignKey("users.id"), nullable=True)
+
+
+class StrengthHoldoutLabel(Base):
+    __tablename__ = "strength_holdout_labels"
+    case_id = Column(Integer, ForeignKey("strength_holdout_cases.id"), primary_key=True)
+    reviewer_id = Column(Integer, ForeignKey("users.id"), primary_key=True)
+    skill_codes = Column(JSON, nullable=False)
+    comment = Column(String, nullable=False)
+    labeled_at = Column(String, nullable=False)
+    accepted = Column(Boolean, nullable=True)
+    acceptance_comment = Column(String, nullable=True)
+    accepted_at = Column(String, nullable=True)
+
+
 class SubmissionScore(Base):
     __tablename__ = "submission_scores"
     submission_id = Column(Integer, ForeignKey("assignment_submissions.id"), primary_key=True)

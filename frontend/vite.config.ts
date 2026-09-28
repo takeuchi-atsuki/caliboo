@@ -32,6 +32,7 @@ export default defineConfig({
     coverage: {
       provider: "v8",
       include: [
+        "src/features/admin/HoldoutEvaluation.tsx",
         "src/lib/apiClient.ts",
         "src/lib/useResource.ts",
         "src/lib/useAutoRefresh.ts",

@@ -17,6 +17,8 @@ from caliboo_api.schemas.agent_jobs import EvaluationInput, StrengthDecision, St
 from caliboo_api.schemas.strength_materials import StrengthAnalysisMaterials
 from caliboo_api.services.strength_materials import normalize_strength_materials
 from caliboo_api.services.llm import provider_name
+from caliboo_api.services.strength_result import validate_evidence
+from caliboo_api.routers.holdout import summary
 
 router = APIRouter(prefix="/api/development", tags=["development"])
 
@@ -145,19 +147,7 @@ def import_strength(
 
 def complete_strength_result(job_id: int, payload: StrengthResult, session: Session) -> dict:
     job = pending_job(session, job_id, "strength")
-    sources = {item["id"]: item for item in validated_strength_materials(job)["sources"]}
-    codes = [item.skillCode for item in payload.candidates]
-    if len(codes) != len(set(codes)):
-        raise HTTPException(422, "duplicate skill code")
-    for candidate in payload.candidates:
-        for evidence in candidate.evidence:
-            source = sources.get(evidence.materialId)
-            if (
-                source is None
-                or not source["evidenceEligible"]
-                or evidence.quote not in source["text"]
-            ):
-                raise HTTPException(422, "evidence must quote an eligible source")
+    sources = validate_evidence(payload, validated_strength_materials(job))
     updated = (
         session.query(AgentJob)
         .filter_by(id=job_id, status="pending")
@@ -286,25 +276,4 @@ def evaluate(
 def evaluation_summary(
     _admin: User = Depends(require_admin), session: Session = Depends(get_session)
 ) -> dict:
-    grouped: dict[int, list[StrengthEvaluation]] = {}
-    for row in session.query(StrengthEvaluation):
-        grouped.setdefault(row.job_id, []).append(row)
-    complete = [rows for rows in grouped.values() if len(rows) >= 2]
-    observations = [row for rows in complete for row in rows]
-    count = len(observations)
-    agreement = sum(row.match != "none" for row in observations) / count if count else 0
-    acceptance = sum(row.accepted for row in observations) / count if count else 0
-    enough = len(complete) >= 20
-    return dict(
-        evaluatedJobs=len(complete),
-        requiredJobs=20,
-        requiredReviewers=2,
-        agreement=agreement,
-        acceptance=acceptance,
-        threshold=0.8,
-        status=(
-            ("passed" if agreement >= 0.8 and acceptance >= 0.8 else "failed")
-            if enough
-            else "insufficient_data"
-        ),
-    )
+    return summary(session)
