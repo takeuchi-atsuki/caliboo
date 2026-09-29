@@ -1,0 +1,13 @@
+{
+  "id": 6,
+  "title": "【竹内PoC 3/3】PythonによるCalibooの使用ユーザを表示するスクリプトの開発",
+  "body": "Python標準ライブラリのurllib、http.cookiejar、getpassを使い、POST /api/auth/loginでCookieセッションを取得してから、admin専用のGET /api/usersを読み取り、使用ユーザの必要な列だけを見やすく表示する再実行可能なスクリプトを作成する。通常はパスワードを対話入力し、CLI引数やファイルに保存しない。--demoを設ける場合は公開開発シードの認証情報に限定する。ユーザー情報は変更しない。実APIで竹内が表示されること、誤認証と権限不足で安全かつ区別できるエラーになることを確認し、実行手順と結果を記録する。",
+  "status": "not_submitted",
+  "createdAt": "2026-09-28T15:21:39.051390+00:00",
+  "submission": null,
+  "target": {
+    "id": 5,
+    "displayName": "竹内"
+  },
+  "messageForMember": null
+}

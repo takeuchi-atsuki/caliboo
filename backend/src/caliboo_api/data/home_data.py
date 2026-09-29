@@ -5,6 +5,7 @@
 """
 
 from caliboo_api.db import session_scope
+from caliboo_api.data.agent_jobs import candidate_interpretation
 from caliboo_api.extension_models import StrengthCandidate
 from caliboo_api.models import Certification, HomeProfile, User
 from caliboo_api.schemas.home import (
@@ -62,9 +63,13 @@ def fetch_home_summary(user_id: int) -> HomeSummary:
             ),
             strengths=[
                 HomeStrength(label=row.label, tone="green", evidence=row.evidence,
-                             growthAction=row.growth_action)
+                             growthAction=row.growth_action,
+                             kind=(interpretation.kind if interpretation else "ability"),
+                             summary=(interpretation.summary if interpretation else ""),
+                             scopeNote=(interpretation.scope_note if interpretation else ""))
                 for row in session.query(StrengthCandidate).filter_by(
                     user_id=user_id, status="approved").order_by(StrengthCandidate.id.desc())
+                for interpretation in [candidate_interpretation(session, row)]
             ],
             shortcuts=_SHORTCUTS,
         )

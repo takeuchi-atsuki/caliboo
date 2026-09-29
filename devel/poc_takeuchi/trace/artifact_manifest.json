@@ -1,0 +1,82 @@
+[
+  {
+    "path": "devel/poc_takeuchi/model/generate.py",
+    "bytes": 7461,
+    "sha256": "66179ddf24bcfe98644a78151b14edf05d8503695147bd3dc20519589d96686e"
+  },
+  {
+    "path": "devel/poc_takeuchi/model/mascot.obj",
+    "bytes": 247365,
+    "sha256": "d84c93a3da3d9d7ce39446d709010c17a9cbc415919cc0bbf7693bd718e7ffe0"
+  },
+  {
+    "path": "devel/poc_takeuchi/model/mascot.mtl",
+    "bytes": 173,
+    "sha256": "68f9a0fd76207ebb9f13164aafbcda51ff012ab5aad028f82e208de1ec186f88"
+  },
+  {
+    "path": "devel/poc_takeuchi/model/README.md",
+    "bytes": 1518,
+    "sha256": "a3bb165d9f76abdbd746e265e557c6c0fcbe98a2aee3d300a9087b195a66fed4"
+  },
+  {
+    "path": "frontend/src/assets/takeuchi/mascot.obj",
+    "bytes": 247365,
+    "sha256": "d84c93a3da3d9d7ce39446d709010c17a9cbc415919cc0bbf7693bd718e7ffe0"
+  },
+  {
+    "path": "frontend/src/assets/takeuchi/mascot.mtl",
+    "bytes": 173,
+    "sha256": "68f9a0fd76207ebb9f13164aafbcda51ff012ab5aad028f82e208de1ec186f88"
+  },
+  {
+    "path": "frontend/takeuchi-model.html",
+    "bytes": 6430,
+    "sha256": "f7dc2b23edb88a0c06ada4471ed18235aff23018a58459257d7858d981a1337c"
+  },
+  {
+    "path": "devel/poc_takeuchi/sql/schema.sql",
+    "bytes": 938,
+    "sha256": "3e4b7e7af816bb6dfe842af49d0e134129c1138097672c04c1f3a569fd8f3f11"
+  },
+  {
+    "path": "devel/poc_takeuchi/sql/exercises.sql",
+    "bytes": 1995,
+    "sha256": "33c6f74ca63a4a9ceba07ebf63e87cee87242c0bc289b7551cfcd1ab0c4b90a2"
+  },
+  {
+    "path": "devel/poc_takeuchi/sql/run.py",
+    "bytes": 5962,
+    "sha256": "079ce729d66458ffe81a095261843ac494222d81719e00c2a172c1f7182cf2e9"
+  },
+  {
+    "path": "devel/poc_takeuchi/sql/exercise-results.json",
+    "bytes": 5657,
+    "sha256": "a50b412008ff3aaf5b23a94c28ea28eba494d10829bf69f40f5d59df86007633"
+  },
+  {
+    "path": "devel/poc_takeuchi/sql/exercise-results.md",
+    "bytes": 3504,
+    "sha256": "7af7dc15a394db8ef8a13a2e597fb7553cf444a23df950264c650dbcbab86af0"
+  },
+  {
+    "path": "devel/poc_takeuchi/sql/README.md",
+    "bytes": 1209,
+    "sha256": "fd0fe7a79b3047250465569b47e2fa9af2c3cf2f3172103fb23f7cd7807bbbe1"
+  },
+  {
+    "path": "devel/poc_takeuchi/users/list_users.py",
+    "bytes": 6636,
+    "sha256": "beaa5481c1397205b324338189f8592d34f9a12f50e1d344d9715bb4ca82d324"
+  },
+  {
+    "path": "devel/poc_takeuchi/users/test_list_users.py",
+    "bytes": 1530,
+    "sha256": "2016516b0d514f5ed62ac5679f01962e5d56443e6003865b0db39d5a71a22dfa"
+  },
+  {
+    "path": "devel/poc_takeuchi/users/README.md",
+    "bytes": 1629,
+    "sha256": "133422e4f837b5e1c2a0205ebb43276f10bbe93fd7af4c27dd15b6536ec8658e"
+  }
+]

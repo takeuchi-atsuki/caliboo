@@ -1,0 +1,9 @@
+{
+  "trainerFeedback": "既存のMascot.tsxから顔・耳・目・頬・笑顔の特徴を拾い、3,634頂点・7,216三角形のOBJ/MTLと回転確認用ビューアに落とし込めています。生成時と再読込時の両方で面参照や退化面、マテリアルを検証した点も、成果物の再現性を高めています。ブラウザでの見た目と操作は未確認なので、次にこの成果物を扱う際は実画面で回転や重なり方を確認し、深度ソートの限界が見える場面を記録してください。",
+  "nextTask": {
+    "taskId": "week2-sqlite-sql-exercise",
+    "title": "Calibooを題材にしたSQLite SQL課題演習",
+    "description": "実DBには接続せず、Python標準ライブラリのsqlite3で小規模な練習用DBを作成する。users、reports、assignments、submissionsの表と、未提出・NULLを含むサンプルデータを用意し、JOIN、GROUP BY、未提出者の抽出、NULLの扱いを確認するSQLを実行する。さらに制約違反とトランザクションのロールバックを試し、各問について期待結果と実測結果を並べて説明する。再実行できるスクリプトと演習結果を提出する。",
+    "skillHint": "DATM"
+  }
+}

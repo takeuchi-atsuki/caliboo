@@ -1,0 +1,13 @@
+{
+  "id": 5,
+  "title": "【竹内PoC 2/3】Calibooを題材にしたSQLite SQL課題演習",
+  "body": "実DBには接続せず、Python標準ライブラリのsqlite3で小規模な練習用DBを作成する。users、reports、assignments、submissionsの表と、未提出・NULLを含むサンプルデータを用意し、JOIN、GROUP BY、未提出者の抽出、NULLの扱いを確認するSQLを実行する。さらに制約違反とトランザクションのロールバックを試し、各問について期待結果と実測結果を並べて説明する。再実行できるスクリプトと演習結果を提出する。",
+  "status": "not_submitted",
+  "createdAt": "2026-09-28T15:17:28.265826+00:00",
+  "submission": null,
+  "target": {
+    "id": 5,
+    "displayName": "竹内"
+  },
+  "messageForMember": null
+}

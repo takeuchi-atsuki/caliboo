@@ -1,0 +1,10 @@
+{
+  "command": "cd backend && python3 -m pytest --disable-socket tests/integration/ -q --tb=short",
+  "exitCode": 0,
+  "passed": 46,
+  "durationSeconds": 54.68,
+  "warnings": [
+    "既存FastAPI TestClientのhttpx利用にStarletteDeprecationWarning"
+  ],
+  "database": "一時SQLite（アプリの実DBには接続しない）"
+}

@@ -1,0 +1,471 @@
+{
+  "inputSchema": {
+    "$defs": {
+      "AnswerSource": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "pattern": "^(report|submission):[1-9][0-9]*:[A-Za-z]+$",
+            "title": "Id",
+            "type": "string"
+          },
+          "text": {
+            "description": "引用用の原文。空白・改行も変更しない。",
+            "minLength": 1,
+            "title": "Text",
+            "type": "string"
+          },
+          "date": {
+            "description": "保存済み日付/提出日時。書式変換せず保持する。",
+            "title": "Date",
+            "type": "string"
+          },
+          "evidenceEligible": {
+            "const": true,
+            "title": "Evidenceeligible",
+            "type": "boolean"
+          },
+          "kind": {
+            "const": "submission",
+            "title": "Kind",
+            "type": "string"
+          },
+          "field": {
+            "const": "answer",
+            "title": "Field",
+            "type": "string"
+          },
+          "sourceRole": {
+            "const": "work_product",
+            "description": "本人の提出物。指示の転記等は除く。",
+            "title": "Sourcerole",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "text",
+          "date",
+          "evidenceEligible",
+          "kind",
+          "field",
+          "sourceRole"
+        ],
+        "title": "AnswerSource",
+        "type": "object"
+      },
+      "FeedbackSource": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "pattern": "^(report|submission):[1-9][0-9]*:[A-Za-z]+$",
+            "title": "Id",
+            "type": "string"
+          },
+          "text": {
+            "description": "引用用の原文。空白・改行も変更しない。",
+            "minLength": 1,
+            "title": "Text",
+            "type": "string"
+          },
+          "date": {
+            "description": "保存済み日付/提出日時。書式変換せず保持する。",
+            "title": "Date",
+            "type": "string"
+          },
+          "evidenceEligible": {
+            "const": true,
+            "title": "Evidenceeligible",
+            "type": "boolean"
+          },
+          "kind": {
+            "const": "submission",
+            "title": "Kind",
+            "type": "string"
+          },
+          "field": {
+            "const": "feedback",
+            "title": "Field",
+            "type": "string"
+          },
+          "sourceRole": {
+            "const": "mentor_feedback",
+            "description": "講師の所見。単独で確定しない。",
+            "title": "Sourcerole",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "text",
+          "date",
+          "evidenceEligible",
+          "kind",
+          "field",
+          "sourceRole"
+        ],
+        "title": "FeedbackSource",
+        "type": "object"
+      },
+      "KeepSource": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "pattern": "^(report|submission):[1-9][0-9]*:[A-Za-z]+$",
+            "title": "Id",
+            "type": "string"
+          },
+          "text": {
+            "description": "引用用の原文。空白・改行も変更しない。",
+            "minLength": 1,
+            "title": "Text",
+            "type": "string"
+          },
+          "date": {
+            "description": "保存済み日付/提出日時。書式変換せず保持する。",
+            "title": "Date",
+            "type": "string"
+          },
+          "evidenceEligible": {
+            "const": true,
+            "title": "Evidenceeligible",
+            "type": "boolean"
+          },
+          "kind": {
+            "const": "report",
+            "title": "Kind",
+            "type": "string"
+          },
+          "field": {
+            "const": "keep",
+            "title": "Field",
+            "type": "string"
+          },
+          "sourceRole": {
+            "const": "self_report",
+            "description": "本人の申告。達成の事実性は別途判断。",
+            "title": "Sourcerole",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "text",
+          "date",
+          "evidenceEligible",
+          "kind",
+          "field",
+          "sourceRole"
+        ],
+        "title": "KeepSource",
+        "type": "object"
+      },
+      "MoodCommentSource": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "pattern": "^(report|submission):[1-9][0-9]*:[A-Za-z]+$",
+            "title": "Id",
+            "type": "string"
+          },
+          "text": {
+            "description": "引用用の原文。空白・改行も変更しない。",
+            "minLength": 1,
+            "title": "Text",
+            "type": "string"
+          },
+          "date": {
+            "description": "保存済み日付/提出日時。書式変換せず保持する。",
+            "title": "Date",
+            "type": "string"
+          },
+          "evidenceEligible": {
+            "const": false,
+            "title": "Evidenceeligible",
+            "type": "boolean"
+          },
+          "kind": {
+            "const": "report",
+            "title": "Kind",
+            "type": "string"
+          },
+          "field": {
+            "const": "moodComment",
+            "title": "Field",
+            "type": "string"
+          },
+          "sourceRole": {
+            "const": "emotion",
+            "description": "感情の文脈。技能の根拠にはしない。",
+            "title": "Sourcerole",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "text",
+          "date",
+          "evidenceEligible",
+          "kind",
+          "field",
+          "sourceRole"
+        ],
+        "title": "MoodCommentSource",
+        "type": "object"
+      },
+      "ProblemSource": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "pattern": "^(report|submission):[1-9][0-9]*:[A-Za-z]+$",
+            "title": "Id",
+            "type": "string"
+          },
+          "text": {
+            "description": "引用用の原文。空白・改行も変更しない。",
+            "minLength": 1,
+            "title": "Text",
+            "type": "string"
+          },
+          "date": {
+            "description": "保存済み日付/提出日時。書式変換せず保持する。",
+            "title": "Date",
+            "type": "string"
+          },
+          "evidenceEligible": {
+            "const": false,
+            "title": "Evidenceeligible",
+            "type": "boolean"
+          },
+          "kind": {
+            "const": "report",
+            "title": "Kind",
+            "type": "string"
+          },
+          "field": {
+            "const": "problem",
+            "title": "Field",
+            "type": "string"
+          },
+          "sourceRole": {
+            "const": "difficulty",
+            "description": "困りごと。達成の根拠にはしない。",
+            "title": "Sourcerole",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "text",
+          "date",
+          "evidenceEligible",
+          "kind",
+          "field",
+          "sourceRole"
+        ],
+        "title": "ProblemSource",
+        "type": "object"
+      },
+      "TrySource": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "pattern": "^(report|submission):[1-9][0-9]*:[A-Za-z]+$",
+            "title": "Id",
+            "type": "string"
+          },
+          "text": {
+            "description": "引用用の原文。空白・改行も変更しない。",
+            "minLength": 1,
+            "title": "Text",
+            "type": "string"
+          },
+          "date": {
+            "description": "保存済み日付/提出日時。書式変換せず保持する。",
+            "title": "Date",
+            "type": "string"
+          },
+          "evidenceEligible": {
+            "const": false,
+            "title": "Evidenceeligible",
+            "type": "boolean"
+          },
+          "kind": {
+            "const": "report",
+            "title": "Kind",
+            "type": "string"
+          },
+          "field": {
+            "const": "try",
+            "title": "Field",
+            "type": "string"
+          },
+          "sourceRole": {
+            "const": "plan",
+            "description": "今後の計画。実施済みと扱わない。",
+            "title": "Sourcerole",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "text",
+          "date",
+          "evidenceEligible",
+          "kind",
+          "field",
+          "sourceRole"
+        ],
+        "title": "TrySource",
+        "type": "object"
+      }
+    },
+    "additionalProperties": false,
+    "properties": {
+      "schemaVersion": {
+        "const": "strength-materials.v1",
+        "title": "Schemaversion",
+        "type": "string"
+      },
+      "sources": {
+        "items": {
+          "discriminator": {
+            "mapping": {
+              "answer": "#/$defs/AnswerSource",
+              "feedback": "#/$defs/FeedbackSource",
+              "keep": "#/$defs/KeepSource",
+              "moodComment": "#/$defs/MoodCommentSource",
+              "problem": "#/$defs/ProblemSource",
+              "try": "#/$defs/TrySource"
+            },
+            "propertyName": "field"
+          },
+          "oneOf": [
+            {
+              "$ref": "#/$defs/KeepSource"
+            },
+            {
+              "$ref": "#/$defs/ProblemSource"
+            },
+            {
+              "$ref": "#/$defs/TrySource"
+            },
+            {
+              "$ref": "#/$defs/MoodCommentSource"
+            },
+            {
+              "$ref": "#/$defs/AnswerSource"
+            },
+            {
+              "$ref": "#/$defs/FeedbackSource"
+            }
+          ]
+        },
+        "maxItems": 120,
+        "title": "Sources",
+        "type": "array"
+      }
+    },
+    "required": [
+      "schemaVersion",
+      "sources"
+    ],
+    "title": "StrengthAnalysisMaterials",
+    "type": "object"
+  },
+  "materials": {
+    "schemaVersion": "strength-materials.v1",
+    "sources": [
+      {
+        "id": "report:6:keep",
+        "text": "私は3Dモデルのメッシュと実画面、SQLの期待値と実測値、実APIの正常時と失敗時をそれぞれ確認し、3課題の成果物と結果を残した。\n\n00:13-00:17 Calibooの3Dモデル制作（進捗100%）\n既存マスコットの顔、耳、目、頬、笑顔をOBJ/MTLで再現し、生成スクリプトと回転表示ビューアを作成した。3,634頂点・7,216三角形について、生成時と再読込時にメッシュを検証した。後続の時間帯にChromiumで表示と操作を追加検証し、390px幅で見つかった横溢れを修正した。\n00:17-00:21 SQLite SQL課題演習（進捗100%）\n練習用の4表と未提出・NULLを含むデータを作り、JOIN、集計、未提出者抽出などを実行した。制約違反とロールバック後の状態も確認し、期待値と実測値が8/8項目で一致した。\n00:21-00:26 Calibooの使用ユーザを表示するPythonスクリプトの開発（進捗100%）\nCookieセッションでログインし、管理者用APIから必要な6列を表示するスクリプトを作成した。実APIで竹内を含む5件を確認し、誤認証の401と権限不足の403を区別して確かめた。",
+        "date": "2026-09-29",
+        "evidenceEligible": true,
+        "kind": "report",
+        "field": "keep",
+        "sourceRole": "self_report"
+      },
+      {
+        "id": "report:6:problem",
+        "text": "私は3Dビューアの横溢れを追加検証で見つけた。別環境でのAPI異常応答と表示幅はまだ確認していない。また、このPoCでは竹内本人の感情を測定していない。",
+        "date": "2026-09-29",
+        "evidenceEligible": false,
+        "kind": "report",
+        "field": "problem",
+        "sourceRole": "difficulty"
+      },
+      {
+        "id": "report:6:try",
+        "text": "私は次回、実画面の狭い幅と操作を早い段階で確認する。APIスクリプトを別環境で使う際は、異常応答と表示幅も検証する。",
+        "date": "2026-09-29",
+        "evidenceEligible": false,
+        "kind": "report",
+        "field": "try",
+        "sourceRole": "plan"
+      },
+      {
+        "id": "report:6:moodComment",
+        "text": "AI代替PoC・感情は未測定 / 今回はAIが竹内の実作業を代替したため、竹内本人の感情は取得していない。 / 今後、本人の振り返りが必要な場合は、本人から直接確認する。",
+        "date": "2026-09-29",
+        "evidenceEligible": false,
+        "kind": "report",
+        "field": "moodComment",
+        "sourceRole": "emotion"
+      },
+      {
+        "id": "submission:5:answer",
+        "text": "urllib、http.cookiejar、getpassで再実行可能な登録アカウント一覧スクリプトを作成した。通常のパスワードは対話入力し、--demoは公開開発シードの管理者だけに限定した。GET /api/usersから表示用6列のみを抽出し、表またはJSONで出力する。接続先をローカルHTTPに制限し、リダイレクトとプロキシ利用を無効にした。Cookieはメモリに保持し、終了時にログアウトする。実APIのデモ実行で竹内(id=5, loginId=takeuchi)を含む5件を確認した。誤認証では401、一般ユーザーの一覧取得では403を区別して表示することを実測した。ユーザー情報を変更するAPIは呼び出していない。\n\n成果物:\ndevel/poc_takeuchi/users/list_users.py\ndevel/poc_takeuchi/users/test_list_users.py\ndevel/poc_takeuchi/users/README.md\n\n実行確認:\npython3 devel/poc_takeuchi/users/list_users.py --demo → 終了コード0。実APIから5件を表示し、竹内(id=5, loginId=takeuchi, role=member)を確認。\npython3 devel/poc_takeuchi/users/list_users.py --demo --format json → 終了コード0。表示対象の6項目だけを持つ5件のJSONを確認。\nPythonからlist_users.list_usersを呼ぶ実APIの負例検証（入力値は記録しない） → 誤認証は認証失敗(401)、一般ユーザーは権限不足(403)を返した。両方とも期待した例外を確認。\npython3 -m unittest discover -s devel/poc_takeuchi/users -p 'test_*.py' -v → 3件成功。ローカルURL制限、表示項目、--demoのアカウント制限を確認。\npython3 -m py_compile devel/poc_takeuchi/users/list_users.py devel/poc_takeuchi/users/test_list_users.py → 成功。Python構文エラーなし。\npython3 -m flake8 --max-line-length=100 devel/poc_takeuchi/users/list_users.py devel/poc_takeuchi/users/test_list_users.py → 成功。指摘なし。\n\n実装:\n\"\"\"ローカル開発環境の登録アカウントを読み取り専用で一覧表示する。\"\"\"\n\nimport argparse\nimport getpass\nimport http.cookiejar\nimport json\nimport sys\nimport unicodedata\nimport urllib.error\nimport urllib.parse\nimport urllib.request\n\nDEFAULT_BASE_URL = \"http://localhost:8000\"\nFIELDS = (\"id\", \"loginId\", \"displayName\", \"role\", \"active\", \"departmentId\")\n\n\nclass UserListError(Exception):\n    \"\"\"利用者に表示してよいエラーメッセージ。\"\"\"\n\n\nclass NoRedirect(urllib.request.HTTPRedirectHandler):\n    def redirect_request(self, request, fp, code, msg, headers, newurl):\n        return None\n\n\ndef validate_base_url(value):\n    \"\"\"Cookieをローカル開発サーバー以外へ送らない。\"\"\"\n    parsed = urllib.parse.urlsplit(value)\n    try:\n        port = parsed.port\n    except ValueError as error:\n        raise UserListError(\"接続先のポート番号が不正です。\") from error\n    if (\n        parsed.scheme != \"http\"\n        or parsed.hostname not in {\"localhost\", \"127.0.0.1\", \"::1\"}\n        or parsed.username is not None\n        or parsed.password is not None\n        or parsed.path not in {\"\", \"/\"}\n        or parsed.query\n        or parsed.fragment\n        or port is None\n    ):\n        raise UserListError(\"接続先はポート付きのローカルHTTP URLに限ります。\")\n    return value.rstrip(\"/\")\n\n\ndef request_json(opener, base_url, path, body=None):\n    data = None if body is None else json.dumps(body).encode(\"utf-8\")\n    headers = {} if data is None else {\"Content-Type\": \"application/json\"}\n    request = urllib.request.Request(\n        base_url + path, data=data, headers=headers,\n        method=\"GET\" if data is None else \"POST\",\n    )\n    with opener.open(request, timeout=10) as response:\n        return None if response.status == 204 else json.load(response)\n\n\ndef list_users(base_url, login_id, password):\n    \"\"\"ログイン後に管理者APIを読み、表示に必要な項目のみ返す。\"\"\"\n    jar = http.cookiejar.CookieJar()\n    opener = urllib.request.build_opener(\n        urllib.request.ProxyHandler({}),\n        urllib.request.HTTPCookieProcessor(jar),\n        NoRedirect(),\n    )\n    logged_in = False\n    try:\n        try:\n            request_json(opener, base_url, \"/api/auth/login\", {\n                \"loginId\": login_id, \"password\": password,\n            })\n            logged_in = True\n        except urllib.error.HTTPError as error:\n            if error.code == 401:\n                raise UserListError(\"認証失敗 (401): ログインIDまたはパスワードを確認してください。\") from None\n            raise UserListError(f\"ログインAPIがHTTP {error.code}を返しました。\") from None\n\n        try:\n            payload = request_json(opener, base_url, \"/api/users\")\n        except urllib.error.HTTPError as error:\n            if error.code == 403:\n                raise UserListError(\"権限不足 (403): 一覧表示には管理者アカウントが必要です。\") from None\n            if error.code == 401:\n                raise UserListError(\"セッションが無効です (401)。再ログインしてください。\") from None\n            raise UserListError(f\"ユーザー一覧APIがHTTP {error.code}を返しました。\") from None\n        users = payload.get(\"users\") if isinstance(payload, dict) else None\n        if not isinstance(users, list) or any(not isinstance(user, dict) for user in users):\n            raise UserListError(\"ユーザー一覧APIの応答形式が不正です。\")\n        return [{field: user.get(field) for field in FIELDS} for user in users]\n    except (urllib.error.URLError, TimeoutError) as error:\n        raise UserListError(\"ローカルAPIへ接続できません。サーバーの起動を確認してください。\") from error\n    except (ValueError, UnicodeError) as error:\n        raise UserListError(\"APIのJSON応答を読めません。\") from error\n    finally:\n        if logged_in:\n            try:\n                request_json(opener, base_url, \"/api/auth/logout\", {})\n            except (urllib.error.URLError, TimeoutError, ValueError, UnicodeError):\n                pass\n        jar.clear()\n\n\ndef format_table(users):\n    def width(value):\n        return sum(2 if unicodedata.east_asian_width(char) in {\"F\", \"W\"} else 1 for char in value)\n\n    def pad(value, target):\n        return value + \" \" * (target - width(value))\n\n    columns = (\"ID\", \"ログインID\", \"表示名\", \"権限\", \"有効\", \"部署ID\")\n    rows = [\n        (\n            str(user[\"id\"]), str(user[\"loginId\"]), str(user[\"displayName\"]),\n            str(user[\"role\"]), \"はい\" if user[\"active\"] else \"いいえ\",\n            str(user[\"departmentId\"] or \"-\"),\n        )\n        for user in users\n    ]\n    widths = [\n        max(width(str(row[index])) for row in [columns, *rows])\n        for index in range(len(columns))\n    ]\n    lines = [\"  \".join(pad(label, widths[index]) for index, label in enumerate(columns))]\n    lines.extend(\n        \"  \".join(pad(value, widths[index]) for index, value in enumerate(row))\n        for row in rows\n    )\n    return \"\\n\".join(lines)\n\n\ndef main(argv=None):\n    parser = argparse.ArgumentParser(description=\"Calibooの登録アカウント一覧を表示します。\")\n    parser.add_argument(\"--base-url\", default=DEFAULT_BASE_URL, help=\"ローカル開発サーバーのURL\")\n    parser.add_argument(\"--login-id\", default=\"sensei\", help=\"管理者のログインID\")\n    parser.add_argument(\"--demo\", action=\"store_true\", help=\"公開開発シードの管理者で実行\")\n    parser.add_argument(\"--format\", choices=(\"table\", \"json\"), default=\"table\")\n    args = parser.parse_args(argv)\n    try:\n        base_url = validate_base_url(args.base_url)\n        if args.demo and args.login_id != \"sensei\":\n            raise UserListError(\"--demoは公開開発シードのsensei専用です。\")\n        # 開発用公開シードのみ。通常利用ではパスワードを引数やファイルへ保存しない。\n        password = \"caliboo-sensei\" if args.demo else getpass.getpass(\"パスワード: \")\n        users = list_users(base_url, args.login_id, password)\n        output = (\n            json.dumps(users, ensure_ascii=False, indent=2)\n            if args.format == \"json\" else format_table(users)\n        )\n        print(output)\n        return 0\n    except (UserListError, EOFError, KeyboardInterrupt) as error:\n        message = str(error) if isinstance(error, UserListError) else \"入力を中断しました。\"\n        print(message, file=sys.stderr)\n        return 1\n\n\nif __name__ == \"__main__\":\n    sys.exit(main())\n\n\n限界: 実測はローカル開発サーバーと公開開発シードのアカウントで行った。非公開の管理者資格情報、停止サーバー時の操作、異常なAPI応答、他環境の文字幅は実APIでは検証していない。\nAIエージェントによる実作業代替PoC。",
+        "date": "2026-09-28T15:26:19.172689+00:00",
+        "evidenceEligible": true,
+        "kind": "submission",
+        "field": "answer",
+        "sourceRole": "work_product"
+      },
+      {
+        "id": "submission:5:feedback",
+        "text": "【AI講師・実作業PoC】\nurllib、http.cookiejar、getpassを使って一覧表示を再実行できる形にまとめ、実APIで竹内を含む5件を確認できています。誤認証の401と一般ユーザーの権限不足による403を実測で区別した点も、結果の信頼性を高めています。1周目の3Dモデルと実画面の検証、2周目のSQLの期待値と実測値の照合を経て、今回は実APIの正常時と失敗時まで確認範囲が広がりました。今後このスクリプトを別環境で使う際は、未確認の異常応答と表示幅も確かめてください。\n\n【2026-09-29 日報の3視点レビュー・対象は3課題全体】\n[管理職(MELCHIOR)] 「3課題の成果物と結果を残した」うえ、3Dモデルはメッシュの再読込と実画面、SQLは「8/8項目」、APIは401と403まで確認しており、成果の検証範囲は明確です。一方、「別環境でのAPI異常応答と表示幅はまだ確認していない」ため、利用範囲を広げる前に追加検証が必要です。課題間の優先順位づけは日報から判断できず、評価を保留します。\n[講師(BALTHASAR)] 「メッシュと実画面」「期待値と実測値」「正常時と失敗時」を確認し、結果まで残している。横溢れの発見を踏まえ、「狭い幅と操作を早い段階で確認する」という次の行動も具体的。今回は「AIが竹内の実作業を代替」しており、竹内本人の伸びや感情の評価は保留とする。次回は本人の振り返りを直接確認したい。\n[シニアエンジニア(CASPER)] 「生成時と再読込時にメッシュを検証」し、Chromiumでの追加検証で「390px幅で見つかった横溢れを修正」した点は、データと実画面の両方を確かめる妥当な判断です。SQLの「期待値と実測値が8/8項目で一致」、実APIで「401と権限不足の403を区別」した確認も具体的です。一方、本人も「別環境でのAPI異常応答と表示幅はまだ確認していない」と記しており、その環境での動作評価は保留します。\n\n【Fan-in要約】\n3周を通じて、3Dモデルでは生成時・再読込時のメッシュと実画面を確かめ、390px幅で見つけた横溢れを修正しました。SQLでは期待値と実測値が8/8項目で一致し、APIでは401と権限不足の403を区別して確認しています。次は、挙げていた狭い幅と操作の早期確認に加え、別環境でのAPI異常応答と表示幅を検証し、結果を残してください。課題間の優先順位は日報から判断できません。今回はAIが実作業を代替したため、本人の成長評価は保留し、次回は本人の振り返りを直接確認します。\n\n【保留事項】\n別環境での検証未了 / 優先順位は判断保留 / 本人の成長評価は保留",
+        "date": "2026-09-28T15:26:19.172689+00:00",
+        "evidenceEligible": true,
+        "kind": "submission",
+        "field": "feedback",
+        "sourceRole": "mentor_feedback"
+      },
+      {
+        "id": "submission:4:answer",
+        "text": "Python標準ライブラリのsqlite3でメモリDBにusers、reports、assignments、submissionsの4表を作成した。4人・2課題・4提出と未提出、未採点のNULLを用意し、INNER/LEFT JOIN、GROUP BY、未提出抽出、COUNTとNULLの違いを6つのSQLで実行した。外部キー違反とROLLBACKも実行し、固定した期待値と実測値を8/8項目で照合した。結果はJSONとMarkdownに保存した。\n\n成果物:\ndevel/poc_takeuchi/sql/schema.sql\ndevel/poc_takeuchi/sql/exercises.sql\ndevel/poc_takeuchi/sql/run.py\ndevel/poc_takeuchi/sql/exercise-results.json\ndevel/poc_takeuchi/sql/exercise-results.md\ndevel/poc_takeuchi/sql/README.md\n\n実行結果:\n# SQLite 演習結果\n\nSQLite 3.46.1 / メモリDB\n\n## inner_join\n\nINNER JOINは提出済み4組だけを返し、未提出4組を落とす。\n\n期待値:\n\n```json\n[\n  [\n    10,\n    1,\n    201\n  ],\n  [\n    10,\n    2,\n    202\n  ],\n  [\n    11,\n    1,\n    203\n  ],\n  [\n    11,\n    3,\n    204\n  ]\n]\n```\n\n実測値:\n\n```json\n[\n  [\n    10,\n    1,\n    201\n  ],\n  [\n    10,\n    2,\n    202\n  ],\n  [\n    11,\n    1,\n    203\n  ],\n  [\n    11,\n    3,\n    204\n  ]\n]\n```\n\n照合: 成功\n\n## left_join\n\nLEFT JOINは全8組を保ち、未提出のsubmission_idをNULLにする。\n\n期待値:\n\n```json\n[\n  [\n    10,\n    1,\n    201\n  ],\n  [\n    10,\n    2,\n    202\n  ],\n  [\n    10,\n    3,\n    null\n  ],\n  [\n    10,\n    4,\n    null\n  ],\n  [\n    11,\n    1,\n    203\n  ],\n  [\n    11,\n    2,\n    null\n  ],\n  [\n    11,\n    3,\n    204\n  ],\n  [\n    11,\n    4,\n    null\n  ]\n]\n```\n\n実測値:\n\n```json\n[\n  [\n    10,\n    1,\n    201\n  ],\n  [\n    10,\n    2,\n    202\n  ],\n  [\n    10,\n    3,\n    null\n  ],\n  [\n    10,\n    4,\n    null\n  ],\n  [\n    11,\n    1,\n    203\n  ],\n  [\n    11,\n    2,\n    null\n  ],\n  [\n    11,\n    3,\n    204\n  ],\n  [\n    11,\n    4,\n    null\n  ]\n]\n```\n\n照合: 成功\n\n## group_by\n\nSQL課題は提出2件、採点済み1件で平均90点。3D課題は2件とも採点済みで平均75点。\n\n期待値:\n\n```json\n[\n  [\n    10,\n    2,\n    1,\n    90.0\n  ],\n  [\n    11,\n    2,\n    2,\n    75.0\n  ]\n]\n```\n\n実測値:\n\n```json\n[\n  [\n    10,\n    2,\n    1,\n    90.0\n  ],\n  [\n    11,\n    2,\n    2,\n    75.0\n  ]\n]\n```\n\n照合: 成功\n\n## missing_submissions\n\n提出行のIDがNULLの4組だけが未提出。点数NULLの井上は含まれない。\n\n期待値:\n\n```json\n[\n  [\n    10,\n    3\n  ],\n  [\n    10,\n    4\n  ],\n  [\n    11,\n    2\n  ],\n  [\n    11,\n    4\n  ]\n]\n```\n\n実測値:\n\n```json\n[\n  [\n    10,\n    3\n  ],\n  [\n    10,\n    4\n  ],\n  [\n    11,\n    2\n  ],\n  [\n    11,\n    4\n  ]\n]\n```\n\n照合: 成功\n\n## null_and_count\n\nCOUNT(*)は結合後の行を数える。COUNT(r.id)は日報なしを0、COUNT(s.score)は未採点を0とする。\n\n期待値:\n\n```json\n[\n  [\n    1,\n    2,\n    2,\n    2,\n    2\n  ],\n  [\n    2,\n    1,\n    1,\n    1,\n    0\n  ],\n  [\n    3,\n    1,\n    0,\n    0,\n    0\n  ],\n  [\n    4,\n    1,\n    0,\n    0,\n    0\n  ]\n]\n```\n\n実測値:\n\n```json\n[\n  [\n    1,\n    2,\n    2,\n    2,\n    2\n  ],\n  [\n    2,\n    1,\n    1,\n    1,\n    0\n  ],\n  [\n    3,\n    1,\n    0,\n    0,\n    0\n  ],\n  [\n    4,\n    1,\n    0,\n    0,\n    0\n  ]\n]\n```\n\n照合: 成功\n\n## null_state\n\n点数NULLだけでは未提出と未採点を区別できず、提出行IDで分岐する。\n\n期待値:\n\n```json\n[\n  [\n    1,\n    \"採点済み\"\n  ],\n  [\n    2,\n    \"提出済み・未採点\"\n  ],\n  [\n    3,\n    \"未提出\"\n  ],\n  [\n    4,\n    \"未提出\"\n  ]\n]\n```\n\n実測値:\n\n```json\n[\n  [\n    1,\n    \"採点済み\"\n  ],\n  [\n    2,\n    \"提出済み・未採点\"\n  ],\n  [\n    3,\n    \"未提出\"\n  ],\n  [\n    4,\n    \"未提出\"\n  ]\n]\n```\n\n照合: 成功\n\n## foreign_key\n\n存在しない利用者への提出は外部キー制約で拒否され、件数は変わらない。\n\n期待値:\n\n```json\n{\n  \"error\": \"FOREIGN KEY constraint failed\",\n  \"count\": 4\n}\n```\n\n実測値:\n\n```json\n{\n  \"error\": \"FOREIGN KEY constraint failed\",\n  \"count\": 4\n}\n```\n\n照合: 成功\n\n## rollback\n\n有効な追加をBEGIN内で実施後、ROLLBACKで件数と行を元に戻す。\n\n期待値:\n\n```json\n{\n  \"before\": 4,\n  \"during\": 5,\n  \"after\": 4,\n  \"new_row\": 0\n}\n```\n\n実測値:\n\n```json\n{\n  \"before\": 4,\n  \"during\": 5,\n  \"after\": 4,\n  \"new_row\": 0\n}\n```\n\n照合: 成功\n\n\nSQL:\n-- name: inner_join\n-- 提出行がある組だけを返す。未提出の利用者は消える。\nSELECT a.id AS assignment_id, u.id AS user_id, s.id AS submission_id\nFROM assignments AS a\nCROSS JOIN users AS u\nJOIN submissions AS s ON s.assignment_id = a.id AND s.user_id = u.id\nORDER BY a.id, u.id;\n\n-- name: left_join\n-- 提出行の有無を残すため、全課題×全利用者を起点にする。\nSELECT a.id AS assignment_id, u.id AS user_id, s.id AS submission_id\nFROM assignments AS a\nCROSS JOIN users AS u\nLEFT JOIN submissions AS s ON s.assignment_id = a.id AND s.user_id = u.id\nORDER BY a.id, u.id;\n\n-- name: group_by\n-- COUNT(score) は NULL の点数を数えない。\nSELECT a.id AS assignment_id, COUNT(s.id) AS submissions,\n       COUNT(s.score) AS scored, AVG(s.score) AS average_score\nFROM assignments AS a\nLEFT JOIN submissions AS s ON s.assignment_id = a.id\nGROUP BY a.id\nORDER BY a.id;\n\n-- name: missing_submissions\n-- score IS NULL では「提出済み・未採点」も含めてしまう。\nSELECT a.id AS assignment_id, u.id AS user_id\nFROM assignments AS a\nCROSS JOIN users AS u\nLEFT JOIN submissions AS s ON s.assignment_id = a.id AND s.user_id = u.id\nWHERE s.id IS NULL\nORDER BY a.id, u.id;\n\n-- name: null_and_count\n-- COUNT(*) は LEFT JOIN が作る行も数える。\nSELECT u.id AS user_id, COUNT(*) AS joined_rows,\n       COUNT(r.id) AS reports, COUNT(s.id) AS submissions,\n       COUNT(s.score) AS scored\nFROM users AS u\nLEFT JOIN reports AS r ON r.user_id = u.id\nLEFT JOIN submissions AS s ON s.user_id = u.id AND s.assignment_id = 10\nGROUP BY u.id\nORDER BY u.id;\n\n-- name: null_state\n-- 提出行がない状態と、提出行の点数が NULL の状態を区別する。\nSELECT u.id AS user_id,\n       CASE WHEN s.id IS NULL THEN '未提出'\n            WHEN s.score IS NULL THEN '提出済み・未採点'\n            ELSE '採点済み' END AS state\nFROM users AS u\nLEFT JOIN submissions AS s ON s.user_id = u.id AND s.assignment_id = 10\nORDER BY u.id;\n\n\n限界: 教材の4人・2課題・4提出だけを検証した。実アプリDB接続、実スキーマとの一致、並行トランザクション、性能、大量データでの動作は未確認。SQLiteのバージョンによって制約違反のエラーメッセージが変わる可能性がある。\nAIエージェントによる実作業代替PoC。",
+        "date": "2026-09-28T15:21:16.966210+00:00",
+        "evidenceEligible": true,
+        "kind": "submission",
+        "field": "answer",
+        "sourceRole": "work_product"
+      },
+      {
+        "id": "submission:4:feedback",
+        "text": "【AI講師・実作業PoC】\nメモリDBに未提出と未採点のNULLを含むデータを用意し、LEFT JOINで全8組を保持したうえで、未提出4組を抽出できています。期待値と実測値の8/8一致を2回確認し、外部キー違反後も提出件数が4件、ロールバック後も新規行が0件であることまで示した点が確かです。1周目のメッシュ再読込時の検証に続き、今回は失敗時の状態も確認できました。次は同じ確認方法を実APIへの読み取りに適用し、認証成功・失敗と権限不足を区別して確かめてください。",
+        "date": "2026-09-28T15:21:16.966210+00:00",
+        "evidenceEligible": true,
+        "kind": "submission",
+        "field": "feedback",
+        "sourceRole": "mentor_feedback"
+      },
+      {
+        "id": "submission:3:answer",
+        "text": "既存Mascot.tsxの形状を確認し、丸いミント色の顔、2耳、黒い目と白いハイライト、ピンクの頬、笑顔を持つOBJ/MTLをPython標準ライブラリで生成した。3,634頂点・7,216三角形のメッシュを出力し、同じモデルを読むCanvasビューアを実装した。生成後と再読込時に座標、面参照、退化面、マテリアルを検証した。\n\n成果物: devel/poc_takeuchi/model/generate.py\ndevel/poc_takeuchi/model/mascot.obj\ndevel/poc_takeuchi/model/mascot.mtl\ndevel/poc_takeuchi/model/README.md\nfrontend/src/assets/takeuchi/mascot.obj\nfrontend/src/assets/takeuchi/mascot.mtl\nfrontend/takeuchi-model.html\n\n確認: python3 devel/poc_takeuchi/model/generate.py → 成功。2箇所に3,634頂点・7,216面のOBJ/MTLを生成し検証した。\npython3 devel/poc_takeuchi/model/generate.py --verify-only → 成功。両方のOBJ/MTLを再読込し、3,634頂点・7,216面を検証した。\nnode --input-type=module --check（HTML内のmoduleスクリプトを標準入力で検査） → 成功。構文エラーなし。\ncd frontend && npm run lint → 成功。tsc --noEmitがエラーなし。\ncd frontend && npm run test:coverage → 成功。34ファイル・260テスト通過。全体カバレッジはstatement 100%、branch 98.11%、function 99.23%、line 100%。\n\n限界: ブラウザでの見た目・操作はこの時点で未確認。Canvas描画は三角形の奥行き順による表示で、リアルタイムの厳密な隠面処理ではない。\n\nAIエージェントによる実作業代替PoC。モデル生成コードとOBJ/MTL、ビューアを実ファイルとして作成した。",
+        "date": "2026-09-28T15:17:05.205439+00:00",
+        "evidenceEligible": true,
+        "kind": "submission",
+        "field": "answer",
+        "sourceRole": "work_product"
+      },
+      {
+        "id": "submission:3:feedback",
+        "text": "【AI講師・実作業PoC】\n既存のMascot.tsxから顔・耳・目・頬・笑顔の特徴を拾い、3,634頂点・7,216三角形のOBJ/MTLと回転確認用ビューアに落とし込めています。生成時と再読込時の両方で面参照や退化面、マテリアルを検証した点も、成果物の再現性を高めています。ブラウザでの見た目と操作は未確認なので、次にこの成果物を扱う際は実画面で回転や重なり方を確認し、深度ソートの限界が見える場面を記録してください。\n\n【実画面の追加検証】親エージェントがChromiumで3,634頂点・7,216三角形の表示、ドラッグ回転とホイール拡縮を確認した。390px幅の横溢れを発見し、作業者がbox-sizing: border-boxを適用して修正した。再検証で横溢れなし・JavaScriptエラーなしを確認した。証跡: devel/poc_takeuchi/trace/model_browser.json、model.png、model_rotated.png、model_mobile.png。",
+        "date": "2026-09-28T15:17:05.205439+00:00",
+        "evidenceEligible": true,
+        "kind": "submission",
+        "field": "feedback",
+        "sourceRole": "mentor_feedback"
+      }
+    ]
+  }
+}

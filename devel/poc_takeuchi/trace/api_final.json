@@ -1,0 +1,34 @@
+{
+  "status": "PASS",
+  "userId": 5,
+  "assignments": [
+    {
+      "id": 4,
+      "status": "reviewed",
+      "targetId": 5
+    },
+    {
+      "id": 5,
+      "status": "reviewed",
+      "targetId": 5
+    },
+    {
+      "id": 6,
+      "status": "reviewed",
+      "targetId": 5
+    }
+  ],
+  "reportCount": 1,
+  "candidateCount": 4,
+  "evidenceCount": 13,
+  "homeLabels": [
+    "【AI作業PoC】実行条件と期待値・実測値の記録",
+    "【AI作業PoC】期待値照合と異常系を含む成果物の検証",
+    "【AI作業PoC】セッション認証と出力整形を備えたAPI利用スクリプトの実装",
+    "【AI作業PoC】NULLと提出行の有無を区別したSQLの作成・実行"
+  ],
+  "pendingStrengthJobs": 0,
+  "runId": "run_0001",
+  "fanInMatches": true,
+  "humanEvaluationsRegistered": false
+}

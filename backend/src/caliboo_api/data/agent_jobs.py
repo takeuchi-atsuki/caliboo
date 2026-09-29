@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 from caliboo_api.data.account_data import now_iso
 from caliboo_api.data.assignment_data import fetch_visible_assignment_statuses
 from caliboo_api.extension_models import (
-    AgentJob, AgentJobContext, AgentJobExecution, StrengthCandidate,
+    AgentJob, AgentJobContext, AgentJobExecution, StrengthCandidate, StrengthInterpretation,
 )
 from caliboo_api.models import AssignmentSubmission, Report
 from caliboo_api.services.strength_materials import normalize_strength_materials
@@ -77,11 +77,26 @@ def enqueue_strength(session: Session, user_id: int) -> AgentJob | None:
     return job
 
 
-def candidate_view(row: StrengthCandidate) -> dict:
+def candidate_interpretation(
+    session: Session, row: StrengthCandidate,
+) -> StrengthInterpretation | None:
+    return session.get(StrengthInterpretation, row.id)
+
+
+def candidate_kind(session: Session, row: StrengthCandidate) -> str:
+    interpretation = candidate_interpretation(session, row)
+    return interpretation.kind if interpretation is not None else "ability"
+
+
+def candidate_view(row: StrengthCandidate, session: Session) -> dict:
+    interpretation = candidate_interpretation(session, row)
     return dict(id=row.id, userId=row.user_id, jobId=row.job_id, label=row.label,
                 skillCode=row.skill_code, confidence=row.confidence, evidence=row.evidence,
                 growthAction=row.growth_action, status=row.status,
-                decidedAt=row.decided_at)
+                decidedAt=row.decided_at,
+                kind=interpretation.kind if interpretation is not None else "ability",
+                summary=interpretation.summary if interpretation is not None else "",
+                scopeNote=interpretation.scope_note if interpretation is not None else "")
 
 
 def job_view(row: AgentJob, include_materials: bool = False,

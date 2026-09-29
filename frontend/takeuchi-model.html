@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Caliboo マスコット 3D モデル</title>
+    <style>
+      *, *::before, *::after { box-sizing: border-box; }
+      :root { font-family: system-ui, sans-serif; color: #17362e; background: #f3faf7; }
+      body { margin: 0; min-height: 100vh; display: grid; place-items: center; }
+      main { width: min(95vw, 900px); padding: 1rem; }
+      h1 { font-size: 1.4rem; margin: 0 0 .5rem; }
+      p { margin: .3rem 0 1rem; }
+      canvas { display: block; width: 100%; height: min(70vh, 650px); background: radial-gradient(circle, #fff 30%, #e4f4ed 100%); border: 1px solid #c7dfd2; border-radius: 18px; cursor: grab; touch-action: none; }
+      canvas:active { cursor: grabbing; }
+      #status { min-height: 1.5em; font-size: .9rem; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Caliboo マスコット 3D モデル</h1>
+      <p>ドラッグで回転、ホイールで拡大・縮小できます。OBJ メッシュを読み込み、三角形を描画しています。</p>
+      <canvas id="viewer" aria-label="回転できる Caliboo マスコットの立体モデル"></canvas>
+      <p id="status" role="status">読み込み中…</p>
+    </main>
+    <script type="module">
+      import objUrl from './src/assets/takeuchi/mascot.obj?url';
+      import mtlUrl from './src/assets/takeuchi/mascot.mtl?url';
+
+      const canvas = document.querySelector('#viewer');
+      const status = document.querySelector('#status');
+      const context = canvas.getContext('2d');
+      const vertices = [];
+      const faces = [];
+      const colors = new Map();
+      let yaw = -0.26;
+      let pitch = -0.12;
+      let scale = 1;
+      let dragging = false;
+      let pointer = null;
+
+      function parseMaterial(text) {
+        let name = '';
+        for (const line of text.split(/\r?\n/)) {
+          const parts = line.trim().split(/\s+/);
+          if (parts[0] === 'newmtl') name = parts[1];
+          if (parts[0] === 'Kd' && name) {
+            colors.set(name, parts.slice(1, 4).map(value => Number(value) * 255));
+          }
+        }
+      }
+
+      function parseObj(text) {
+        let material = '';
+        for (const line of text.split(/\r?\n/)) {
+          const parts = line.trim().split(/\s+/);
+          if (parts[0] === 'v') vertices.push(parts.slice(1, 4).map(Number));
+          if (parts[0] === 'usemtl') material = parts[1];
+          if (parts[0] === 'f') faces.push({ indices: parts.slice(1, 4).map(value => Number(value) - 1), material });
+        }
+        if (!vertices.length || !faces.length || faces.some(face => face.indices.some(i => !vertices[i]))) {
+          throw new Error('OBJ の頂点または面が不正です');
+        }
+      }
+
+      function rotate([x, y, z]) {
+        const cy = Math.cos(yaw), sy = Math.sin(yaw);
+        const cx = Math.cos(pitch), sx = Math.sin(pitch);
+        const rx = x * cy + z * sy;
+        const rz = -x * sy + z * cy;
+        return [rx, y * cx - rz * sx, y * sx + rz * cx];
+      }
+
+      function draw() {
+        const width = canvas.clientWidth;
+        const height = canvas.clientHeight;
+        const ratio = devicePixelRatio || 1;
+        canvas.width = Math.round(width * ratio);
+        canvas.height = Math.round(height * ratio);
+        context.setTransform(ratio, 0, 0, ratio, 0, 0);
+        context.clearRect(0, 0, width, height);
+        const transformed = vertices.map(rotate);
+        const size = Math.min(width, height) * .34 * scale;
+        const projected = transformed.map(([x, y, z]) => {
+          const perspective = 3.5 / (3.5 - z);
+          return [width / 2 + x * size * perspective, height / 2 - y * size * perspective];
+        });
+        const ordered = faces.map(face => ({
+          ...face,
+          depth: face.indices.reduce((sum, index) => sum + transformed[index][2], 0) / 3,
+        })).sort((a, b) => a.depth - b.depth);
+        for (const face of ordered) {
+          const [a, b, c] = face.indices.map(index => transformed[index]);
+          const ux = b[0] - a[0], uy = b[1] - a[1], uz = b[2] - a[2];
+          const vx = c[0] - a[0], vy = c[1] - a[1], vz = c[2] - a[2];
+          const nx = uy * vz - uz * vy;
+          const ny = uz * vx - ux * vz;
+          const nz = ux * vy - uy * vx;
+          const normalLength = Math.hypot(nx, ny, nz) || 1;
+          const light = .7 + .3 * Math.abs((nx * -.32 + ny * .55 + nz * .77) / normalLength);
+          const base = colors.get(face.material) || [150, 200, 180];
+          context.fillStyle = `rgb(${base.map(channel => Math.round(channel * light)).join(',')})`;
+          context.beginPath();
+          const [first, second, third] = face.indices.map(index => projected[index]);
+          context.moveTo(...first);
+          context.lineTo(...second);
+          context.lineTo(...third);
+          context.closePath();
+          context.fill();
+        }
+      }
+
+      canvas.addEventListener('pointerdown', event => {
+        dragging = true;
+        pointer = [event.clientX, event.clientY];
+        canvas.setPointerCapture(event.pointerId);
+      });
+      canvas.addEventListener('pointermove', event => {
+        if (!dragging) return;
+        yaw += (event.clientX - pointer[0]) * .009;
+        pitch = Math.max(-1.4, Math.min(1.4, pitch + (event.clientY - pointer[1]) * .009));
+        pointer = [event.clientX, event.clientY];
+        draw();
+      });
+      canvas.addEventListener('pointerup', () => { dragging = false; });
+      canvas.addEventListener('pointercancel', () => { dragging = false; });
+      canvas.addEventListener('wheel', event => {
+        event.preventDefault();
+        scale = Math.max(.5, Math.min(2.2, scale * (event.deltaY > 0 ? .9 : 1.1)));
+        draw();
+      }, { passive: false });
+      new ResizeObserver(draw).observe(canvas);
+
+      async function loadModel() {
+        try {
+          const [objResponse, mtlResponse] = await Promise.all([
+            fetch(objUrl),
+            fetch(mtlUrl),
+          ]);
+          if (!objResponse.ok || !mtlResponse.ok) throw new Error('モデルファイルを取得できません');
+          parseMaterial(await mtlResponse.text());
+          parseObj(await objResponse.text());
+          status.textContent = `${vertices.length} 頂点、${faces.length} 三角形を表示中`;
+          draw();
+        } catch (error) {
+          status.textContent = `読み込みエラー: ${error.message}`;
+        }
+      }
+      void loadModel();
+    </script>
+  </body>
+</html>

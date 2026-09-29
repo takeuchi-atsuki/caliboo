@@ -1,0 +1,42 @@
+{
+  "reviewType": "承認済み観点SP-1〜4の独立テストレビュー",
+  "workspace": "/tmp/caliboo-strength-profile-main",
+  "result": "主要経路は検証されているが、意味のある境界の不足が2件ある",
+  "implementationBugs": [],
+  "findings": [
+    {
+      "id": "SP2-ROLE",
+      "type": "test_gap",
+      "file": "backend/tests/unit/test_strength_profile.py",
+      "line": 62,
+      "perspective": "SP-2",
+      "issue": "講師所見のみの拒否ケースが同じmaterialIdの重複であり、本人記録との区別を検証できていない。",
+      "impact": "mentor_feedbackを誤って本人記録に含めても、このケースは同一記録の重複排除によって422となり、回帰を検出しない。",
+      "requiredCheck": "異なる提出IDのfeedback 2件だけを根拠とするwork_styleが422になることを確認する。本人記録1件と別提出のfeedbackを組み合わせた場合も有効な境界となる。"
+    },
+    {
+      "id": "SP3-CROSS-KIND",
+      "type": "test_gap",
+      "file": "backend/tests/integration/test_strength_profile.py",
+      "line": 95,
+      "perspective": "SP-3",
+      "issue": "新しい別種類の承認済み候補が存在するとき、古いpending候補を承認できる境界がない。",
+      "impact": "古い候補の承認拒否をkindに関係なく適用する実装へ戻しても、既存ケースは成功する。同じジョブ内での併存確認ではjob_idの大小条件を通らない。",
+      "requiredCheck": "同じskillCodeで、新しいジョブのwork_styleを先に承認し、古いジョブのpending abilityを後から承認する。200となり、両候補が承認済みで併存することを確認する。"
+    }
+  ],
+  "coverageConfirmed": [
+    "SP-1: 解釈保存、講師編集、未承認非表示、本人一覧・ホームへの反映",
+    "SP-2: 解釈必須、本人記録2件の受理、重複記録・引用不一致・文脈専用項目の拒否",
+    "SP-3: 追加テーブル作成、旧候補の既定値、種類別置換、古い同種候補の承認拒否",
+    "SP-4: 種類別表示、理由・範囲、根拠の開閉、編集内容の送信、旧形式と空状態",
+    "通常workerの保存・不正結果拒否と、holdoutの解釈保存・非配信"
+  ],
+  "notVerified": [
+    "テスト実行結果の再確認",
+    "親担当が実施予定のmanual実データフローと狭幅ブラウザー確認",
+    "依頼範囲外の実provider通信"
+  ],
+  "codeEdited": false,
+  "testsRun": false
+}

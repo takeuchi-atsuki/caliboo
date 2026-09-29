@@ -1,0 +1,98 @@
+{
+  "modelVerification": "PASS 3634 vertices / 7216 triangles in both OBJ/MTL placements",
+  "sqlQuestions": {
+    "passed": 8,
+    "total": 8
+  },
+  "cliUnitTests": {
+    "passed": 3
+  },
+  "cliLiveApi": [
+    "5 registered users including takeuchi",
+    "401 authentication failure",
+    "403 member forbidden"
+  ],
+  "newPythonFlake8": "PASS",
+  "frontendLint": "PASS",
+  "frontendTests": {
+    "files": 34,
+    "tests": 260,
+    "coverage": {
+      "statements": 100,
+      "branches": 98.11,
+      "functions": 99.23,
+      "lines": 100
+    }
+  },
+  "backendIntegration": {
+    "command": "cd backend && python3 -m pytest --disable-socket tests/integration/ -q --tb=short",
+    "exitCode": 0,
+    "passed": 46,
+    "durationSeconds": 54.68,
+    "warnings": [
+      "既存FastAPI TestClientのhttpx利用にStarletteDeprecationWarning"
+    ],
+    "database": "一時SQLite（アプリの実DBには接続しない）"
+  },
+  "api": {
+    "status": "PASS",
+    "userId": 5,
+    "assignments": [
+      {
+        "id": 4,
+        "status": "reviewed",
+        "targetId": 5
+      },
+      {
+        "id": 5,
+        "status": "reviewed",
+        "targetId": 5
+      },
+      {
+        "id": 6,
+        "status": "reviewed",
+        "targetId": 5
+      }
+    ],
+    "reportCount": 1,
+    "candidateCount": 4,
+    "evidenceCount": 13,
+    "homeLabels": [
+      "【AI作業PoC】実行条件と期待値・実測値の記録",
+      "【AI作業PoC】期待値照合と異常系を含む成果物の検証",
+      "【AI作業PoC】セッション認証と出力整形を備えたAPI利用スクリプトの実装",
+      "【AI作業PoC】NULLと提出行の有無を区別したSQLの作成・実行"
+    ],
+    "pendingStrengthJobs": 0,
+    "runId": "run_0001",
+    "fanInMatches": true,
+    "humanEvaluationsRegistered": false
+  },
+  "browser": {
+    "checks": [
+      "本人ログインとホームへの承認済み強みの反映",
+      "強み画面の全候補・全根拠引用の可視化",
+      "390px幅の強み画面に横溢れなし",
+      "提出日報の履歴詳細",
+      "課題のフィードバックに3視点とFan-in要約",
+      "PoC比較結果、3職種レビュー、根拠ダイアログ"
+    ],
+    "errors": [],
+    "labels": [
+      "【AI作業PoC】実行条件と期待値・実測値の記録",
+      "【AI作業PoC】期待値照合と異常系を含む成果物の検証",
+      "【AI作業PoC】セッション認証と出力整形を備えたAPI利用スクリプトの実装",
+      "【AI作業PoC】NULLと提出行の有無を区別したSQLの作成・実行"
+    ],
+    "status": "PASS",
+    "runId": "run_0001"
+  },
+  "modelBrowser": {
+    "status": "3634 頂点、7216 三角形を表示中",
+    "rotation": "PASS",
+    "zoom": "PASS",
+    "errors": [],
+    "mobileOverflow": false
+  },
+  "backendUnitSuite": "not rerun: backend implementation unchanged"
+}

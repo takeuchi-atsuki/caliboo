@@ -22,6 +22,9 @@ class HomeCertification(BaseModel):
 class HomeStrength(BaseModel):
     label: str
     tone: Tone
+    kind: Literal["ability", "work_style"] = "ability"
+    summary: str = ""
+    scopeNote: str = ""
     evidence: list[dict] = []
     growthAction: str = ""
 

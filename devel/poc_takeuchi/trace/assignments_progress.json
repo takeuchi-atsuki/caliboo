@@ -1,0 +1,34 @@
+{
+  "assignments": [
+    {
+      "id": 6,
+      "title": "【竹内PoC 3/3】PythonによるCalibooの使用ユーザを表示するスクリプトの開発",
+      "status": "not_submitted",
+      "createdAt": "2026-09-28T15:21:39.051390+00:00",
+      "target": {
+        "id": 5,
+        "displayName": "竹内"
+      }
+    },
+    {
+      "id": 5,
+      "title": "【竹内PoC 2/3】Calibooを題材にしたSQLite SQL課題演習",
+      "status": "reviewed",
+      "createdAt": "2026-09-28T15:17:28.265826+00:00",
+      "target": {
+        "id": 5,
+        "displayName": "竹内"
+      }
+    },
+    {
+      "id": 4,
+      "title": "【竹内PoC 1/3】Caliboo の3Dモデル制作",
+      "status": "reviewed",
+      "createdAt": "2026-09-28T15:13:59.985563+00:00",
+      "target": {
+        "id": 5,
+        "displayName": "竹内"
+      }
+    }
+  ]
+}

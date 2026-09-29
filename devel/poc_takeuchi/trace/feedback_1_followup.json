@@ -1,0 +1,14 @@
+{
+  "user": {
+    "id": 5,
+    "displayName": "竹内"
+  },
+  "status": "reviewed",
+  "submission": {
+    "answerText": "既存Mascot.tsxの形状を確認し、丸いミント色の顔、2耳、黒い目と白いハイライト、ピンクの頬、笑顔を持つOBJ/MTLをPython標準ライブラリで生成した。3,634頂点・7,216三角形のメッシュを出力し、同じモデルを読むCanvasビューアを実装した。生成後と再読込時に座標、面参照、退化面、マテリアルを検証した。\n\n成果物: devel/poc_takeuchi/model/generate.py\ndevel/poc_takeuchi/model/mascot.obj\ndevel/poc_takeuchi/model/mascot.mtl\ndevel/poc_takeuchi/model/README.md\nfrontend/src/assets/takeuchi/mascot.obj\nfrontend/src/assets/takeuchi/mascot.mtl\nfrontend/takeuchi-model.html\n\n確認: python3 devel/poc_takeuchi/model/generate.py → 成功。2箇所に3,634頂点・7,216面のOBJ/MTLを生成し検証した。\npython3 devel/poc_takeuchi/model/generate.py --verify-only → 成功。両方のOBJ/MTLを再読込し、3,634頂点・7,216面を検証した。\nnode --input-type=module --check（HTML内のmoduleスクリプトを標準入力で検査） → 成功。構文エラーなし。\ncd frontend && npm run lint → 成功。tsc --noEmitがエラーなし。\ncd frontend && npm run test:coverage → 成功。34ファイル・260テスト通過。全体カバレッジはstatement 100%、branch 98.11%、function 99.23%、line 100%。\n\n限界: ブラウザでの見た目・操作はこの時点で未確認。Canvas描画は三角形の奥行き順による表示で、リアルタイムの厳密な隠面処理ではない。\n\nAIエージェントによる実作業代替PoC。モデル生成コードとOBJ/MTL、ビューアを実ファイルとして作成した。",
+    "submittedAt": "2026-09-28T15:17:05.205439+00:00",
+    "feedbackComment": "【AI講師・実作業PoC】\n既存のMascot.tsxから顔・耳・目・頬・笑顔の特徴を拾い、3,634頂点・7,216三角形のOBJ/MTLと回転確認用ビューアに落とし込めています。生成時と再読込時の両方で面参照や退化面、マテリアルを検証した点も、成果物の再現性を高めています。ブラウザでの見た目と操作は未確認なので、次にこの成果物を扱う際は実画面で回転や重なり方を確認し、深度ソートの限界が見える場面を記録してください。\n\n【実画面の追加検証】親エージェントがChromiumで3,634頂点・7,216三角形の表示、ドラッグ回転とホイール拡縮を確認した。390px幅の横溢れを発見し、作業者がbox-sizing: border-boxを適用して修正した。再検証で横溢れなし・JavaScriptエラーなしを確認した。証跡: devel/poc_takeuchi/trace/model_browser.json、model.png、model_rotated.png、model_mobile.png。",
+    "feedbackAt": "2026-09-28T15:22:59.864215+00:00",
+    "score": null
+  }
+}

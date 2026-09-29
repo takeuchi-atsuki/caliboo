@@ -66,6 +66,25 @@ describe("ホーム (docs/screens/home.md)", () => {
     expect(screen.queryByText("課題を整理する力")).not.toBeInTheDocument();
   });
 
+  it("承認済みの能力・仕事の傾向・旧形式を分けて、見出しと解釈をカードに表示する", () => {
+    vi.mocked(useHomeSummary).mockReturnValue({ summary: { ...summary, strengths: [
+      { label: "検証する力", tone: "purple", kind: "ability", summary: "複数の課題で結果を確かめた。" },
+      { label: "慎重に確かめる傾向", tone: "blue", kind: "work_style", summary: "作業ごとに期待値を確認した。" },
+      { label: "旧形式の強み", tone: "green" },
+    ] }, error: null });
+    renderHome();
+    const abilities = within(screen.getByRole("region", { name: "得意な能力" }));
+    const styles = within(screen.getByRole("region", { name: "性格・仕事の進め方の傾向" }));
+    expect(abilities.getByText("検証する力")).toBeInTheDocument();
+    expect(abilities.getByText("複数の課題で結果を確かめた。")).toBeInTheDocument();
+    expect(abilities.getByText("旧形式の強み")).toBeInTheDocument();
+    expect(abilities.queryByText("慎重に確かめる傾向")).not.toBeInTheDocument();
+    expect(styles.getByText("慎重に確かめる傾向")).toBeInTheDocument();
+    expect(styles.getByText("作業ごとに期待値を確認した。")).toBeInTheDocument();
+    expect(styles.queryByText("旧形式の強み")).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "強みを詳しく見る" })).toHaveAttribute("href", "/strengths");
+  });
+
   it("取得待ちはステータス、取得失敗はエラーとして通知する", () => {
     vi.mocked(useHomeSummary).mockReturnValue({ summary: null, error: null });
     const view = renderHome();

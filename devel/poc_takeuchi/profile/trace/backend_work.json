@@ -1,0 +1,42 @@
+{
+  "task": "能力と仕事の進め方の傾向として強み候補を保存・承認・表示するバックエンド実装",
+  "workerOutput": "既存候補テーブルの列を変更せず strength_interpretations を追加した。旧候補は ability と空の解釈として読む。CandidateInput、決定API、候補一覧、ホーム表示に kind・summary・scopeNote を追加した。work_style は解釈と範囲の非空、および異なる2件の日報・提出物の本人根拠を検証する。同一提出の回答と講師所見を2件に数えず、適格な出典の原文引用検証を維持した。重複・承認済み候補の置換・古い候補の承認拒否は kind と skillCode の組で行う。最新mainの自動AI workerとholdoutの共通検証経路を更新し、AI生成プロンプトにも新契約を反映した。旧holdout結果は保存時に未指定の既定フィールドを付加せず、従来の往復形式を保つ。追加テスト観点の承認後、通常取込・自動worker・holdout・既存DB・旧候補互換に対応する単体3件と統合4件を追加した。異なる提出の講師所見2件、本人記録1件と講師所見1件を誤って傾向に数えないことも確認した。",
+  "commands": [
+    {
+      "command": "cd backend && python3 -m flake8 src tests",
+      "result": "成功、警告ゼロ（/tmp/caliboo-strength-profile-main）"
+    },
+    {
+      "command": "cd backend && PYTHONPATH=/tmp/caliboo-strength-profile-main/backend/src python3 -m pytest --disable-socket tests/integration/ -q --tb=short",
+      "result": "最終テスト追加後74成功、Starlette/httpxの既存deprecation警告1件。初回は69成功1失敗で、旧holdout結果に新しい既定フィールドを付加する互換回帰を発見・修正した。"
+    },
+    {
+      "command": "cd backend && PYTHONPATH=/tmp/caliboo-strength-profile-main/backend/src python3 -m pytest --disable-socket tests/integration/test_holdout.py -q --tb=short",
+      "result": "修正後1成功"
+    },
+    {
+      "command": "cd backend && PYTHONPATH=/tmp/caliboo-strength-profile-main/backend/src python3 -m pytest --disable-socket tests/unit/ --cov=caliboo_api --cov-report=term-missing -q --tb=short",
+      "result": "新規単体3件を含む608成功、TOTALカバレッジ98%。Starlette/httpxの既存deprecation警告1件。実行開始後にmentor別提出の追加assertを加えたため、そのassertはfocused再実行で検証した。"
+    },
+    {
+      "command": "cd backend && PYTHONPATH=/tmp/caliboo-strength-profile-main/backend/src python3 -m pytest --disable-socket tests/unit/test_strength_profile.py tests/integration/test_strength_profile.py -q --tb=short",
+      "result": "レビュー補強後のfocused 7件成功。異なるmentor提出の拒否と新style承認後の旧ability承認を含む。"
+    }
+  ],
+  "artifacts": [
+    "backend/src/caliboo_api/schemas/agent_jobs.py",
+    "backend/src/caliboo_api/schemas/home.py",
+    "backend/src/caliboo_api/extension_models.py",
+    "backend/src/caliboo_api/data/agent_jobs.py",
+    "backend/src/caliboo_api/data/home_data.py",
+    "backend/src/caliboo_api/routers/development.py",
+    "backend/src/caliboo_api/routers/holdout.py",
+    "backend/src/caliboo_api/services/strength_result.py",
+    "backend/src/caliboo_api/services/job_inference.py",
+    "backend/tests/unit/test_strength_profile.py",
+    "backend/tests/integration/test_strength_profile.py"
+  ],
+  "limitations": "本人の達成かどうかの意味判定は機械的な出典分類と引用照合に加えて解析者・講師の判断が必要。新しいAIプロバイダーへの実通信は行っていない。",
+  "model": "gpt-6-sol",
+  "promptVersion": "profile-work-2026-09-29.1"
+}

@@ -1,0 +1,6 @@
+{
+  "issue": "未実施事項のkpt.problemをTESTの達成根拠に含めていた",
+  "action": "独立解析エージェントへ差し戻し、当該引用を削除して限界欄へ移すよう依頼",
+  "response": "poc_analysis_result.json",
+  "parentChangedAssessment": false
+}
