@@ -57,6 +57,7 @@ export default defineConfig({
         "src/features/study/useQuiz.ts",
         "src/features/study/QuizPracticeReason.tsx",
         "src/features/home/useHomeSummary.ts",
+        "src/features/home/strengthSummary.ts",
         "src/features/report/useReportForm.ts",
         "src/features/report/reportAutosave.ts",
         "src/components/theme/ThemeModeProvider.tsx",

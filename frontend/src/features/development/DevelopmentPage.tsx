@@ -68,7 +68,8 @@ function Candidate({ candidate, admin, busy, decide }: {
     {admin && <Typography>{labels[candidate.status]} / 確信度 {candidate.confidence}%</Typography>}
     {candidate.scopeNote && <Typography variant="body2" color="text.secondary">評価できる範囲: {candidate.scopeNote}</Typography>}
     {!pending && <Typography>次の取り組み: {candidate.growthAction}</Typography>}
-    <Box component="details" sx={{ '& summary': { cursor: "pointer", fontWeight: 700 } }}>
+    {/* !NOTE: 本人向けの生ログ公開は一時凍結。講師の承認に必要な根拠確認は維持する。 */}
+    {admin && <Box component="details" sx={{ '& summary': { cursor: "pointer", fontWeight: 700 } }}>
       <Box component="summary">根拠を見る（{candidate.evidence.length}件）</Box>
       <Stack spacing={1} sx={{ mt: 1 }}>
         {candidate.evidence.map((item, index) => <Typography key={index} component="blockquote" sx={{ m: 0, pl: 2, borderLeft: "3px solid", borderColor: "divider", overflowWrap: "anywhere" }}>
@@ -77,7 +78,7 @@ function Candidate({ candidate, admin, busy, decide }: {
         {candidate.evidence.length === 0 && <Typography variant="body2">引用できる根拠はありません。</Typography>}
         <Typography variant="caption" color="text.secondary">スキルコード: {candidate.skillCode}</Typography>
       </Stack>
-    </Box>
+    </Box>}
     {pending ? <><TextField label="強みの表現" value={label} onChange={(e) => setLabel(e.target.value)} />
       <TextField label="強みの解釈" multiline value={summary} onChange={(e) => setSummary(e.target.value)} />
       <TextField label="評価できる範囲" multiline value={scopeNote} onChange={(e) => setScopeNote(e.target.value)} />

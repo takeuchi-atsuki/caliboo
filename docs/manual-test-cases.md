@@ -443,3 +443,16 @@ JavaScript実行時エラーは0件。独立HTMLはVitestのカバレッジ対�
 講師の編集・承認と空状態は `DevelopmentPage.spec.tsx`、ホーム表示は `HomePage.spec.tsx` でも確認する。竹内の実データでの実行手順は [verify-approval.cjs](../devel/poc_takeuchi/profile/verify-approval.cjs) と [verify-browser.cjs](../devel/poc_takeuchi/profile/verify-browser.cjs)。前者は未承認候補に承認操作を行うため、保存済みのAI講師判断と実行対象を確認してから使う。後者の本人パスワードは `TAKEUCHI_POC_PASSWORD` 環境変数から渡し、ファイルへ保存しない。
 
 2026-09-29の実データ確認はPASS。新4候補を講師画面から承認し、本人画面の能力・傾向の区分、全17引用の開閉、日報・Fan-in、320px・390pxで横はみ出しなしを確認した。JavaScriptエラー0件。[成果報告](poc-strength-profile-2026-09-29.md)と[検証記録](../devel/poc_takeuchi/profile/trace/browser-profile.json)を参照。
+
+## ホームの強み要約・本人向け根拠表示の凍結（2026-09-30）
+
+[ホーム仕様](screens/home.md#要約タグの表現) と [強み画面仕様](screens/strengths.md#本人向け根拠表示の一時凍結2026-09-30) に対応する。Chromium + Playwrightで表示確認用APIモックを使用した。最新mainを基にしたPR用の作業ツリーでも全項目を再確認した。実DBの変更・根拠の削除は行っていない。
+
+| ID | 操作・対象 | 期待結果 | 結果 |
+| --- | --- | --- | --- |
+| ST-01 | 320/390/768/1440px、ライト/ダークでホームを表示 | 能力と仕事の進め方を短いタグで表示し、長文の判断理由を出さない。AI作業PoCの出典表示を保持し、横にはみ出さない | PASS（8通り） |
+| ST-02 | 各表示幅で「強みを詳しく見る」を選択 | 詳細画面で元の見出し・説明・次の一歩の入力を確認できる。「根拠を見る」と引用ログは本人向けDOMに存在しない | PASS（8通り） |
+| ST-03 | 320pxで未知の長い見出しと強み0件を表示 | 原文の意味を切り捨てず折り返し、0件では案内を表示する | PASS（両モード） |
+| ST-04 | 講師で強み詳細を開き「根拠を見る」を選択 | 原文と出典を引き続き確認できる | PASS（両モード） |
+
+実行時例外なし。PC・スマートフォン幅の要約パネルはスクリーンショットでも確認した。`strengthSummary.spec.ts`・`HomePage.spec.tsx`は要約・旧形式・否定表現の保持・出典表示・詳細への導線を、`DevelopmentPage.spec.tsx`は本人への非表示と講師の根拠確認・承認を検証する。最新mainへ統合したブランチでフロントエンド321テスト成功、カバレッジは行/文100%・分岐98.61%・関数99.43%。型検査成功。iOS実機・VoiceOverは未実施。

@@ -4,6 +4,8 @@
 
 ## ホーム(1b)
 
+2026-09-30のユーザーによる要約表示・根拠導線凍結の指示を反映し、ホームのタグ表示は [ホーム仕様](screens/home.md#要約タグの表現)、本人・講師の表示範囲は [強み画面仕様](screens/strengths.md#本人向け根拠表示の一時凍結2026-09-30) に従う。既存のデータ反映・承認済み表示・画面表示の観点として、`strengthSummary.spec.ts`・`HomePage.spec.tsx`・`DevelopmentPage.spec.tsx`と手動確認に対応付ける。新しいAPI結合フローは追加しない。
+
 - `GET /api/home/summary`のデータが正しく画面に反映される(ユーザー名・ストリーク・達成率・強みタグ・ショートカット3枚)
 - ショートカットカードクリックで`/assignments` `/study` `/ojt`へ正しく遷移する（日報は「今日のふり返り」から`/report`へ遷移する）
 
@@ -300,6 +302,6 @@ PL-1/2は`tests/integration/test_learning_cycle.py`と`tests/unit/test_learning_
 - SP-1: 能力・性格傾向・判断理由・評価範囲・原文根拠を保存し、講師の編集・承認後に本人一覧とホームへ反映する。
 - SP-2: 性格傾向は異なる2件以上の本人記録を必要とし、同一記録の重複、講師所見のみ、引用不一致、文脈専用項目を拒否する。
 - SP-3: 旧形式・既存DBを保持し、能力と性格傾向を併存させ、同じ種類・スキルの新しい承認だけが旧候補を置換する。古い同種候補の承認を拒否する。
-- SP-4: 2区分の表示、判断理由と範囲、根拠の開閉、講師の編集と承認、空状態、狭い画面の表示が機能する。
+- SP-4: 2区分の表示、判断理由と範囲、講師の根拠の開閉、講師の編集と承認、空状態、狭い画面の表示が機能する。
 
 SP-1〜3は `backend/tests/unit/test_strength_profile.py` と `backend/tests/integration/test_strength_profile.py` に対応付ける。既存DBへの追加テーブル作成、自動ワーカーとホールドアウトの共通契約も確認する。SP-4は `DevelopmentPage.spec.tsx`・`HomePage.spec.tsx` と `manual-test-cases.md` に対応付ける。本人分離・未承認非公開・古いジョブ拒否の既存観点も維持する。

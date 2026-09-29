@@ -39,7 +39,7 @@ beforeEach(() => {
 function renderPage() { return render(<MemoryRouter><DevelopmentPage /></MemoryRouter>); }
 
 describe("実提出データの強み画面 (docs/strength-profile.md)", () => {
-  it("能力と仕事の傾向を分け、理由・範囲・次の取り組みを見せ、根拠は開いて確認する", async () => {
+  it("本人には能力と仕事の傾向・理由・範囲・次の取り組みを見せ、根拠ログは描画しない", async () => {
     candidates = [ability, style];
     renderPage();
     const abilities = within(await screen.findByRole("region", { name: "得意な能力" }));
@@ -50,13 +50,23 @@ describe("実提出データの強み画面 (docs/strength-profile.md)", () => {
     expect(abilities.getByText(`次の取り組み: ${ability.growthAction}`)).toBeInTheDocument();
     expect(styles.getByRole("heading", { name: style.label })).toBeInTheDocument();
     expect(styles.getByText(style.summary!)).toBeInTheDocument();
-    const details = abilities.getByText("根拠を見る（1件）").closest("details")!;
+    expect(screen.queryByText(/根拠を見る|スキルコード|report:1:keep/)).not.toBeInTheDocument();
+    expect(screen.queryByText(evidence[0].quote)).not.toBeInTheDocument();
+    expect(screen.getByText("次の行動")).toBeInTheDocument();
+  });
+
+  it("講師は引き続き根拠を開閉して原文と出典を確認できる", async () => {
+    vi.mocked(useAuth).mockReturnValue({ user: { id: 1, loginId: "teacher", displayName: "講師", role: "admin" } } as ReturnType<typeof useAuth>);
+    candidates = [ability];
+    renderPage();
+    const toggle = await screen.findByText("根拠を見る（1件）");
+    const details = toggle.closest("details")!;
     expect(details.open).toBe(false);
-    await userEvent.setup().click(abilities.getByText("根拠を見る（1件）"));
+    await userEvent.setup().click(toggle);
     expect(details.open).toBe(true);
     expect(within(details).getByText(evidence[0].quote)).toBeVisible();
     expect(within(details).getByText(/report:1:keep/)).toBeVisible();
-    await userEvent.setup().click(abilities.getByText("根拠を見る（1件）"));
+    await userEvent.setup().click(toggle);
     expect(details.open).toBe(false);
     expect(screen.getByText("次の行動")).toBeInTheDocument();
   });
