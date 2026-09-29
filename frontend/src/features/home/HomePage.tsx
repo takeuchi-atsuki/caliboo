@@ -3,7 +3,6 @@ import { Alert, Box, Button, Skeleton, Stack, Typography } from "@mui/material";
 
 import { Mascot } from "../../components/mascot/Mascot";
 import { DonutProgress } from "../../components/progress/DonutProgress";
-import { Tag } from "../../components/badge/Tag";
 import { ShortcutCard } from "../../components/card/ShortcutCard";
 import { PageContainer } from "../../components/layout/PageContainer";
 import { PhosphorIcon } from "../../components/icon/PhosphorIcon";
@@ -39,10 +38,23 @@ export function HomePage() {
                   <Typography id="strengths-title" component="h2" sx={{ fontSize: { xs: 23, md: 28 }, fontWeight: 800, letterSpacing: "-0.035em", lineHeight: 1.5 }}>今のあなたの強み</Typography>
                 </Stack>
                 <Typography variant="body2" color="text.secondary">日々の取り組みから、あなたらしさを発見。</Typography>
-                <Box sx={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 1, my: 2.5 }}>
+                <Stack spacing={2} sx={{ my: 2.5 }}>
                   {summary.strengths.length === 0 && <Typography variant="body2" color="text.secondary">日報や課題から強みを見つけていきます。</Typography>}
-                  {summary.strengths.map((strength) => <Tag key={strength.label} label={strength.label} tone={strength.tone} />)}
-                </Box>
+                  {(["ability", "work_style"] as const).map((kind) => {
+                    // !NOTE: 旧APIのkind未設定は能力として表示し、既存の承認済み候補を保つ。
+                    const items = summary.strengths.filter((strength) => (strength.kind ?? "ability") === kind);
+                    if (items.length === 0) return null;
+                    return <Box component="section" key={kind} aria-label={kind === "ability" ? "得意な能力" : "性格・仕事の進め方の傾向"}>
+                      <Typography component="h3" sx={{ fontWeight: 700, mb: 1 }}>{kind === "ability" ? "得意な能力" : "性格・仕事の進め方の傾向"}</Typography>
+                      <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "repeat(2, minmax(0, 1fr))" }, gap: 1.5 }}>
+                        {items.map((strength, index) => <Box key={`${strength.label}-${index}`} sx={{ bgcolor: "var(--color-panel)", border: "1px solid var(--color-border-soft)", borderRadius: "var(--radius-lg)", p: 2, minWidth: 0 }}>
+                          <Typography sx={{ fontWeight: 700, overflowWrap: "anywhere" }}>{strength.label}</Typography>
+                          {strength.summary && <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, overflowWrap: "anywhere" }}>{strength.summary}</Typography>}
+                        </Box>)}
+                      </Box>
+                    </Box>;
+                  })}
+                </Stack>
                 <Button component={Link} to="/strengths" variant="contained" color="secondary" endIcon={<PhosphorIcon name="ph ph-arrow-right" size={18} />} sx={{ minHeight: 48, width: { xs: "100%", sm: "auto" } }}>強みを詳しく見る</Button>
                 <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>強みの根拠から次の行動を決め、振り返りを残せます。表示中は5秒ごとに更新します。</Typography>
               </Box>

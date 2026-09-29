@@ -1,0 +1,13 @@
+{
+  "result": "指摘2点とも解消",
+  "reviewed": [
+    "backend/tests/unit/test_strength_profile.py",
+    "backend/tests/integration/test_strength_profile.py"
+  ],
+  "resolved": {
+    "SP2-ROLE": "異なる提出のfeedback 2件、および本人記録1件＋別提出feedbackの422を確認するケースが追加され、講師所見を本人記録に数える回帰を検出できる。",
+    "SP3-CROSS-KIND": "新しいwork_style承認後、同じskillCodeの古いabilityを200で承認し、両種類の併存を確認するケースが追加された。"
+  },
+  "remainingFindings": [],
+  "verification": "静的確認のみ。編集・テスト再実行なし。"
+}

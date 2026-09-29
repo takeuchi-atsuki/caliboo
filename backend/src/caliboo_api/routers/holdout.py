@@ -160,7 +160,8 @@ def import_result(case_id: int, payload: ResultInput, admin: User = Depends(requ
         {"status": "labeling"}, synchronize_session=False)
     if not locked or session.query(Label).filter_by(case_id=case_id).count() != 2:
         raise HTTPException(409, "two fixed labels required before result")
-    row.result = payload.result.model_dump()
+    # !NOTE: 旧形式を再取得したとき、追加フィールドの既定値で提出原文を変えない。
+    row.result = payload.result.model_dump(exclude_unset=True)
     row.result_at, row.result_by, row.status = now_iso(), admin.id, "result_ready"
     session.commit()
     return case_view(session, row, admin.id)

@@ -135,6 +135,16 @@ class AgentJobExecution(Base):
     last_error = Column(String, nullable=True)
 
 
+class StrengthInterpretation(Base):
+    """旧候補テーブルを変更せず、能力・仕事の進め方の解釈を保持する。"""
+
+    __tablename__ = "strength_interpretations"
+    candidate_id = Column(Integer, ForeignKey("strength_candidates.id"), primary_key=True)
+    kind = Column(String, nullable=False)
+    summary = Column(String, nullable=False, default="")
+    scope_note = Column(String, nullable=False, default="")
+
+
 class StrengthEvaluation(Base):
     __tablename__ = "strength_evaluations"
     __table_args__ = (UniqueConstraint("job_id", "reviewer_id"),)

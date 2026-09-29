@@ -1,0 +1,28 @@
+{
+  "reviewType": "独立コードレビュー",
+  "workspace": "/tmp/caliboo-strength-profile-main",
+  "baseline": "main e94a5e6",
+  "result": "確認範囲では具体的な不具合・回帰を特定しなかった",
+  "findings": [],
+  "reviewed": [
+    "AGENTS.md、言語別規約、docs/strength-profile.mdと今回のbackend/frontend差分を照合した",
+    "kind・summary・scopeNoteの追加テーブルへの保存と、解釈行がない旧候補のability扱いを確認した",
+    "承認済み候補の置換と古い候補の承認拒否がkind・skillCodeの組で判定されることを確認した",
+    "work_styleの解釈必須、異なる本人記録2件、同一記録の重複排除、原文一致、文脈専用項目の拒否を確認した",
+    "通常workerが共通の結果保存・検証処理に合流し、holdoutも同じ根拠検証を使用することを確認した",
+    "holdoutは導入時からv1材料を保存しており、追加されたsourceRole参照による既存ケースの互換問題には当たらないことを履歴で確認した",
+    "UIの種類別表示、旧データの既定表示、編集値の送信、自動更新中の入力保持、承認後の表示更新を静的に確認した"
+  ],
+  "notVerified": [
+    "ブラウザーでの実操作・狭い画面の描画",
+    "実DBの更新・再起動を伴う動作",
+    "実際の外部推論結果と並行リクエスト",
+    "レビュー後に他の担当者が追加した変更"
+  ],
+  "execution": {
+    "codeEdited": false,
+    "testsCreated": false,
+    "testsRun": false,
+    "reason": "追加テスト観点は承認待ちであり、既存テスト成功の繰り返しは依頼範囲外"
+  }
+}

@@ -292,3 +292,14 @@ PL-1/2は`tests/integration/test_learning_cycle.py`と`tests/unit/test_learning_
 ### 実日報評価の独立性（2026-09-29、GitHub #18）
 
 既存の未完了バックログ評価観点（2名・20件・不足を合格にしない）を具体化する。`tests/unit/test_holdout.py`で未閲覧申告、固定材料、二重ラベル・同時保存、結果先行の拒否、原文引用、受容性の固定、モデル/プロンプト版ごとの集計を検証する。旧方式の20件×2名でも合格にしない回帰は`test_backlog_extensions.py`。`tests/integration/test_holdout.py`は2名の操作→結果の同時登録→受容性、再起動保持、本人への非配信、各APIの講師限定を確認する。`HoldoutEvaluation.spec.tsx`は入力保持・必須確認・手順に応じた表示・二重保存防止を確認する。すべて合成fixtureであり、実日報の本番妥当性は#3で別に評価する。
+
+## 能力・性格傾向としての強み（2026-09-29）
+
+2026-09-29にユーザー承認済み（提示した4観点に「承認する」と回答）。仕様は [能力・性格傾向の仕様](strength-profile.md) を参照。
+
+- SP-1: 能力・性格傾向・判断理由・評価範囲・原文根拠を保存し、講師の編集・承認後に本人一覧とホームへ反映する。
+- SP-2: 性格傾向は異なる2件以上の本人記録を必要とし、同一記録の重複、講師所見のみ、引用不一致、文脈専用項目を拒否する。
+- SP-3: 旧形式・既存DBを保持し、能力と性格傾向を併存させ、同じ種類・スキルの新しい承認だけが旧候補を置換する。古い同種候補の承認を拒否する。
+- SP-4: 2区分の表示、判断理由と範囲、根拠の開閉、講師の編集と承認、空状態、狭い画面の表示が機能する。
+
+SP-1〜3は `backend/tests/unit/test_strength_profile.py` と `backend/tests/integration/test_strength_profile.py` に対応付ける。既存DBへの追加テーブル作成、自動ワーカーとホールドアウトの共通契約も確認する。SP-4は `DevelopmentPage.spec.tsx`・`HomePage.spec.tsx` と `manual-test-cases.md` に対応付ける。本人分離・未承認非公開・古いジョブ拒否の既存観点も維持する。

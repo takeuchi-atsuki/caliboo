@@ -1,0 +1,10 @@
+{
+  "status": 200,
+  "user": {
+    "id": 5,
+    "loginId": "takeuchi",
+    "displayName": "竹内",
+    "role": "member",
+    "streakDays": 0
+  }
+}

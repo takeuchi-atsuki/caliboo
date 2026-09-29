@@ -522,7 +522,7 @@ print(opener.open("http://localhost:8000/api/home/summary").read().decode("utf-8
 以下の既存APIの変更と追加APIを使用する。正確な型定義は `schemas/agent_jobs.py`、`routers/users.py`、`routers/proposal_agent.py` と `/openapi.json` を参照。
 
 - `login/me` は `streakDays` を返す。ログイン失敗が実接続元単位で15分20回に達した場合は429と `Retry-After`（秒）を返す。
-- ホームの `strengths` は本人の承認済み候補（可変件数）。各要素は `label,tone,evidence,growthAction`。未承認のみなら空配列。
+- ホームの `strengths` は本人の承認済み候補（可変件数）。各要素は `label,tone,evidence,growthAction,kind,summary,scopeNote`。未承認のみなら空配列。
 - OJTのmessagesは共通初期メッセージと本人×課の永続履歴、`escalated`を返す。chatは質問と一次回答を保存する。
 - クイズの `choices` は文字列または `{text,imageUrl,alt}`。画像は `/quiz-assets/[A-Za-z0-9_-]+.svg` に限定、alt必須。`selectedIndex`が範囲外なら422。正解済み問題の重複を数えず、本人の分野別・資格全体進捗を更新する。画像自体は認証を要しない静的コンテンツ。
 - 課題作成は任意の `targetUserId`（有効なmember）を受け付ける。不正な対象は404。フィードバックは任意の `score`（0〜100整数/null）を受け付け、提出の詳細にも返す。
@@ -541,8 +541,8 @@ print(opener.open("http://localhost:8000/api/home/summary").read().decode("utf-8
 | POST | /api/development/jobs/{job_id}/retry | admin。失敗ジョブをpendingに戻し実行情報を初期化。対象不在/無効404、failed以外409 |
 | GET | /api/development/strength-materials/schema | admin。強み解析入力 `StrengthAnalysisMaterials` のJSON Schema |
 | GET | /api/development/jobs/{job_id} | admin。ジョブ情報・materials・result、存在すればcontext（進捗）。強み材料はv1へ検証・整形。不正な保存済み材料/未対応版は409 |
-| POST | /api/development/jobs/{job_id}/strength-result | admin。StrengthResultを取り込み候補を確認待ちで保存。引用/材料ID/skillCode重複を検証。古い/完了済み409、形式422 |
-| POST | /api/development/strengths/{candidate_id}/decision | admin。`{status:approved/rejected,label,growthAction}`。確認待ちのみ。既決409 |
+| POST | /api/development/jobs/{job_id}/strength-result | admin。StrengthResultを取り込み候補を確認待ちで保存。引用/材料ID/種類とスキルの重複を検証。古い/完了済み409、形式422 |
+| POST | /api/development/strengths/{candidate_id}/decision | admin。`{status:approved/rejected,label,growthAction}`、任意 `summary,scopeNote,kind`。kind指定は保存済みと一致する場合のみ。確認待ちのみ。既決409 |
 | GET | /api/development/evaluations/{job_id}/materials | admin。人間ラベル付け用のv1材料（解析結果を含めない）。不正な保存済み材料/未対応版は409 |
 | POST | /api/development/evaluations/{job_id} | admin。`{skillCodes,accepted,comment}`。旧方式の参考評価。完了した強みジョブのみ。本人の評価を更新しmatch(exact/partial/none)を返す。合格集計対象外 |
 | GET | /api/development/evaluations | admin。evaluatedJobs/requiredJobs=20/requiredReviewers=2/agreement/acceptance/threshold=0.8/status/trace/legacyEvaluations。新方式のみ集計。最新ケースのtraceと同一条件に限定。statusはinsufficient_data/passed/failed |
@@ -556,8 +556,10 @@ StrengthResultの形:
 
 ```json
 {
-  "trace": {"provider":"codex_agent","model":"gpt-6-astra","promptVersion":"live-2026-09-28.2"},
-  "candidates": [{"label":"確認する力","skillCode":"TEST","confidence":75,
+  "trace": {"provider":"codex_agent","model":"gpt-6-astra","promptVersion":"live-2026-09-29.1"},
+  "candidates": [{"kind":"ability","label":"実測で品質を確かめるのが得意","skillCode":"TEST","confidence":75,
+    "summary":"原文の行動から、この能力を判断した理由",
+    "scopeNote":"観測した条件と未検証の範囲",
     "evidence":[{"materialId":"report:1:keep","quote":"原文の引用"}],
     "growthAction":"次の小さな取り組み"}],
   "notes":"解析の根拠と限界"
@@ -565,6 +567,8 @@ StrengthResultの形:
 ```
 
 候補は最大10件、根拠は候補ごとに1〜10件、confidenceは0〜100整数。ジョブのsourcesから原文を引用する。`evidenceEligible=false`（Problem/Try/気分コメント）を根拠にすると422。入力なしを推測して補完せず空候補を保存できる。traceはモデル・プロンプト版の追跡情報であり、サーバーがモデル実行を証明する署名ではない。取込は認証済み講師専用。
+
+`kind` は `ability`（既定）または `work_style`。`summary,scopeNote` は旧形式では空文字となる。`work_style` は両項目の非空と、異なる2件以上の本人記録（`self_report` / `work_product`）の引用を必須とし、不足は422。同じ日報・提出の別フィールドは同一記録と数える。候補の重複と承認時の置換は `(kind,skillCode)` 単位で、同じスキルの能力と仕事の傾向は併存する。解釈を省略した承認は保存済み内容を保持する。[能力・性格傾向の仕様](strength-profile.md)を参照。
 
 ProposalAgentResultはtrace/title/body/messageForMember/rationale/estimateMinutes（5〜480）と任意のevidence。trace.providerはcodex_agent/openai。openai再生成はevidence必須で、materialId（material:0からの添字）と元資料quoteの連続部分を検証し、不一致は422。旧Codex取込のevidence省略は互換維持する。再生成結果の自動配信はしない。
 

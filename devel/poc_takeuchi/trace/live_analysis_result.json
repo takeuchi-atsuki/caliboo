@@ -1,0 +1,47 @@
+{
+  "trace": {"provider":"codex_agent","model":"gpt-6-astra","promptVersion":"live-2026-09-28.2"},
+  "candidates": [
+    {
+      "label":"NULLと提出行の有無を区別したSQLの作成・実行",
+      "skillCode":"DBAD","confidence":94,
+      "evidence":[
+        {"materialId":"submission:4:answer","quote":"Python標準ライブラリのsqlite3でメモリDBにusers、reports、assignments、submissionsの4表を作成した。4人・2課題・4提出と未提出、未採点のNULLを用意し、INNER/LEFT JOIN、GROUP BY、未提出抽出、COUNTとNULLの違いを6つのSQLで実行した。"},
+        {"materialId":"submission:4:answer","quote":"SELECT u.id AS user_id,\n       CASE WHEN s.id IS NULL THEN '未提出'\n            WHEN s.score IS NULL THEN '提出済み・未採点'\n            ELSE '採点済み' END AS state\nFROM users AS u\nLEFT JOIN submissions AS s ON s.user_id = u.id AND s.assignment_id = 10\nORDER BY u.id;"},
+        {"materialId":"submission:4:answer","quote":"外部キー違反とROLLBACKも実行し、固定した期待値と実測値を8/8項目で照合した。"}
+      ],
+      "growthAction":"未提出・未採点・採点済みを含むデータを1組追加し、SQLを実行する前に期待する抽出結果を記述する。"
+    },
+    {
+      "label":"セッション認証と出力整形を備えたAPI利用スクリプトの実装",
+      "skillCode":"PROG","confidence":95,
+      "evidence":[
+        {"materialId":"submission:5:answer","quote":"urllib、http.cookiejar、getpassで再実行可能な登録アカウント一覧スクリプトを作成した。"},
+        {"materialId":"submission:5:answer","quote":"GET /api/usersから表示用6列のみを抽出し、表またはJSONで出力する。接続先をローカルHTTPに制限し、リダイレクトとプロキシ利用を無効にした。Cookieはメモリに保持し、終了時にログアウトする。実APIのデモ実行で竹内(id=5, loginId=takeuchi)を含む5件を確認した。"},
+        {"materialId":"submission:3:answer","quote":"3,634頂点・7,216三角形のメッシュを出力し、同じモデルを読むCanvasビューアを実装した。"}
+      ],
+      "growthAction":"一覧APIの空配列と不正な応答形式を入力する小さな検証を追加し、表示結果とエラーメッセージを確認する。"
+    },
+    {
+      "label":"期待値照合と異常系を含む成果物の検証",
+      "skillCode":"TEST","confidence":96,
+      "evidence":[
+        {"materialId":"submission:3:answer","quote":"生成後と再読込時に座標、面参照、退化面、マテリアルを検証した。"},
+        {"materialId":"submission:4:answer","quote":"外部キー違反とROLLBACKも実行し、固定した期待値と実測値を8/8項目で照合した。"},
+        {"materialId":"submission:5:answer","quote":"誤認証では401、一般ユーザーの一覧取得では403を区別して表示することを実測した。"},
+        {"materialId":"submission:5:answer","quote":"python3 -m unittest discover -s devel/poc_takeuchi/users -p 'test_*.py' -v → 3件成功。ローカルURL制限、表示項目、--demoのアカウント制限を確認。"}
+      ],
+      "growthAction":"停止したローカルサーバーへの接続を1ケース検証し、期待する終了コードとエラーメッセージを実測結果と照合する。"
+    },
+    {
+      "label":"実行条件と期待値・実測値の記録",
+      "skillCode":"DOCM","confidence":88,
+      "evidence":[
+        {"materialId":"submission:4:answer","quote":"結果はJSONとMarkdownに保存した。"},
+        {"materialId":"submission:4:answer","quote":"## rollback\n\n有効な追加をBEGIN内で実施後、ROLLBACKで件数と行を元に戻す。\n\n期待値:\n\n```json\n{\n  \"before\": 4,\n  \"during\": 5,\n  \"after\": 4,\n  \"new_row\": 0\n}\n```\n\n実測値:\n\n```json\n{\n  \"before\": 4,\n  \"during\": 5,\n  \"after\": 4,\n  \"new_row\": 0\n}\n```\n\n照合: 成功"},
+        {"materialId":"submission:5:answer","quote":"python3 devel/poc_takeuchi/users/list_users.py --demo --format json → 終了コード0。表示対象の6項目だけを持つ5件のJSONを確認。"}
+      ],
+      "growthAction":"検証結果を1件選び、前提条件・実行手順・期待値・実測値を同じ形式でまとめ、再実行に必要な情報が揃うか確認する。"
+    }
+  ],
+  "notes":"提出物に含まれる実装、SQL、実行結果を主な根拠とした。日報Keepは本人申告の形式だが、今回はAIが作業を代替したPoCの記録であり、人間本人の能力・感情・成長を測定したものではない。講師所見だけによる確定や、Problem・Try・感情欄を用いた達成認定は行っていない。提出された記録の範囲での評価であり、外部ファイルの閲覧や再実行は行っていない。SQLは小規模な教材用メモリDB、APIはローカル開発環境での観測に限られる。技能の経時的な改善や、別環境・大量データでの再現性は確定しない。"
+}

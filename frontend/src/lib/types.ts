@@ -1,4 +1,5 @@
 export type Tone = "green" | "blue" | "purple" | "pink" | "orange";
+export type StrengthKind = "ability" | "work_style";
 
 export interface CurrentUser {
   id: number;
@@ -12,7 +13,7 @@ export interface HomeSummary {
   user: { name: string; streakDays: number };
   hero: { message: string };
   certification: { name: string; achievementPercent: number };
-  strengths: { label: string; tone: Tone; evidence?: { quote: string }[]; growthAction?: string }[];
+  strengths: { label: string; tone: Tone; kind?: StrengthKind; summary?: string; scopeNote?: string; evidence?: { quote: string }[]; growthAction?: string }[];
   shortcuts: {
     icon: string;
     title: string;
@@ -461,6 +462,7 @@ export interface LearningAction {
 export interface StrengthCandidate {
   id: number; jobId: number; userId: number; label: string; skillCode: string;
   confidence: number; growthAction: string; status: string;
+  kind?: StrengthKind; summary?: string; scopeNote?: string;
   evidence: { materialId: string; quote: string; source: { date: string; field: string } }[];
 }
 

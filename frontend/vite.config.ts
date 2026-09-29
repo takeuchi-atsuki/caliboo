@@ -1,8 +1,18 @@
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vitest/config";
+import { fileURLToPath } from "node:url";
 
 export default defineConfig({
   plugins: [react()],
+  build: {
+    // !NOTE: 竹内PoCのモデル閲覧ページも成果物として配布するため、通常画面と同時にビルドする。
+    rollupOptions: {
+      input: [
+        fileURLToPath(new URL("./index.html", import.meta.url)),
+        fileURLToPath(new URL("./takeuchi-model.html", import.meta.url)),
+      ],
+    },
+  },
   server: {
     port: 5173,
     // !NOTE: バックエンドはCookieベースのセッション認証を使うため、フロントと同一オリジンで

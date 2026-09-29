@@ -1,0 +1,22 @@
+{
+  "status": "completed",
+  "completedAt": "2026-09-28T16:19:04.889071+00:00",
+  "userId": 5,
+  "loginId": "takeuchi",
+  "assignments": [
+    4,
+    5,
+    6
+  ],
+  "reportId": "rpt_20260929_6",
+  "liveJobId": 9,
+  "pocRunId": "run_0001",
+  "approvedCandidates": 4,
+  "verifiedQuotes": 13,
+  "browserResult": "PASS",
+  "report": "docs/poc-takeuchi-2026-09-29.md",
+  "checks": "trace/validation_summary.json",
+  "branch": "feat/takeuchi-live-strength-poc",
+  "committed": false,
+  "humanEvaluation": false
+}

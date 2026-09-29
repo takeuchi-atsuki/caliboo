@@ -1,0 +1,27 @@
+{
+  "task": "強みを能力と仕事の傾向として表示し、講師の解釈・評価範囲の編集承認に対応する。竹内PoCのモデル閲覧ページを本番ビルドに含める。",
+  "workerOutput": "強み画面を能力と性格・仕事の進め方の傾向に分け、見出し・解釈・評価範囲・次の取り組みを表示した。原文引用と出典、スキルコードは展開式の詳細へ移した。講師は見出し・解釈・評価範囲・次の取り組みを編集して承認できる。ホームの承認済み強みを種類別のカードにした。最新mainの5秒自動更新、解析失敗と講師確認待ちの案内、LearningActionsを保持した。竹内PoCモデル閲覧ページをマルチページビルドに追加し、OBJ/MTLをViteのURL importで参照した。",
+  "commands": [
+    "cd frontend && npm run lint: exit 0",
+    "cd frontend && npm run build: exit 0; dist/index.html、dist/takeuchi-model.html、OBJ、JSを生成",
+    "cd frontend && npm run test -- src/features/development/DevelopmentPage.spec.tsx src/features/home/HomePage.spec.tsx: exit 0; 2 files、10 tests成功",
+    "cd frontend && npm run test:coverage -- --maxWorkers=2 --minWorkers=1: exit 0; 42 files、304 tests成功、coverage statements 100%、branches 98.6%、functions 99.43%、lines 100%"
+  ],
+  "artifacts": [
+    "frontend/src/lib/types.ts",
+    "frontend/src/features/development/DevelopmentPage.tsx",
+    "frontend/src/features/home/HomePage.tsx",
+    "frontend/src/features/development/DevelopmentPage.spec.tsx",
+    "frontend/src/features/home/HomePage.spec.tsx",
+    "frontend/vite.config.ts",
+    "frontend/takeuchi-model.html"
+  ],
+  "limitations": [
+    "ブラウザでの画面確認は親エージェントが担当する。"
+  ],
+  "trace": {
+    "provider": "codex_agent",
+    "model": "gpt-6-sol",
+    "promptVersion": "profile-work-2026-09-29.1"
+  }
+}

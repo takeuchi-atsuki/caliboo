@@ -1,0 +1,33 @@
+{
+  "task": {
+    "taskId": "week2-sqlite-sql-exercise",
+    "title": "Calibooを題材にしたSQLite SQL課題演習",
+    "description": "実DBには接続せず、Python標準ライブラリのsqlite3で小規模な練習用DBを作成する。users、reports、assignments、submissionsの表と、未提出・NULLを含むサンプルデータを用意し、JOIN、GROUP BY、未提出者の抽出、NULLの扱いを確認するSQLを実行する。さらに制約違反とトランザクションのロールバックを試し、各問について期待結果と実測結果を並べて説明する。再実行できるスクリプトと演習結果を提出する。"
+  },
+  "workerModel": "gpt-6-sol",
+  "promptVersion": "takeuchi-work-2026-09-29.1",
+  "workerOutput": "Python標準ライブラリのsqlite3でメモリDBにusers、reports、assignments、submissionsの4表を作成した。4人・2課題・4提出と未提出、未採点のNULLを用意し、INNER/LEFT JOIN、GROUP BY、未提出抽出、COUNTとNULLの違いを6つのSQLで実行した。外部キー違反とROLLBACKも実行し、固定した期待値と実測値を8/8項目で照合した。結果はJSONとMarkdownに保存した。",
+  "commands": [
+    {
+      "command": "python3 devel/poc_takeuchi/sql/run.py",
+      "result": "成功。2回連続で8/8問一致。SQLite 3.46.1。"
+    },
+    {
+      "command": "python3 -c 'import ast, pathlib; ast.parse(pathlib.Path(\"devel/poc_takeuchi/sql/run.py\").read_text(encoding=\"utf-8\")); print(\"Python構文: OK\")'",
+      "result": "成功。Python構文: OK。"
+    },
+    {
+      "command": "python3 -c 'import json, pathlib; p=pathlib.Path(\"devel/poc_takeuchi/sql/exercise-results.json\"); d=json.loads(p.read_text(encoding=\"utf-8\")); print(\"SQLite\", d[\"sqlite_version\"], \"照合\", sum(x[\"passed\"] for x in d[\"results\"]), \"/\", len(d[\"results\"]), \"全件成功\", d[\"all_passed\"])'",
+      "result": "成功。SQLite 3.46.1、照合8/8、全件成功True。外部キー違反後の提出件数4、ROLLBACK前4・途中5・後4・新規行0も確認した。"
+    }
+  ],
+  "artifacts": [
+    "devel/poc_takeuchi/sql/schema.sql",
+    "devel/poc_takeuchi/sql/exercises.sql",
+    "devel/poc_takeuchi/sql/run.py",
+    "devel/poc_takeuchi/sql/exercise-results.json",
+    "devel/poc_takeuchi/sql/exercise-results.md",
+    "devel/poc_takeuchi/sql/README.md"
+  ],
+  "limitations": "教材の4人・2課題・4提出だけを検証した。実アプリDB接続、実スキーマとの一致、並行トランザクション、性能、大量データでの動作は未確認。SQLiteのバージョンによって制約違反のエラーメッセージが変わる可能性がある。"
+}

@@ -1,0 +1,37 @@
+{
+  "user": {
+    "name": "竹内",
+    "streakDays": 0
+  },
+  "hero": {
+    "message": "おかえり、竹内さん！今日の振り返りをしよう"
+  },
+  "certification": {
+    "name": "基本情報技術者試験",
+    "achievementPercent": 0
+  },
+  "strengths": [],
+  "shortcuts": [
+    {
+      "icon": "ph-bold ph-clipboard-text",
+      "title": "課題に取り組む",
+      "description": "課題・フィードバックを確認",
+      "to": "/assignments",
+      "tone": "orange"
+    },
+    {
+      "icon": "ph-bold ph-graduation-cap",
+      "title": "資格勉強",
+      "description": "過去問・質問",
+      "to": "/study",
+      "tone": "blue"
+    },
+    {
+      "icon": "ph-bold ph-users-three",
+      "title": "OJT",
+      "description": "AIメンターに相談",
+      "to": "/ojt",
+      "tone": "green"
+    }
+  ]
+}

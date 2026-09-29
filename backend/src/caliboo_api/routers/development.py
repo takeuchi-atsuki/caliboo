@@ -7,10 +7,11 @@ from sqlalchemy.orm import Session
 
 from caliboo_api.auth.deps import get_current_user, require_admin
 from caliboo_api.data.account_data import is_active, now_iso
-from caliboo_api.data.agent_jobs import candidate_view, enqueue_strength, job_view
+from caliboo_api.data.agent_jobs import candidate_kind, candidate_view, enqueue_strength, job_view
 from caliboo_api.db import get_session
 from caliboo_api.extension_models import (
     AgentJob, AgentJobContext, AgentJobExecution, StrengthCandidate, StrengthEvaluation,
+    StrengthInterpretation,
 )
 from caliboo_api.models import User
 from caliboo_api.schemas.agent_jobs import EvaluationInput, StrengthDecision, StrengthResult
@@ -73,7 +74,8 @@ def list_strengths(
         .all()
     )
     return {
-        "candidates": [candidate_view(row) for row in query.order_by(StrengthCandidate.id.desc())],
+        "candidates": [candidate_view(row, session)
+                       for row in query.order_by(StrengthCandidate.id.desc())],
         "jobs": [job_view(job, execution=session.get(AgentJobExecution, job.id)) for job in jobs],
         "reviewPending": session.query(StrengthCandidate).filter_by(
             user_id=target, status="pending").count() > 0,
@@ -159,8 +161,7 @@ def complete_strength_result(job_id: int, payload: StrengthResult, session: Sess
     if not updated:
         raise HTTPException(409, "job is no longer pending")
     for candidate in payload.candidates:
-        session.add(
-            StrengthCandidate(
+        row = StrengthCandidate(
                 user_id=job.user_id,
                 job_id=job_id,
                 label=candidate.label,
@@ -173,7 +174,12 @@ def complete_strength_result(job_id: int, payload: StrengthResult, session: Sess
                 growth_action=candidate.growthAction,
                 status="pending",
             )
-        )
+        session.add(row)
+        session.flush()
+        session.add(StrengthInterpretation(
+            candidate_id=row.id, kind=candidate.kind, summary=candidate.summary,
+            scope_note=candidate.scopeNote,
+        ))
     session.commit()
     return {"imported": len(payload.candidates)}
 
@@ -189,6 +195,16 @@ def decide_strength(
     if row is None:
         raise HTTPException(404, "candidate not found")
     member_or_404(session, row.user_id)
+    kind = candidate_kind(session, row)
+    if payload.kind is not None and payload.kind != kind:
+        raise HTTPException(422, "candidate kind cannot be changed by decision")
+    interpretation = session.get(StrengthInterpretation, row.id)
+    summary = payload.summary if payload.summary is not None else (
+        interpretation.summary if interpretation is not None else "")
+    scope_note = payload.scopeNote if payload.scopeNote is not None else (
+        interpretation.scope_note if interpretation is not None else "")
+    if kind == "work_style" and (not summary or not scope_note):
+        raise HTTPException(422, "work style requires summary and scope note")
     newer = (
         session.query(StrengthCandidate)
         .filter(
@@ -197,9 +213,9 @@ def decide_strength(
             StrengthCandidate.job_id > row.job_id,
             StrengthCandidate.status == "approved",
         )
-        .first()
+        .all()
     )
-    if newer is not None:
+    if any(candidate_kind(session, candidate) == kind for candidate in newer):
         raise HTTPException(409, "a newer candidate has already been approved")
     updated = (
         session.query(StrengthCandidate)
@@ -217,16 +233,29 @@ def decide_strength(
     )
     if not updated:
         raise HTTPException(409, "candidate is no longer pending")
+    if interpretation is None:
+        if payload.summary is not None or payload.scopeNote is not None:
+            interpretation = StrengthInterpretation(
+                candidate_id=row.id, kind=kind, summary=summary, scope_note=scope_note,
+            )
+            session.add(interpretation)
+    else:
+        interpretation.summary = summary
+        interpretation.scope_note = scope_note
     if payload.status == "approved":
-        session.query(StrengthCandidate).filter(
+        # !NOTE: 旧候補には解釈行がないため ability として扱う。
+        approved = session.query(StrengthCandidate).filter(
             StrengthCandidate.user_id == row.user_id,
             StrengthCandidate.skill_code == row.skill_code,
             StrengthCandidate.id != row.id,
             StrengthCandidate.status == "approved",
-        ).update({"status": "superseded"}, synchronize_session=False)
+        ).all()
+        for previous in approved:
+            if candidate_kind(session, previous) == kind:
+                previous.status = "superseded"
     session.commit()
     session.refresh(row)
-    return candidate_view(row)
+    return candidate_view(row, session)
 
 
 @router.get("/evaluations/{job_id}/materials")

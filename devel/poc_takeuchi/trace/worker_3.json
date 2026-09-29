@@ -1,0 +1,42 @@
+{
+  "task": {
+    "taskId": "week3-caliboo-users-python",
+    "title": "PythonによるCalibooの使用ユーザを表示するスクリプトの開発",
+    "description": "Python標準ライブラリでローカルCalibooにログインし、管理者専用の登録アカウント一覧を読み取り専用で表示する。実APIの成功・認証失敗・権限不足を確認する。"
+  },
+  "workerModel": "gpt-6-sol",
+  "promptVersion": "takeuchi-work-2026-09-29.1",
+  "workerOutput": "urllib、http.cookiejar、getpassで再実行可能な登録アカウント一覧スクリプトを作成した。通常のパスワードは対話入力し、--demoは公開開発シードの管理者だけに限定した。GET /api/usersから表示用6列のみを抽出し、表またはJSONで出力する。接続先をローカルHTTPに制限し、リダイレクトとプロキシ利用を無効にした。Cookieはメモリに保持し、終了時にログアウトする。実APIのデモ実行で竹内(id=5, loginId=takeuchi)を含む5件を確認した。誤認証では401、一般ユーザーの一覧取得では403を区別して表示することを実測した。ユーザー情報を変更するAPIは呼び出していない。",
+  "commands": [
+    {
+      "command": "python3 devel/poc_takeuchi/users/list_users.py --demo",
+      "result": "終了コード0。実APIから5件を表示し、竹内(id=5, loginId=takeuchi, role=member)を確認。"
+    },
+    {
+      "command": "python3 devel/poc_takeuchi/users/list_users.py --demo --format json",
+      "result": "終了コード0。表示対象の6項目だけを持つ5件のJSONを確認。"
+    },
+    {
+      "command": "Pythonからlist_users.list_usersを呼ぶ実APIの負例検証（入力値は記録しない）",
+      "result": "誤認証は認証失敗(401)、一般ユーザーは権限不足(403)を返した。両方とも期待した例外を確認。"
+    },
+    {
+      "command": "python3 -m unittest discover -s devel/poc_takeuchi/users -p 'test_*.py' -v",
+      "result": "3件成功。ローカルURL制限、表示項目、--demoのアカウント制限を確認。"
+    },
+    {
+      "command": "python3 -m py_compile devel/poc_takeuchi/users/list_users.py devel/poc_takeuchi/users/test_list_users.py",
+      "result": "成功。Python構文エラーなし。"
+    },
+    {
+      "command": "python3 -m flake8 --max-line-length=100 devel/poc_takeuchi/users/list_users.py devel/poc_takeuchi/users/test_list_users.py",
+      "result": "成功。指摘なし。"
+    }
+  ],
+  "artifacts": [
+    "devel/poc_takeuchi/users/list_users.py",
+    "devel/poc_takeuchi/users/test_list_users.py",
+    "devel/poc_takeuchi/users/README.md"
+  ],
+  "limitations": "実測はローカル開発サーバーと公開開発シードのアカウントで行った。非公開の管理者資格情報、停止サーバー時の操作、異常なAPI応答、他環境の文字幅は実APIでは検証していない。"
+}

@@ -1,0 +1,11 @@
+{
+  "agent": "/root/takeuchi_live_analyst/profile_scoped_analysis",
+  "model": "gpt-6-astra",
+  "reasoningEffort": "medium",
+  "forkTurns": "none",
+  "inputMethod": "scoped_file",
+  "promptVersion": "live-2026-09-29.2",
+  "inputPath": "/tmp/caliboo-strength-profile-main/devel/poc_takeuchi/profile/trace/live_analysis_input.json",
+  "inputSha256": "d6cf77254da622fffa73e62d56e8af1e00c2cc1c26cc688507b5bc93c603cdc4",
+  "resultPath": "/tmp/caliboo-strength-profile-main/devel/poc_takeuchi/profile/trace/live_analysis_result.json"
+}

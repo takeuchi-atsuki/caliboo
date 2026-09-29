@@ -1,0 +1,39 @@
+{
+  "checkedAt": "2026-09-29T12:52:45.462973+00:00",
+  "assignmentId": 7,
+  "submissionId": 6,
+  "reportId": "rpt_20260929_7",
+  "jobId": 12,
+  "jobStatus": "completed",
+  "currentApproved": 4,
+  "currentKinds": {
+    "ability": 3,
+    "work_style": 1
+  },
+  "retainedLegacy": 2,
+  "totalEvidence": 17,
+  "reviewPending": false,
+  "browser": "PASS",
+  "newCandidates": [
+    {
+      "id": 8,
+      "kind": "work_style",
+      "label": "【AI作業PoC】成果を別の確かめ方でも確認する"
+    },
+    {
+      "id": 7,
+      "kind": "ability",
+      "label": "【AI作業PoC】誤判定しやすい境界を検証に落とす"
+    },
+    {
+      "id": 6,
+      "kind": "ability",
+      "label": "【AI作業PoC】欠損の意味を分けて集計する"
+    },
+    {
+      "id": 5,
+      "kind": "ability",
+      "label": "【AI作業PoC】利用条件を処理の流れに組み込む"
+    }
+  ]
+}

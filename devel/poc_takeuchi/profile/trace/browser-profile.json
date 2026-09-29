@@ -1,0 +1,41 @@
+{
+  "status": "PASS",
+  "checkedAt": "2026-09-29T12:52:29.903Z",
+  "checks": [
+    "SP-1/4: ホームに承認済み能力・性格傾向と解釈を表示",
+    "SP-4: 新候補の判断理由・評価範囲と全候補の原文根拠の開閉",
+    "SP-4: 320px幅で横はみ出しなし",
+    "SP-4: 390px幅で横はみ出しなし",
+    "今回の作業日報を本人の提出履歴から表示",
+    "追加課題の実提出・3職種レビュー・Fan-in要約を表示"
+  ],
+  "errors": [],
+  "currentCandidates": 4,
+  "retainedLegacyCandidates": 2,
+  "labels": [
+    {
+      "kind": "work_style",
+      "label": "【AI作業PoC】成果を別の確かめ方でも確認する"
+    },
+    {
+      "kind": "ability",
+      "label": "【AI作業PoC】誤判定しやすい境界を検証に落とす"
+    },
+    {
+      "kind": "ability",
+      "label": "【AI作業PoC】欠損の意味を分けて集計する"
+    },
+    {
+      "kind": "ability",
+      "label": "【AI作業PoC】利用条件を処理の流れに組み込む"
+    },
+    {
+      "kind": "ability",
+      "label": "【AI作業PoC】実行条件と期待値・実測値の記録"
+    },
+    {
+      "kind": "ability",
+      "label": "【AI作業PoC】NULLと提出行の有無を区別したSQLの作成・実行"
+    }
+  ]
+}

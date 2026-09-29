@@ -1,0 +1,18 @@
+{
+  "provider": "codex_session",
+  "mode": "agent",
+  "injectedPersona": null,
+  "subjectId": "user_5",
+  "userId": 5,
+  "loginId": "takeuchi",
+  "label": "竹内・実作業PoC（3Dモデル／SQLite／Python）",
+  "branch": "feat/takeuchi-live-strength-poc",
+  "workPromptVersion": "takeuchi-work-2026-09-29.1",
+  "rolePromptVersion": "2026-09-28.1",
+  "liveAnalysisPromptVersion": "live-2026-09-28.2",
+  "dateZone": "Asia/Tokyo",
+  "date": "2026-09-29",
+  "authorization": "ユーザーがAIによる実作業・日報作成提出・課題演習・講師フィードバックを指定し、強み創出と可視化までの完了を依頼。候補表示の確認もAI講師として実施し、人間評価には登録しない。",
+  "runtime": "既存ローカルAPIと開発フロントエンド。外部LLM APIは呼ばずCodexサブエージェントを使用。",
+  "adaptation": "strength-worker定義の作文専用モードでは実作業にならないため、同モデル gpt-6-sol の作業エージェントに新規成果物ディレクトリを割当。日報、講師、レビュー、解析は履歴を分離した専用ロールで実行。"
+}
