@@ -4,6 +4,7 @@ __pycache__/
 .coverage
 .coverage.*
 *.egg-info/
+.venv
 
 # Frontend
 node_modules/
