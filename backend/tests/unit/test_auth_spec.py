@@ -210,7 +210,7 @@ def test_expired_session_returns_401_and_logout_still_succeeds(client, expire_se
 
 # --- 全/api/*ルートの認証必須(login/logout以外) ---
 
-_EXEMPT_PATHS = {"/api/auth/login", "/api/auth/logout"}
+_EXEMPT_PATHS = {"/api/auth/login", "/api/auth/logout", "/api/auth/reset-password"}
 _DUMMY_PATH_PARAMS = {
     "action_id": "1", "case_id": "1",
     "job_id": "1", "candidate_id": "1", "thread_id": "1",

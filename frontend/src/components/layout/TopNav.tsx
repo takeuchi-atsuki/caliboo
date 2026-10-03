@@ -16,6 +16,7 @@ const NAV_ITEMS = [
   { label: "強み", to: "/strengths", icon: "ph ph-sparkle" },
   { label: "資格勉強", to: "/study", icon: "ph ph-book-open" },
   { label: "OJT", to: "/ojt", icon: "ph ph-chats-circle" },
+  { label: "パスワード変更", to: "/password/change", icon: "ph ph-key" },
 ];
 const MOBILE_ITEMS = NAV_ITEMS.filter((item) => ["/home", "/report", "/assignments", "/study"].includes(item.to));
 const ADMIN_ITEMS = [

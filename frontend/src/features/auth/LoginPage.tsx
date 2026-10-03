@@ -1,8 +1,9 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
-import { Navigate, useLocation } from "react-router-dom";
+import { Link, Navigate, useLocation } from "react-router-dom";
 import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
+import MuiButton from "@mui/material/Button";
 
 import { Mascot } from "../../components/mascot/Mascot";
 import { Button } from "../../components/ui/Button";
@@ -148,6 +149,7 @@ export function LoginPage() {
         >
           ログイン
         </Button>
+        <MuiButton component={Link} to="/password/reset">パスワードを忘れた場合</MuiButton>
       </Box>
     </Box>
   );

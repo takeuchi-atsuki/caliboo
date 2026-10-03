@@ -1,8 +1,11 @@
 """講師向けユーザー管理API。"""
 
 from typing import Annotated
+import hashlib
+import secrets
+import time
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Response
 from pydantic import BaseModel, StringConstraints
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -13,7 +16,7 @@ from caliboo_api.data.account_data import (
     account_view, initialize_profile, now_iso, set_department,
 )
 from caliboo_api.db import get_session
-from caliboo_api.extension_models import AccountState
+from caliboo_api.extension_models import AccountState, PasswordReset
 from caliboo_api.models import User, UserSession
 from caliboo_api.schemas.auth import Role
 
@@ -75,10 +78,38 @@ def update_user(user_id: int, payload: UserUpdate, session: Session = Depends(ge
     state = session.get(AccountState, user_id)
     state.active = payload.active
     user.display_name = payload.displayName
-    if payload.password is not None or not payload.active or user.role != payload.role:
+    credentials_changed = (
+        payload.password is not None or not payload.active or user.role != payload.role
+    )
+    if credentials_changed:
         session.query(UserSession).filter_by(user_id=user_id).delete()
     user.role = payload.role
+    if credentials_changed:
+        session.query(PasswordReset).filter_by(user_id=user_id).delete()
     if payload.password is not None:
         user.password_hash = hash_password(payload.password)
     session.commit()
     return account_view(session, user)
+
+
+@router.post("/{user_id}/password-reset-code")
+def issue_password_reset_code(
+    user_id: int, response: Response, session: Session = Depends(get_session),
+    _admin: User = Depends(require_admin),
+) -> dict:
+    """管理者が本人確認後に伝えるコードを一度だけ返す。再発行で旧コードは失効。"""
+    user = session.get(User, user_id)
+    state = session.get(AccountState, user_id)
+    if user is None or (state is not None and not state.active):
+        raise HTTPException(404, "active user not found")
+    code = secrets.token_urlsafe(32)
+    expires_at = int(time.time()) + 900
+    reset = session.get(PasswordReset, user_id)
+    if reset is None:
+        reset = PasswordReset(user_id=user_id)
+        session.add(reset)
+    reset.token_hash = hashlib.sha256(code.encode("utf-8")).hexdigest()
+    reset.expires_at = expires_at
+    session.commit()
+    response.headers["Cache-Control"] = "no-store"
+    return {"resetCode": code, "expiresAt": expires_at}

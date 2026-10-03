@@ -14,6 +14,7 @@ import { AssignmentDetailPage } from "./features/assignment/AssignmentDetailPage
 import { AssignmentProposalPage } from "./features/assignment/AssignmentProposalPage";
 import { StrengthsPage } from "./features/strengths/StrengthsPage";
 import { LoginPage } from "./features/auth/LoginPage";
+import { PasswordPage } from "./features/auth/PasswordPage";
 import { ThemeModeProvider } from "./components/theme/ThemeModeProvider";
 import { AuthProvider } from "./components/auth/AuthProvider";
 import { RequireAuth } from "./components/auth/RequireAuth";
@@ -31,6 +32,7 @@ export default function App() {
         <BrowserRouter>
           <Routes>
             <Route path="/login" element={<LoginPage />} />
+            <Route path="/password/reset" element={<PasswordPage mode="reset" />} />
             <Route
               element={
                 <RequireAuth>
@@ -40,6 +42,7 @@ export default function App() {
             >
               <Route path="/" element={<Navigate to="/home" replace />} />
               <Route path="/home" element={<HomePage />} />
+              <Route path="/password/change" element={<PasswordPage mode="change" />} />
               <Route path="/report" element={<ReportPage />} />
               <Route path="/ojt" element={<OjtChatPage />} />
               <Route path="/ojt/panel" element={<OjtThreePanePage />} />

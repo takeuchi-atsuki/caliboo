@@ -10,6 +10,7 @@ NonEmptyText = Annotated[str, StringConstraints(strip_whitespace=True, min_lengt
 #        意図して先頭・末尾に空白を含めたパスワードを設定していた場合に、別の値として
 #        扱われてしまう(=正しいパスワードなのにログインできなくなる)ため。
 NonEmptyRawText = Annotated[str, StringConstraints(min_length=1)]
+NewPassword = Annotated[str, StringConstraints(min_length=12, max_length=128)]
 
 
 class LoginRequest(BaseModel):
@@ -17,6 +18,17 @@ class LoginRequest(BaseModel):
 
     loginId: NonEmptyText
     password: NonEmptyRawText
+
+
+class ChangePasswordRequest(BaseModel):
+    currentPassword: NonEmptyRawText
+    newPassword: NewPassword
+
+
+class ResetPasswordRequest(BaseModel):
+    loginId: NonEmptyText
+    resetCode: NonEmptyRawText
+    newPassword: NewPassword
 
 
 class CurrentUser(BaseModel):
