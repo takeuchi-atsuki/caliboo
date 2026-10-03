@@ -2,7 +2,7 @@
 
 FastAPIアプリ本体: `backend/src/caliboo_api/main.py`。CORS設定は持たない(開発時はViteの`server.proxy`で`/api`を転送し、画面と同一オリジンで呼び出す。理由は`docs/architecture.md`「認証・認可」参照)。
 
-`POST /api/auth/login`・`POST /api/auth/logout`以外の全エンドポイントはログイン必須で、未認証(Cookie無し・無効・期限切れ)の場合は401 `{"detail": "not authenticated"}`を返す。ロールによる権限不足は403 `{"detail": "forbidden"}`。ユーザーごとのデータ(ホーム・資格勉強の進捗・日報・課題の提出)は、ログイン中のユーザーのものだけを返す。分野別進捗率は`user_progress_categories`の本人行を返す。
+`POST /api/auth/login`・`POST /api/auth/logout`・`POST /api/auth/reset-password`以外の全エンドポイントはログイン必須で、未認証(Cookie無し・無効・期限切れ)の場合は401 `{"detail": "not authenticated"}`を返す。ロールによる権限不足は403 `{"detail": "forbidden"}`。ユーザーごとのデータ(ホーム・資格勉強の進捗・日報・課題の提出)は、ログイン中のユーザーのものだけを返す。分野別進捗率は`user_progress_categories`の本人行を返す。
 
 ## 認証
 
@@ -11,6 +11,10 @@ FastAPIアプリ本体: `backend/src/caliboo_api/main.py`。CORS設定は持た�
 | POST | /api/auth/login | `{"loginId": "yuki", "password": "..."}`で認証し、セッションCookie(`caliboo_session`)を設定してログイン中のユーザーを返す。ログインIDまたはパスワードの誤りは401 `{"detail": "invalid login id or password"}`(どちらの誤りかは区別しない)。`loginId`は前後空白を除いたうえで空なら422。`password`は空文字なら422で、前後空白は除かない(空白のみのパスワードは422ではなく401) |
 | POST | /api/auth/logout | セッションを破棄しCookieを削除する。204。認証不要で冪等(Cookieが無い・期限切れでも204) |
 | GET | /api/auth/me | ログイン中のユーザーを返す。未認証は401 |
+| POST | /api/auth/change-password | 本人の`{"currentPassword":"...","newPassword":"..."}`。新パスワードは12〜128文字かつ現パスワードと異なる値。成功204、現パスワード誤り401、同値・長さ不正422、試行制限429。成功時に全セッション失効 |
+| POST | /api/auth/reset-password | 未ログイン可。`{"loginId":"...","resetCode":"...","newPassword":"..."}`。成功204、ID不明・コード不正・期限切れ・無効化は同じ401、試行制限429。成功時にコード消費・全セッション失効 |
+
+管理者のみ`POST /api/users/{user_id}/password-reset-code`で`{"resetCode":"...","expiresAt":<UNIX秒>}`を発行する。レスポンスは`Cache-Control: no-store`。コードは15分・一回限りで、再発行すると旧コードが使えなくなる。対象が存在しないか無効なら404、権限不足は403。コードはこのレスポンスでのみ平文表示し、保存時はハッシュ化する。
 
 `login`・`me`のレスポンス(`schemas/auth.py`の`CurrentUser`):
 

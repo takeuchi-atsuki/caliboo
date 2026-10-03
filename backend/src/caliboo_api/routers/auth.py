@@ -6,6 +6,8 @@
 """
 
 import math
+import hashlib
+import hmac
 import time
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
@@ -21,10 +23,13 @@ from caliboo_api.auth.session import (
 )
 from caliboo_api.config import get_settings
 from caliboo_api.db import get_session
-from caliboo_api.models import HomeProfile, User
+from caliboo_api.models import HomeProfile, User, UserSession
 from caliboo_api.extension_models import LoginAttempt
+from caliboo_api.extension_models import PasswordReset, PasswordResetAttempt
 from caliboo_api.data.account_data import is_active
-from caliboo_api.schemas.auth import CurrentUser, LoginRequest
+from caliboo_api.schemas.auth import (
+    ChangePasswordRequest, CurrentUser, LoginRequest, ResetPasswordRequest,
+)
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
@@ -111,3 +116,73 @@ def logout(
 def me(user: User = Depends(get_current_user),
        session: Session = Depends(get_session)) -> CurrentUser:
     return _to_current_user(user, session)
+
+
+@router.post("/change-password", status_code=204)
+def change_password(
+    payload: ChangePasswordRequest, request: Request, response: Response,
+    user: User = Depends(get_current_user), session: Session = Depends(get_session),
+) -> Response:
+    """現在のパスワードを確認して変更し、全端末をログアウトさせる。"""
+    source = request.client.host if request.client else "unknown"
+    now = int(time.time())
+    session.query(LoginAttempt).filter(LoginAttempt.attempted_at <= now - 900).delete()
+    attempts = session.query(LoginAttempt).filter_by(source=source).order_by(
+        LoginAttempt.attempted_at
+    ).all()
+    if len(attempts) >= 20:
+        retry = max(1, math.ceil(attempts[0].attempted_at + 900 - now))
+        session.commit()
+        raise HTTPException(429, "too many password attempts", headers={"Retry-After": str(retry)})
+    if not password.verify_password(
+        payload.currentPassword, user.password_hash or password.DUMMY_PASSWORD_HASH
+    ) or user.password_hash is None:
+        session.add(LoginAttempt(source=source, attempted_at=now))
+        session.commit()
+        raise HTTPException(401, "invalid current password")
+    if password.verify_password(payload.newPassword, user.password_hash):
+        raise HTTPException(422, "new password must differ")
+    user.password_hash = password.hash_password(payload.newPassword)
+    session.query(UserSession).filter_by(user_id=user.id).delete()
+    session.query(PasswordReset).filter_by(user_id=user.id).delete()
+    session.commit()
+    response.delete_cookie(COOKIE_NAME, path="/")
+    response.status_code = 204
+    return response
+
+
+@router.post("/reset-password", status_code=204)
+def reset_password(
+    payload: ResetPasswordRequest, request: Request, response: Response,
+    session: Session = Depends(get_session),
+) -> Response:
+    """管理者発行コードを消費し、全端末をログアウトさせる。"""
+    source = request.client.host if request.client else "unknown"
+    now = int(time.time())
+    session.query(PasswordResetAttempt).filter(
+        PasswordResetAttempt.attempted_at <= now - 900
+    ).delete()
+    attempts = session.query(PasswordResetAttempt).filter_by(source=source).order_by(
+        PasswordResetAttempt.attempted_at
+    ).all()
+    if len(attempts) >= 20:
+        retry = max(1, math.ceil(attempts[0].attempted_at + 900 - now))
+        session.commit()
+        raise HTTPException(429, "too many reset attempts", headers={"Retry-After": str(retry)})
+    user = session.query(User).filter_by(login_id=payload.loginId).first()
+    reset = session.get(PasswordReset, user.id) if user else None
+    candidate = hashlib.sha256(payload.resetCode.encode("utf-8")).hexdigest()
+    # !NOTE: 未知のIDでも固定長のハッシュを比較し、IDの存在を応答から推測しにくくする。
+    expected = reset.token_hash if reset else "0" * 64
+    valid = hmac.compare_digest(candidate, expected)
+    if not (user and reset and reset.expires_at > now and is_active(session, user.id) and valid):
+        session.add(PasswordResetAttempt(source=source, attempted_at=now))
+        session.commit()
+        raise HTTPException(401, "invalid or expired reset code")
+    user.password_hash = password.hash_password(payload.newPassword)
+    session.delete(reset)
+    session.query(UserSession).filter_by(user_id=user.id).delete()
+    session.commit()
+    response.delete_cookie(COOKIE_NAME, path="/")
+    response.status_code = 204
+    return response

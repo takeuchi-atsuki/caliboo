@@ -12,6 +12,23 @@ from caliboo_api.extension_models import AgentJob
 from caliboo_api.models import Assignment, AssignmentSubmission, PocRun, Report
 
 
+def test_password_reset_end_to_end(admin_client, client, anonymous_client):
+    """issue #23: 発行→本人再設定→旧セッション失効→新パスワードで再ログイン。"""
+    user_id = client.get("/api/auth/me").json()["id"]
+    code = admin_client.post(f"/api/users/{user_id}/password-reset-code").json()["resetCode"]
+    result = anonymous_client.post("/api/auth/reset-password", json={
+        "loginId": "yuki", "resetCode": code, "newPassword": "updated-password-123",
+    })
+    assert result.status_code == 204
+    assert client.get("/api/auth/me").status_code == 401
+    assert anonymous_client.post("/api/auth/login", json={
+        "loginId": "yuki", "password": "caliboo-yuki",
+    }).status_code == 401
+    assert anonymous_client.post("/api/auth/login", json={
+        "loginId": "yuki", "password": "updated-password-123",
+    }).status_code == 200
+
+
 def test_department_ojt_configuration_and_history_flow(client, admin_client, other_member_client):
     """OJT-F1〜F5: 部署設定→相談→返信→設定変更→再起動でも履歴・配属を保持。"""
     create = dict(id="research", name="研究課", icon="ph ph-code", color="#cdeede",

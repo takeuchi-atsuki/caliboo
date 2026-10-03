@@ -3,6 +3,7 @@ import { Navigate } from "react-router-dom";
 import { Alert, Box, Button, MenuItem, Stack, TextField, Typography } from "@mui/material";
 import { useAuth } from "../../components/auth/AuthProvider";
 import { PageContainer } from "../../components/layout/PageContainer";
+import { apiClient } from "../../lib/apiClient";
 import { useResource } from "../../lib/useResource";
 import type { Department, ManagedUser } from "../../lib/types";
 
@@ -46,6 +47,9 @@ function UserEditor({ selected, departments, busy, save }: {
   const [departmentId, setDepartmentId] = useState(selected?.departmentId ?? "");
   const [password, setPassword] = useState("");
   const [saved, setSaved] = useState(false);
+  const [resetCode, setResetCode] = useState<string | null>(null);
+  const [resetError, setResetError] = useState(false);
+  const [issuing, setIssuing] = useState(false);
   return <Box component="form" onSubmit={async (event) => {
     event.preventDefault();
     const ok = await save({ loginId, displayName, role, active, departmentId: departmentId || null,
@@ -70,6 +74,24 @@ function UserEditor({ selected, departments, busy, save }: {
       required={!selected} value={password} onChange={(e) => setPassword(e.target.value)}
       slotProps={{ htmlInput: { minLength: 12, maxLength: 128 } }} helperText="12〜128文字" />
     <Button type="submit" variant="contained" disabled={busy}>保存</Button>
+    {selected?.active && <Button type="button" variant="outlined" disabled={issuing} onClick={async () => {
+      setIssuing(true);
+      setResetCode(null);
+      setResetError(false);
+      try {
+        const result = await apiClient.post<{ resetCode: string }>(`/api/users/${selected.id}/password-reset-code`, {});
+        setResetCode(result.resetCode);
+      } catch {
+        setResetError(true);
+      } finally {
+        setIssuing(false);
+      }
+    }}>再設定コードを発行</Button>}
+    {resetError && <Alert severity="error">再設定コードを発行できませんでした。</Alert>}
+    {resetCode && <Alert severity="warning" sx={{ overflowWrap: "anywhere" }}>
+      本人確認後に次のコードを安全な方法で伝えてください。15分間有効・一度だけ使用できます。再表示はできません。<br />
+      <code>{resetCode}</code>
+    </Alert>}
     {selected?.history.map((entry, index) => <Typography key={index} variant="body2">
       {entry.changedAt}: {departments.find((dept) => dept.id === entry.departmentId)?.name ?? "未配属"}
     </Typography>)}

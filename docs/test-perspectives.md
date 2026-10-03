@@ -2,6 +2,12 @@
 
 2026-07-16、2026-08-13にユーザー承認済み。バックエンドAPI結合フローとして`backend/tests/integration/test_flows.py`に実装。フロント側の画面操作を伴う観点は`docs/manual-test-cases.md`の手動テストケースに対応させている。
 
+## パスワード変更・再設定（issue #23、2026-10-03 にユーザー承認済み）
+
+- 本人は現パスワードで変更でき、成功時に全セッションが失効する。誤った現パスワードでは変更されない（`test_password_reset_spec.py`、`docs/manual-test-cases.md`）。
+- 管理者が発行したコードは15分間・一回限りで、再発行やロール変更で旧コードは失効する。コード平文はDBに保存されない（`test_password_reset_spec.py`）。
+- 未知のログインID・誤コード・期限切れは同じエラーになり、失敗回数超過で429となる。管理者以外は発行できない（`test_password_reset_spec.py`）。
+
 ## ホーム(1b)
 
 2026-09-30のユーザーによる要約表示・根拠導線凍結の指示を反映し、ホームのタグ表示は [ホーム仕様](screens/home.md#要約タグの表現)、本人・講師の表示範囲は [強み画面仕様](screens/strengths.md#本人向け根拠表示の一時凍結2026-09-30) に従う。既存のデータ反映・承認済み表示・画面表示の観点として、`strengthSummary.spec.ts`・`HomePage.spec.tsx`・`DevelopmentPage.spec.tsx`と手動確認に対応付ける。新しいAPI結合フローは追加しない。

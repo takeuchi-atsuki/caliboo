@@ -28,6 +28,24 @@ class LoginAttempt(Base):
     attempted_at = Column(Integer, nullable=False)
 
 
+class PasswordReset(Base):
+    """管理者が発行した一度限りの再設定コード。平文は保存しない。"""
+
+    __tablename__ = "password_resets"
+    user_id = Column(Integer, ForeignKey("users.id"), primary_key=True)
+    token_hash = Column(String, nullable=False)
+    expires_at = Column(Integer, nullable=False)
+
+
+class PasswordResetAttempt(Base):
+    """接続元別の再設定失敗履歴。"""
+
+    __tablename__ = "password_reset_attempts"
+    id = Column(Integer, primary_key=True)
+    source = Column(String, nullable=False, index=True)
+    attempted_at = Column(Integer, nullable=False)
+
+
 class UserProgress(Base):
     __tablename__ = "user_progress_categories"
     user_id = Column(Integer, ForeignKey("users.id"), primary_key=True)
