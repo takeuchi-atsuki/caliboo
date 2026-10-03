@@ -2,6 +2,8 @@
 
 !NOTE: パスワード再設定は既存の`users`に列を増やさず、追加の`password_resets`・`password_reset_attempts`テーブルで管理する。既存SQLiteには`create_all()`で新テーブルだけを追加でき、旧DBを破壊しない。コードの平文は保存せず、管理者への発行レスポンスだけで返す。詳細は[ログイン画面仕様](screens/login.md)を参照。
 
+!NOTE: 課題ワークスペースのJavaScript実行はブラウザ内のsandbox iframeとWorkerで完結する。iframeには`allow-scripts`だけを付け、不透明なオリジン・`connect-src 'none'`のCSPでアプリの認証情報と通信先を分離する。実行ごとにiframeを生成し、2秒または出力上限で破棄する。詳細は[課題演習画面仕様](screens/assignment.md#課題ワークスペースissue-24)を参照。
+
 ## 目的
 
 新人研修向けパーソナライズ学習ツール「Caliboo」のフロントエンド6画面（デザインカンプ由来）と、それを動かすためのダミーバックエンドAPIを実装する。
