@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 
 import { apiClient, setUnauthorizedHandler } from "../../lib/apiClient";
 import { clearAutosave } from "../../features/report/reportAutosave";
+import { clearWorkspaces } from "../../features/assignment/workspaceStorage";
 import type { CurrentUser } from "../../lib/types";
 
 export type UserRole = "member" | "admin";
@@ -64,6 +65,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     setUnauthorizedHandler(() => {
+      clearWorkspaces();
       setUser(null);
       setStatus("unauthenticated");
     });
@@ -85,6 +87,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       //        ブラウザで別のユーザーがログインしたとき、前のユーザーの書きかけの日報が
       //        復元候補として出てしまう(docs/screens/login.md参照)。
       clearAutosave();
+      clearWorkspaces();
       setUser(null);
       setLoggedOutByUser(true);
       setStatus("unauthenticated");

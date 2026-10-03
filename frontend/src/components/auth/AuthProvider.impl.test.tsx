@@ -71,6 +71,7 @@ function LoginErrorProbe() {
 describe("AuthProvider", () => {
   afterEach(() => {
     vi.restoreAllMocks();
+    sessionStorage.clear();
   });
 
   it("マウント時にGET /api/auth/meが成功するとauthenticatedになりuserが設定される", async () => {
@@ -156,6 +157,7 @@ describe("AuthProvider", () => {
   it("logoutでapiClient.postが呼ばれ、clearAutosaveが呼ばれ、unauthenticatedになる", async () => {
     mockedApiClient.get.mockResolvedValue(currentUser);
     mockedApiClient.post.mockResolvedValue(undefined);
+    sessionStorage.setItem("caliboo.assignment-workspace.1.10", "saved code");
     const user = userEvent.setup();
 
     render(
@@ -170,6 +172,7 @@ describe("AuthProvider", () => {
     expect(mockedApiClient.post).toHaveBeenCalledWith("/api/auth/logout", undefined);
     await waitFor(() => expect(screen.getByTestId("status").textContent).toBe("unauthenticated"));
     expect(mockedClearAutosave).toHaveBeenCalled();
+    expect(sessionStorage.getItem("caliboo.assignment-workspace.1.10")).toBeNull();
     expect(screen.getByTestId("loggedOutByUser").textContent).toBe("true");
   });
 
@@ -196,6 +199,7 @@ describe("AuthProvider", () => {
 
   it("他のAPIの401ハンドラが呼ばれると、unauthenticatedへ遷移する", async () => {
     mockedApiClient.get.mockResolvedValue(currentUser);
+    sessionStorage.setItem("caliboo.assignment-workspace.1.10", "saved code");
 
     render(
       <AuthProvider>
@@ -213,6 +217,7 @@ describe("AuthProvider", () => {
     });
 
     expect(screen.getByTestId("status").textContent).toBe("unauthenticated");
+    expect(sessionStorage.getItem("caliboo.assignment-workspace.1.10")).toBeNull();
     expect(screen.getByTestId("user").textContent).toBe("");
     expect(screen.getByTestId("loggedOutByUser").textContent).toBe("false");
   });

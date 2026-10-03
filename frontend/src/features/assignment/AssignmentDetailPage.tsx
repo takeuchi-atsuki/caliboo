@@ -13,6 +13,7 @@ import type { ProposalListItem, ProposalListResponse } from "../../lib/types";
 import { useAssignmentDetail } from "./useAssignmentDetail";
 import { AssignmentSubmissionForm, ReadOnlyAnswer } from "./AssignmentSubmissionForm";
 import { AssignmentFeedbackForm } from "./AssignmentFeedbackForm";
+import { AssignmentWorkspace } from "./AssignmentWorkspace";
 
 const panelStyle = { background: "var(--color-panel)", borderRadius: 20, padding: "20px 22px" };
 
@@ -29,6 +30,7 @@ export function AssignmentDetailPage() {
     useAssignmentDetail(parsedId, role);
 
   const [originProposal, setOriginProposal] = useState<ProposalListItem | null>(null);
+  const [workspaceAnswer, setWorkspaceAnswer] = useState<{ text: string; revision: number }>();
 
   // !NOTE: 課題案からの導線(講師のみ)は、既存課題APIに`proposalId`を持たせず
   //        (設計レビュー反映: AI由来を新入社員側へ漏らさないため)、課題案API側の
@@ -162,8 +164,13 @@ export function AssignmentDetailPage() {
 
             {user.role === "member" ? (
               <>
+                <AssignmentWorkspace key={`${user.id}.${assignment.id}`} assignmentId={assignment.id} userId={user.id}
+                  canUseCode={assignment.status !== "reviewed"} onUseCode={(text) => setWorkspaceAnswer((previous) => ({
+                    text, revision: (previous?.revision ?? 0) + 1,
+                  }))} />
                 <div style={panelStyle}>
-                  <AssignmentSubmissionForm assignment={assignment} submitting={submitting} onSubmit={submitAnswer} />
+                  <AssignmentSubmissionForm assignment={assignment} submitting={submitting} onSubmit={submitAnswer}
+                    workspaceAnswer={workspaceAnswer} />
                 </div>
 
                 {assignment.submission?.feedbackComment ? (

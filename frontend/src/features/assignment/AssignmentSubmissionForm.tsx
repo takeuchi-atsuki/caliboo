@@ -8,6 +8,7 @@ export interface AssignmentSubmissionFormProps {
   assignment: AssignmentDetail;
   submitting: boolean;
   onSubmit: (answerText: string) => Promise<void>;
+  workspaceAnswer?: { text: string; revision: number };
 }
 
 export function ReadOnlyAnswer({ text }: { text: string }) {
@@ -28,12 +29,16 @@ export function ReadOnlyAnswer({ text }: { text: string }) {
   );
 }
 
-export function AssignmentSubmissionForm({ assignment, submitting, onSubmit }: AssignmentSubmissionFormProps) {
+export function AssignmentSubmissionForm({ assignment, submitting, onSubmit, workspaceAnswer }: AssignmentSubmissionFormProps) {
   const [answerText, setAnswerText] = useState(assignment.submission?.answerText ?? "");
 
   useEffect(() => {
     setAnswerText(assignment.submission?.answerText ?? "");
   }, [assignment.id, assignment.submission?.answerText]);
+
+  useEffect(() => {
+    if (workspaceAnswer) setAnswerText(workspaceAnswer.text);
+  }, [workspaceAnswer?.revision]);
 
   const heading = "あなたの回答";
 
