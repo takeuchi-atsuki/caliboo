@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Windows + Git Bash 用。devel/ に配置。
-# 先に bash ./devel/setup-windows.sh を実行してください。
-# 起動: bash ./devel/dev-server-windows.sh / 停止: Ctrl+C
+# Windows + Git Bash 用。
+# 先に bash ./devel/windows/setup-windows.sh を実行してください。
+# 起動: bash ./devel/windows/dev-server-windows.sh / 停止: Ctrl+C
 # PYTHON: 任意の Windows Python 実行ファイル（引数は含めない）。
 set -euo pipefail
 export PYTHONUTF8=1
@@ -14,7 +14,11 @@ esac
 [[ $# -eq 0 ]] || die "引数が多すぎます。"
 case "$(uname -s)" in MINGW*|MSYS*) ;; *) die "Windows の Git Bash から実行してください。" ;; esac
 script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-repo_root="$(dirname -- "$script_dir")"
+devel_dir="$script_dir"
+if [[ "$(basename -- "$script_dir")" == windows ]]; then
+  devel_dir="$(dirname -- "$script_dir")"
+fi
+repo_root="$(dirname -- "$devel_dir")"
 backend_python="${PYTHON:-$repo_root/backend/.venv/Scripts/python.exe}"
 "$backend_python" -P -c 'import sys; sys.exit(sys.platform != "win32" or sys.version_info < (3,12))' || die "Windows Python 3.12+ が必要です。setup-windows.sh を実行してください。"
 "$backend_python" -P -c 'import caliboo_api.main, uvicorn' || die "バックエンドを読み込めません。依存関係と上記エラーを確認してください。"
