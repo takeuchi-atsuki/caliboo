@@ -180,6 +180,7 @@ BACKLOG.md          課題・対応状況
 | [総合テスト観点](docs/test-perspectives.md) | テストで確認する仕様と観点 |
 | [手動テストケース](docs/manual-test-cases.md) | 画面・操作の確認手順 |
 | [開発用スクリプト](devel/README.md) | セットアップの詳細、配布zip作成、トラブルシュート |
+| [CI品質ゲート](docs/ci-quality-gates.md) | GitHub Actionsの起動範囲、検証候補、ローカル再現方法 |
 | [バックログ](BACKLOG.md) | 未決事項と対応状況 |
 | [開発ルール](AGENTS.md) | ファイル種別ごとの規約と完了前の確認 |
 
