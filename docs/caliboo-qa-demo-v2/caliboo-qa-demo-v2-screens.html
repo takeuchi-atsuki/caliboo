@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Caliboo 質疑応答デモ</title>
+<style>
+:root{--ink:#263642;--muted:#577078;--green:#2a806c;--mint:#edf8f3;--lilac:#f2eef9;--line:#dce8e4;--paper:#fff}
+*{box-sizing:border-box}body{margin:0;background:#e9efed;font-family:"Noto Sans CJK JP","Hiragino Kaku Gothic ProN",Meiryo,sans-serif;color:var(--ink);line-height:1.45}
+@page{size:A4 landscape;margin:0}
+.page{width:297mm;height:210mm;background:var(--paper);padding:10mm 13mm 8mm;margin:10px auto;position:relative;display:flex;flex-direction:column;break-after:page;overflow:hidden}
+.page:last-child{break-after:auto}.top{display:flex;align-items:center;justify-content:space-between;color:var(--green);font-weight:800;font-size:11pt;letter-spacing:.08em}
+.tag{background:var(--mint);border-radius:20px;color:var(--green);padding:5px 15px;font-size:10pt;letter-spacing:0}
+h1,h2{margin:4mm 0 1mm;line-height:1.25;letter-spacing:-.02em}h1{font-size:30pt}h2{font-size:22pt}.lede{font-size:12pt;color:var(--muted);margin:0 0 3mm}
+.photo{width:100%;height:145mm;min-height:0;display:flex;align-items:center;justify-content:center;border:1px solid var(--line);border-radius:3mm;background:#f9fbfb;overflow:hidden}
+.photo img{max-width:100%;max-height:100%;object-fit:contain;display:block}.photo.wide{height:143mm}
+.foot{font-size:9pt;display:flex;justify-content:space-between;align-items:end;color:var(--muted);margin-top:auto;padding-top:2mm;border-top:1px solid var(--line)}
+.foot strong{color:var(--green);font-weight:700}.intro-grid{display:grid;grid-template-columns:1.13fr .87fr;gap:7mm;margin-top:4mm}
+.hero{background:linear-gradient(135deg,#e6f7ef,#f7f6fc);padding:7mm;border-radius:5mm}.hero .lead{font-weight:750;font-size:20pt;line-height:1.35;margin:0 0 3mm}
+.hero p{font-size:12pt;margin:0 0 2mm}.hero .small{font-size:10pt;color:var(--muted);margin:4mm 0 0}
+.sequence{display:flex;flex-direction:column;gap:2.8mm}
+.step{border:1px solid var(--line);padding:2mm 3mm;border-radius:3mm;display:grid;grid-template-columns:10mm 1fr;gap:3mm;align-items:center}.bubble{width:9mm;height:9mm;background:var(--green);color:white;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:12pt}
+.step b{font-size:12pt;color:var(--ink)}.step small{display:block;color:var(--muted);font-size:9.5pt}
+.callout{margin:5mm 0 2mm;padding:3mm 5mm;background:#f7f6fc;border-left:3mm solid #8d79c0;border-radius:2mm;font-size:10.5pt}
+.raw-grid{display:grid;grid-template-columns:1fr 1fr;gap:5mm;margin:4mm 0}
+.raw{padding:5mm;border:1px solid var(--line);border-radius:4mm;background:#f7fcf9;font-size:12pt;color:var(--ink)}.raw b{display:block;color:var(--green);font-size:14pt;margin-bottom:2mm}.raw p{margin:1mm 0}.raw .tiny{font-size:10pt;color:var(--muted)}
+.result{border-radius:4mm;padding:5mm;background:#f4f1fa;margin-top:3mm;font-size:12pt}.result b{color:#60509a}.result p{margin:2mm 0}
+@media print{body{background:white}.page{margin:0;print-color-adjust:exact;-webkit-print-color-adjust:exact}}
+@media screen and (max-width:1100px){.page{width:100%;height:auto;min-height:calc(100vh - 20px);padding:5vw}.photo{height:auto;max-height:none}.photo img{width:100%}.intro-grid,.raw-grid{grid-template-columns:1fr}.foot{margin-top:4vw}}
+</style></head>
+<body>
+<section class="page">
+<div class="top"><span>Caliboo &nbsp;/&nbsp; Q&amp;A DEMO</span><span class="tag">2026.11.25 v2 実機収録・完全架空の2日報</span></div>
+<h1>毎日の記録から、使える強みを見つける。</h1><p class="lede">質問があったときに見せる、90秒の操作デモ。実ブラウザー画面・実API応答に基づく。</p>
+<div class="intro-grid"><div class="hero"><p class="lead">「SQL活用力」<br>「原因を切り分ける力」</p><p>架空の新入社員がSQLの集計・抽出を行い、不一致の原因を切り分けた2日間を例にします。</p><p>AIは行動を他の仕事にも活かせる、短い強みの候補として言語化。具体的な行動や観測範囲は詳細に残します。</p><p class="small">本画面資料は収録済み。ライブ推論や本番精度のデモではありません。追加の有料APIは使用していません。</p></div>
+<div class="sequence"><div class="step"><div class="bubble">1</div><div><b>日報を書いて提出</b><small>Keep / Problem / Try / 感じたこと</small></div></div><div class="step"><div class="bubble">2</div><div><b>AIが候補を作る</b><small>原文・観測範囲・次の行動</small></div></div><div class="step"><div class="bubble">3</div><div><b>講師が根拠を確かめる</b><small>修正・見送り・承認</small></div></div><div class="step"><div class="bubble">4</div><div><b>本人にヒントが届く</b><small>承認済みの候補を本人UIに表示</small></div></div></div></div>
+<div class="callout"><b>実演の条件：</b> 候補出力は独立Codex（Astra 6.2）の推敲した実応答を手動モードへ取込。講師承認は架空アカウントでの模擬操作。実日報での妥当性評価は未実施。</div>
+<div class="foot"><span>Caliboo / 育成支援のためのデモ</span><strong>01 / 07</strong></div>
+</section>
+<section class="page">
+<div class="top"><span>Caliboo &nbsp;/&nbsp; 実機画面 01</span><span class="tag">本人画面・実ブラウザー</span></div>
+<h2>日報を書く。日々の行動が、材料になる。</h2>
+<p class="lede">「提出する」で解析待ちジョブが作成される。これは架空の当日分の入力画面。</p>
+<div class="photo"><img src="01-report-entry.png" alt="実ブラウザーの日報入力"></div>
+<div class="foot"><span>提出した日報はHTTP 200（rpt_20261125_2）を実測。</span><strong>02 / 07</strong></div>
+</section>
+<section class="page">
+<div class="top"><span>Caliboo &nbsp;/&nbsp; 実機画面 02</span><span class="tag">解析完了・講師確認前</span></div>
+<h2>AIは候補を作る。本人表示は講師確認のあと。</h2>
+<p class="lede">独立Codexの実応答3候補を取り込んだ直後。本人にはまだ候補が表示されていない。</p>
+<div class="photo"><img src="04-member-review-pending.png" alt="本人の講師確認待ち画面"></div>
+<div class="foot"><span>実API：候補0件（本人）、候補3件（講師確認待ち）。追加の有料推論APIなし。</span><strong>03 / 07</strong></div>
+</section>
+<section class="page">
+<div class="top"><span>Caliboo &nbsp;/&nbsp; 実機画面 03</span><span class="tag">講師・根拠と承認</span></div>
+<h2>候補をうのみにせず、根拠と範囲を確認する。</h2>
+<p class="lede">「SQL活用力」の具体的な根拠を、SELECT・GROUP BY、WITH・LEFT JOINの原文引用から確認。</p>
+<div class="photo wide"><img src="06-instructor-candidate-2.png" alt="講師のSQL活用力の原文根拠と承認ボタン"></div>
+<div class="foot"><span>確信度はAIの参考判断であり、能力点・正答率ではない。講師承認は今回の模擬操作。</span><strong>04 / 07</strong></div>
+</section>
+<section class="page">
+<div class="top"><span>Caliboo &nbsp;/&nbsp; 実機画面 04</span><span class="tag">本人・承認済み候補3件</span></div>
+<h2>本人ホームに、短く、使いやすい強みが届く。</h2>
+<p class="lede">能力2件と仕事の進め方1件を本人ホームに表示。具体的な行動の羅列ではなく、成長に活かせる見出し。</p>
+<div class="photo"><img src="09-member-home.png" alt="承認後の本人ホームの3候補表示"></div>
+<div class="foot"><span>現行仕様の承認済みAI候補の表示例。本人の能力を断定する評価ではない。</span><strong>05 / 07</strong></div>
+</section>
+<section class="page">
+<div class="top"><span>Caliboo &nbsp;/&nbsp; 実機画面 05</span><span class="tag">本人・強みの詳細</span></div>
+<h2>詳細では、具体的な行動と範囲まで伝える。</h2>
+<p class="lede">「SQL活用力」「原因を切り分ける力」の説明、評価できる範囲、次の取り組みを確認。</p>
+<div class="photo"><img src="08-member-approved.png" alt="本人の強み詳細（能力2件）"></div>
+<div class="foot"><span>SQLの学習課題2件に限った候補であり、大規模データや他分野での再現性は未確認。</span><strong>06 / 07</strong></div>
+</section>
+<section class="page">
+<div class="top"><span>Caliboo &nbsp;/&nbsp; RAW DATA</span><span class="tag">完全架空データ・技術確認</span></div>
+<h2>実際にどんなデータを渡し、何が返ったのか。</h2>
+<p class="lede">独立解析へ渡した材料は日報原文とスキーマ。本人IDや期待する強みラベルは渡していない。</p>
+<div class="raw-grid"><div class="raw"><b>11/24 Keep（要約）</b>演習用SQLiteの受講記録20件をSELECTとGROUP BYで日別集計。JOIN後の件数増加について入力件数・結合キー・結合後件数を確認し、結合先の重複に原因を絞った。キー単位で整理後、手計算と照合。<p class="tiny">本人申告。根拠として使用可。</p></div><div class="raw"><b>11/25 Keep（要約）</b>別の演習データ10件をWITH・LEFT JOINで抽出。入力値・抽出条件・集計条件を個別に確認し、NULL条件の違いに原因を絞った。IS NULLで修正後、3パターンを再確認。<p class="tiny">本人申告。根拠として使用可。</p></div></div>
+<div class="result"><p><b>実AI出力 1 / 能力：</b> SQL活用力（2日分の引用）</p><p><b>実AI出力 2 / 能力：</b> 原因を切り分ける力（2日分の引用）</p><p><b>実AI出力 3 / 仕事の進め方：</b> 修正後は結果を確かめる（2日分の引用）</p><p><b>取込の実測：</b> AIの見出しを根拠に照らして推敲後、HTTP 200で3候補を取込。講師ロールの模擬承認3件も成功。元・推敲後の実応答を保存。</p></div>
+<div class="callout"><b>結論：</b> 架空日報で機構の動作を確認。実際の社員の能力を証明するものではなく、実日報による精度検証と運用上の情報管理は別途必要。</div>
+<div class="foot"><span>日報の完全な原文、生応答、取込・承認結果はJSONとして別添。</span><strong>07 / 07</strong></div>
+</section>
+</body></html>

@@ -1,0 +1,156 @@
+{
+  "version": "v2",
+  "dataset": "完全架空の新入社員日報2件。個人情報・現場の機密なし。",
+  "base_commit": "bbddd81b766fb0ed37f90eb41b98bfdd54d21c5c",
+  "provider": "manual",
+  "ai_model": "gpt-6.2-astra",
+  "ai_execution": "Codex independent agent initial generation + heading-only refinement. Paid API calls: 0.",
+  "import_http": 200,
+  "imported_candidates": 3,
+  "member_candidate_count_before_approval": 0,
+  "instructor_candidate_count_pending": 3,
+  "simulated_approvals_http": [
+    200,
+    200,
+    200
+  ],
+  "member_candidate_count_after_approval": 3,
+  "home_strength_count": 3,
+  "candidate_headings": [
+    "SQL活用力",
+    "原因を切り分ける力",
+    "修正後は結果を確かめる"
+  ],
+  "limitations": [
+    "synthetic reports, not evidence of real employees or real-world accuracy",
+    "simulated instructor approvals in isolated database",
+    "replay uses recorded AI response, not live inference",
+    "UI does not render member-side raw quotes; operational data access controls require separate review"
+  ],
+  "files": {
+    "01-report-20261124.json": {
+      "sha256": "e58060d53917660e64e95af8aa83ca0698a74afd3507dacd8827da65c98431c9",
+      "bytes": 918
+    },
+    "01-report-entry.png": {
+      "sha256": "a1aece89264a450b8bcbb70bd47110f560647a14ddc72bf5698a03d55add0648",
+      "bytes": 110954
+    },
+    "02-report-browser.json": {
+      "sha256": "6a411c0ffe6ffec2b95af239bf0531d288fe9bd502401abcebb2fd5ab8e86349",
+      "bytes": 883
+    },
+    "02-report-submitted.png": {
+      "sha256": "928265ea0e25efb5454a4637cfb51b01195f172e413d014a2694c247aafde432",
+      "bytes": 109652
+    },
+    "03-job-before.json": {
+      "sha256": "6637a8f04051dd0ee38c0875f59b23724c6edec027fe77681fea8102a24bdede",
+      "bytes": 150
+    },
+    "03-material-export.json": {
+      "sha256": "c275e2320429e5c412719a0102be1270352331ab5a700e9899175fcb7dc6253f",
+      "bytes": 13514
+    },
+    "03-member-pending.png": {
+      "sha256": "f43e0442460980a1ee81fed279489b2b125ac8c9074cd16208ba87844de6436c",
+      "bytes": 106502
+    },
+    "04-ai-analysis-refined.json": {
+      "sha256": "7c3f87ae9b5dd5a958f969f024d058af75b4b25683bd56b54738b8aea74134c8",
+      "bytes": 4046
+    },
+    "04-ai-analysis-result.json": {
+      "sha256": "1e595809033f37a9f6e3d4ba606e406d61b51df1dbc6a1271dd6f25ae7962a73",
+      "bytes": 4064
+    },
+    "04-member-review-pending.png": {
+      "sha256": "668171cdb57caf559442d4381273ef384a2b7081dbc13de6a4f4de5a5cafd0ef",
+      "bytes": 106907
+    },
+    "05-import-response.json": {
+      "sha256": "cfb3d8746d592156f692eb1f18ac954115023ebd265a6006fc7266def7c580c5",
+      "bytes": 289
+    },
+    "05-instructor-review.png": {
+      "sha256": "8da64c64f8ca4db5ba5f98e8544239233c156ae9decfa24f870cda6169302e7f",
+      "bytes": 136490
+    },
+    "05-job-completed.json": {
+      "sha256": "65d29a709ad7af3bb4955dcacf475b990f2aa312fd948a9d5f37f553659880f1",
+      "bytes": 166
+    },
+    "06-instructor-candidate-1.png": {
+      "sha256": "43120ef3625e4688d8161b9c7ce5462353e5c42b394614e4ac6ce55586312b00",
+      "bytes": 133152
+    },
+    "06-instructor-candidate-2.png": {
+      "sha256": "9b6820997e6117eedbd755eae0974eb0fc34f2ce739cca306c7febd0e4cdd58a",
+      "bytes": 121005
+    },
+    "06-instructor-candidate-3.png": {
+      "sha256": "31c9322ce43ace33b9a7438c95036f10bc0285dd5c55e3ef3a7ae2724e292ac8",
+      "bytes": 116878
+    },
+    "06-instructor-pending.json": {
+      "sha256": "0deae6127be5dc26ff0c460176906c64912fc53ddf98c4f9c1738d151decfa5a",
+      "bytes": 7952
+    },
+    "06-member-before-approval.json": {
+      "sha256": "fd58d97b4a35458896c157a7337163bb28c804237e2caf55859a06299a301713",
+      "bytes": 461
+    },
+    "07-instructor-approved.png": {
+      "sha256": "ea01aaddd33ea6a8e6bc835fcb373f784ee0e1cd1e1538821eb29b0e3acdf9fc",
+      "bytes": 136553
+    },
+    "07-simulated-approvals.json": {
+      "sha256": "b473ab315faedeaf2e18f6ddcbc6f692e24e493db697df2a5df40ee01f530026",
+      "bytes": 10302
+    },
+    "08-instructor-after-approval.json": {
+      "sha256": "863f69a316a83b14fcfda4b95defef6da95a48fd86ffeb7dc7ff95f12adbdcc3",
+      "bytes": 8046
+    },
+    "08-member-after-approval.json": {
+      "sha256": "863f69a316a83b14fcfda4b95defef6da95a48fd86ffeb7dc7ff95f12adbdcc3",
+      "bytes": 8046
+    },
+    "08-member-approved-full.png": {
+      "sha256": "94484113af259db507c957180b5bfa007053c8d9e11a4e321bb73fe39930bb70",
+      "bytes": 239658
+    },
+    "08-member-approved.png": {
+      "sha256": "e13d8cc4a6905d8e798b88148ca9a4a7b5670aa8320735b9d2e014d905173bf3",
+      "bytes": 159180
+    },
+    "09-member-home-summary.json": {
+      "sha256": "f0523e60b681a13bcaa4b351d0186c6788d89fd79d31ce6a606c0eb78fab20d7",
+      "bytes": 7169
+    },
+    "09-member-home.png": {
+      "sha256": "ccb8a40d4e81185eb2ca1da82f6c9323f801debd0272f7f8e0a9bd6966740572",
+      "bytes": 228566
+    },
+    "10-replay-verification.txt": {
+      "sha256": "d399cb4a9b75a26765e74ab2b4ed07db293e2fb02bbfd41c4aa9f2b0783cfc1b",
+      "bytes": 720
+    },
+    "README.md": {
+      "sha256": "c6958024fb0f7b3670fb08c29325b74906c3ab128fb93615352bb4f718597a1a",
+      "bytes": 7393
+    },
+    "caliboo-qa-demo-v2-screens.html": {
+      "sha256": "14feff9d7a851f57170f9531e974ee03db4896968668fda271466074296ccfd6",
+      "bytes": 10483
+    },
+    "caliboo-qa-demo-v2-screens.pdf": {
+      "sha256": "e7ccb765b94817bef6feaf8c1aed0451e6e95fc94867b963407f879000df6ab7",
+      "bytes": 1038905
+    },
+    "replay_demo.py": {
+      "sha256": "b887100478645cec73ffad2ad8c96027289f330982055601d795ce920cdd213e",
+      "bytes": 9196
+    }
+  }
+}

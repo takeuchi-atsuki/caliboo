@@ -1,0 +1,9 @@
+{
+  "httpStatus": 200,
+  "response": {
+    "imported": 3
+  },
+  "capturedAt": "2026-11-25T13:23:42.792174+00:00",
+  "materialSHA256": "c275e2320429e5c412719a0102be1270352331ab5a700e9899175fcb7dc6253f",
+  "resultSHA256": "7c3f87ae9b5dd5a958f969f024d058af75b4b25683bd56b54738b8aea74134c8"
+}
