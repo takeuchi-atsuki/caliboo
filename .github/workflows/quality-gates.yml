@@ -1,0 +1,189 @@
+name: Caliboo quality gates
+
+# Initial rollout: only reviewed code on these same-repository validation branches.
+on:
+  push:
+    branches:
+      - ci/verify-32-base
+      - ci/verify-32-postgresql
+      - ci/verify-32-package
+      - ci/verify-32-assignment
+      - ci/verify-32-gui
+      - ci/verify-32-all
+      - ci/verify-32-windows-package
+
+permissions:
+  contents: read
+
+env:
+  PIP_NO_CACHE_DIR: '1'
+  NPM_CONFIG_AUDIT: 'false'
+  NPM_CONFIG_FUND: 'false'
+  CALIBOO_AI_PROVIDER: manual
+  CALIBOO_COOKIE_SECURE: 'false'
+
+jobs:
+  quality:
+    if: >-
+      github.repository == 'takeuchi-atsuki/caliboo' && github.event_name == 'push' &&
+      github.ref_name != 'ci/verify-32-windows-package'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: '22.23.4'
+          package-manager-cache: false
+      - name: Install dependencies
+        run: |
+          python -m pip install -e './backend[dev]'
+          npm ci --prefix frontend
+      - name: Gate script lint and self-tests
+        run: |
+          python -m flake8 --isolated --max-line-length=100 devel/ci
+          python -m unittest discover -s devel/ci -p 'test_quality_gate.py'
+      - name: Backend lint, unit and integration (no network)
+        run: python devel/ci/quality_gate.py backend
+      - name: Frontend type check, coverage and both build entries
+        run: python devel/ci/quality_gate.py frontend
+      - name: Install pinned Chromium
+        run: |
+          python -m pip install -r devel/ci/browser-requirements.txt
+          python -m playwright install --with-deps chromium
+      - name: SQLite browser and restart smoke
+        shell: bash
+        run: |
+          args=()
+          case "$GITHUB_REF_NAME" in
+            ci/verify-32-assignment) args+=(--assignment) ;;
+            ci/verify-32-gui) args+=(--gui) ;;
+            ci/verify-32-all) args+=(--assignment --gui) ;;
+            ci/verify-32-base|ci/verify-32-postgresql|ci/verify-32-package) ;;
+            *) exit 1 ;;
+          esac
+          python devel/ci/browser_e2e.py "${args[@]}"
+
+  postgresql:
+    # Branch selection is explicit: a candidate that should contain #25 must fail
+    # if its real PostgreSQL tests or migration scripts are missing.
+    if: >-
+      github.repository == 'takeuchi-atsuki/caliboo' && github.event_name == 'push' &&
+      (github.ref_name == 'ci/verify-32-postgresql' || github.ref_name == 'ci/verify-32-all')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_PASSWORD: caliboo-ci-only
+        ports:
+          - 5432/tcp
+        options: >-
+          --health-cmd "pg_isready -U postgres -d postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: '3.12'
+      - name: Install backend development dependencies
+        run: python -m pip install -e './backend[dev]'
+      - name: PostgreSQL 18 initialization, migration, concurrent use and recovery
+        env:
+          CALIBOO_CI_POSTGRES_PORT: ${{ job.services.postgres.ports[5432] }}
+          CALIBOO_CI_POSTGRES_CONTAINER: ${{ job.services.postgres.id }}
+          CALIBOO_CI_POSTGRES_PASSWORD: caliboo-ci-only
+        run: python devel/ci/postgres_gate.py
+
+  package:
+    if: >-
+      github.repository == 'takeuchi-atsuki/caliboo' && github.event_name == 'push' &&
+      (github.ref_name == 'ci/verify-32-package' || github.ref_name == 'ci/verify-32-all')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: '22.23.4'
+          package-manager-cache: false
+      - name: Install pinned Chromium
+        run: |
+          python -m pip install -r devel/ci/browser-requirements.txt
+          python -m playwright install --with-deps chromium
+      - name: Clean release ZIP smoke
+        run: python devel/ci/package_gate.py
+
+  windows_package:
+    # This branch runs only the Windows distribution gate, independent of the Linux jobs.
+    if: >-
+      github.repository == 'takeuchi-atsuki/caliboo' && github.event_name == 'push' &&
+      github.ref_name == 'ci/verify-32-windows-package'
+    runs-on: windows-2022
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
+        # Keep checked-in Bash entrypoints LF; step-local Git config, not a repo/runner setting.
+        env:
+          GIT_CONFIG_COUNT: '1'
+          GIT_CONFIG_KEY_0: core.autocrlf
+          GIT_CONFIG_VALUE_0: 'false'
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: '3.12'
+          architecture: x64
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: '22.23.4'
+          architecture: x64
+          package-manager-cache: false
+      - name: Verify native Windows x64 and Git Bash
+        run: |
+          test "$RUNNER_OS" = Windows
+          test "$RUNNER_ARCH" = X64
+          case "$(uname -s)" in MINGW*|MSYS*) ;; *) exit 1 ;; esac
+          command -v cygpath
+          uname -s
+          python -c 'import sys,struct; assert sys.platform == "win32" and struct.calcsize("P") == 8 and sys.version_info[:2] == (3,12); print(sys.platform, sys.version.split()[0])'
+          node -e 'if(process.platform!=="win32"||process.arch!=="x64"||process.versions.node!=="22.23.4") process.exit(1); console.log(process.platform,process.arch,process.version)'
+      - name: Windows gate script self-tests
+        run: |
+          python - <<'PY'
+          import sys
+          import unittest
+          suite = unittest.defaultTestLoader.discover("devel/ci", pattern="test_windows_*.py")
+          expected = suite.countTestCases()
+          result = unittest.TextTestRunner(verbosity=2).run(suite)
+          sys.exit(0 if expected > 0 and result.testsRun == expected and result.wasSuccessful()
+                   and not result.skipped and not result.expectedFailures else 1)
+          PY
+      - name: Attempt pinned Chromium installation (UI is incomplete if unavailable)
+        run: |
+          if python -m pip install -r devel/ci/browser-requirements.txt &&
+             python -m playwright install chromium; then
+            echo "Pinned browser installed; sandboxed launch will be verified by the gate."
+          else
+            echo "Pinned browser installation incomplete; gate will still verify package/API stages and report UI separately."
+          fi
+      - name: Windows Git Bash clean distribution smoke
+        run: python devel/ci/windows_package_gate.py
