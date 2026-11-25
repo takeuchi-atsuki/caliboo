@@ -11,7 +11,7 @@
 | 成果物 | 印刷用PDF | 編集・プレビュー |
 | --- | --- | --- |
 | ポスター v4 | [PDF](caliboo-poster-v4.pdf) | [HTML](caliboo-poster-v4.html)・[PNG](caliboo-poster-v4.png) |
-| パンフレット v3 | [PDF](caliboo-pamphlet-v3.pdf) | [HTML](caliboo-pamphlet-v3.html)・[表面PNG](caliboo-pamphlet-v3-front.png)・[裏面PNG](caliboo-pamphlet-v3-back.png) |
+| パンフレット v4 | [PDF](caliboo-pamphlet-v4.pdf) | [HTML](caliboo-pamphlet-v4.html)・[表面PNG](caliboo-pamphlet-v4-front.png)・[裏面PNG](caliboo-pamphlet-v4-back.png) |
 | POP v3（QRコードあり） | [PDF](caliboo-pop-v3-qr.pdf) | [HTML](caliboo-pop-v3-qr.html)・[PNG](caliboo-pop-v3-qr.png) |
 | POP v3（QRコードなし） | [PDF](caliboo-pop-v3.pdf) | [HTML](caliboo-pop-v3.html)・[PNG](caliboo-pop-v3.png) |
 
