@@ -4,7 +4,7 @@ import hashlib
 import json
 import time
 
-from sqlalchemy.dialects.sqlite import insert
+from caliboo_api.dialect import conflict_insert, lock_user
 from sqlalchemy.orm import Session
 
 from caliboo_api.data.account_data import now_iso
@@ -48,18 +48,19 @@ def create_job(session: Session, user_id: int, kind: str, materials: dict,
         fingerprint_input.append(context)
     encoded = json.dumps(fingerprint_input, ensure_ascii=False, sort_keys=True)
     fingerprint = hashlib.sha256(encoded.encode()).hexdigest()
-    session.execute(insert(AgentJob).values(
+    session.execute(conflict_insert(session, AgentJob).values(
         user_id=user_id, kind=kind, materials=materials, fingerprint=fingerprint,
         status="pending", created_at=now_iso(),
     ).on_conflict_do_nothing(index_elements=["fingerprint"]))
     job = session.query(AgentJob).filter_by(fingerprint=fingerprint).one()
     if context is not None:
-        session.execute(insert(AgentJobContext).values(job_id=job.id, context=context).
-                        on_conflict_do_nothing())
+        session.execute(conflict_insert(session, AgentJobContext).values(
+            job_id=job.id, context=context).on_conflict_do_nothing())
     return job
 
 
 def enqueue_strength(session: Session, user_id: int) -> AgentJob | None:
+    lock_user(session, user_id)
     materials = strength_materials(session, user_id)
     if not materials:
         return None

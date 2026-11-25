@@ -9,6 +9,7 @@ from fastapi import HTTPException
 from caliboo_api.data.account_data import is_active
 from caliboo_api.extension_models import SubmissionScore
 
+from caliboo_api.dialect import lock_user
 from caliboo_api.db import session_scope
 from caliboo_api.models import Assignment, AssignmentRecipient, AssignmentSubmission, User
 from caliboo_api.schemas.assignment import (
@@ -272,6 +273,7 @@ def save_submission(
     if recipient is not None and recipient.user_id != user_id:
         return SubmissionSaveError.ASSIGNMENT_NOT_FOUND
 
+    lock_user(session, user_id)
     submission = _get_submission(session, assignment_id, user_id)
     if submission is not None and submission.feedback_comment is not None:
         return SubmissionSaveError.ALREADY_REVIEWED
@@ -357,6 +359,7 @@ def save_member_feedback(
     if recipient is not None and recipient.user_id != target_user_id:
         return FeedbackSaveError.USER_NOT_FOUND
 
+    lock_user(session, target_user_id)
     submission = _get_submission(session, assignment_id, target_user_id)
     if submission is None:
         return FeedbackSaveError.NOT_SUBMITTED

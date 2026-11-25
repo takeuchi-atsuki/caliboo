@@ -1,7 +1,7 @@
 """本人×課の会話と明示相談。"""
 
 from fastapi import HTTPException
-from sqlalchemy.dialects.sqlite import insert
+from caliboo_api.dialect import conflict_insert
 from sqlalchemy.orm import Session
 
 from caliboo_api.data.account_data import now_iso
@@ -13,7 +13,7 @@ from caliboo_api.schemas.common import ChatMessage
 def thread_for(session: Session, user_id: int, department_id: str) -> OjtThread:
     if session.get(Department, department_id) is None:
         raise HTTPException(404, "department not found")
-    session.execute(insert(OjtThread).values(
+    session.execute(conflict_insert(session, OjtThread).values(
         user_id=user_id, department_id=department_id,
     ).on_conflict_do_nothing(index_elements=["user_id", "department_id"]))
     return session.query(OjtThread).filter_by(

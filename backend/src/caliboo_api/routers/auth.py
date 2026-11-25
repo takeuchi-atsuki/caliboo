@@ -23,6 +23,7 @@ from caliboo_api.auth.session import (
 )
 from caliboo_api.config import get_settings
 from caliboo_api.db import get_session
+from caliboo_api.dialect import lock_attempt_source, lock_user
 from caliboo_api.models import HomeProfile, User, UserSession
 from caliboo_api.extension_models import LoginAttempt
 from caliboo_api.extension_models import PasswordReset, PasswordResetAttempt
@@ -70,6 +71,7 @@ def login(
     # !NOTE: X-Forwarded-Forは信頼しない。プロキシ運用では信頼済み接続元の設定が必要。
     source = request.client.host if request.client else "unknown"
     now = int(time.time())
+    lock_attempt_source(session, source)
     session.query(LoginAttempt).filter(LoginAttempt.attempted_at <= now - 900).delete()
     attempts = session.query(LoginAttempt).filter_by(source=source).order_by(
         LoginAttempt.attempted_at).all()
@@ -78,6 +80,8 @@ def login(
         session.commit()
         raise HTTPException(429, "too many login attempts", headers={"Retry-After": str(retry)})
     user = session.query(User).filter(User.login_id == payload.loginId).first()
+    if user is not None:
+        lock_user(session, user.id)
     has_password = user is not None and user.password_hash
     password_hash = user.password_hash if has_password else password.DUMMY_PASSWORD_HASH
     password_is_valid = password.verify_password(payload.password, password_hash)
@@ -126,6 +130,7 @@ def change_password(
     """現在のパスワードを確認して変更し、全端末をログアウトさせる。"""
     source = request.client.host if request.client else "unknown"
     now = int(time.time())
+    lock_attempt_source(session, source)
     session.query(LoginAttempt).filter(LoginAttempt.attempted_at <= now - 900).delete()
     attempts = session.query(LoginAttempt).filter_by(source=source).order_by(
         LoginAttempt.attempted_at
@@ -134,6 +139,7 @@ def change_password(
         retry = max(1, math.ceil(attempts[0].attempted_at + 900 - now))
         session.commit()
         raise HTTPException(429, "too many password attempts", headers={"Retry-After": str(retry)})
+    lock_user(session, user.id)
     if not password.verify_password(
         payload.currentPassword, user.password_hash or password.DUMMY_PASSWORD_HASH
     ) or user.password_hash is None:
@@ -159,6 +165,7 @@ def reset_password(
     """管理者発行コードを消費し、全端末をログアウトさせる。"""
     source = request.client.host if request.client else "unknown"
     now = int(time.time())
+    lock_attempt_source(session, source, reset=True)
     session.query(PasswordResetAttempt).filter(
         PasswordResetAttempt.attempted_at <= now - 900
     ).delete()
@@ -170,6 +177,8 @@ def reset_password(
         session.commit()
         raise HTTPException(429, "too many reset attempts", headers={"Retry-After": str(retry)})
     user = session.query(User).filter_by(login_id=payload.loginId).first()
+    if user is not None:
+        lock_user(session, user.id)
     reset = session.get(PasswordReset, user.id) if user else None
     candidate = hashlib.sha256(payload.resetCode.encode("utf-8")).hexdigest()
     # !NOTE: 未知のIDでも固定長のハッシュを比較し、IDの存在を応答から推測しにくくする。

@@ -9,6 +9,7 @@ from caliboo_api.data.account_data import now_iso
 from caliboo_api.data.agent_jobs import create_job, job_view
 from caliboo_api.data.assignment_proposal_data import get_proposal_detail
 from caliboo_api.db import get_session
+from caliboo_api.dialect import lock_user
 from caliboo_api.extension_models import AgentJob, ProposalRevision
 from caliboo_api.models import AssignmentProposal, User
 from caliboo_api.routers.development import pending_job
@@ -28,6 +29,8 @@ def regenerate(proposal_id: int, payload: RegenerateRequest,
     row = session.get(AssignmentProposal, proposal_id)
     if row is None:
         raise HTTPException(404, "proposal not found")
+    lock_user(session, row.target_user_id)
+    session.refresh(row)
     if row.assignment_id is not None or row.decided_at is not None:
         raise HTTPException(409, "proposal is no longer pending")
     previous = dict(title=row.title, body=row.body, messageForMember=row.message_for_member,
