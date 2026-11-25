@@ -84,7 +84,8 @@ it("自動更新で課題が届き、古い版で編集中の文章を保護す�
   await act(async () => document.dispatchEvent(new Event("visibilitychange"))); await screen.findByText(/別の画面で更新されました/);
   expect(screen.getByLabelText("行動の内容", { exact: false })).toHaveValue("自分の下書き");
   expect(screen.getByRole("button", { name: "変更を保存" })).toBeDisabled();
-  expect(screen.getByRole("link", { name: "個別の課題" })).toHaveAttribute("href", "/assignment/8");
+  expect(screen.getByRole("link", { name: "個別の課題" })).toHaveAttribute("href", "/assignments/8");
+  expect(screen.getByRole("link", { name: "全員の課題" })).toHaveAttribute("href", "/assignments/9");
   fireEvent.click(screen.getByRole("button", { name: "編集を閉じる" })); fireEvent.click(screen.getByRole("button", { name: "行動を編集・振り返る" }));
   expect(screen.getByLabelText("行動の内容", { exact: false })).toHaveValue("別画面で更新");
 });
