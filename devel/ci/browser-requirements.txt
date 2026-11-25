@@ -1,0 +1,2 @@
+# ChromiumのリビジョンはPlaywrightのこの版に対応するものだけを利用する。
+playwright==1.62.0
