@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import ValidationError
-from sqlalchemy.dialects.sqlite import insert
+from caliboo_api.dialect import conflict_insert, lock_user
 from sqlalchemy.orm import Session
 
 from caliboo_api.auth.deps import get_current_user, require_admin
@@ -48,6 +48,8 @@ def pending_job(session: Session, job_id: int, kind: str) -> AgentJob:
     job = session.get(AgentJob, job_id)
     if job is None or job.kind != kind:
         raise HTTPException(404, "job not found")
+    lock_user(session, job.user_id)
+    session.refresh(job)
     if job.status != "pending":
         raise HTTPException(409, "job is no longer pending")
     member_or_404(session, job.user_id)
@@ -194,6 +196,7 @@ def decide_strength(
     row = session.get(StrengthCandidate, candidate_id)
     if row is None:
         raise HTTPException(404, "candidate not found")
+    lock_user(session, row.user_id)
     member_or_404(session, row.user_id)
     kind = candidate_kind(session, row)
     if payload.kind is not None and payload.kind != kind:
@@ -290,7 +293,7 @@ def evaluate(
         comment=payload.comment,
     )
     session.execute(
-        insert(StrengthEvaluation)
+        conflict_insert(session, StrengthEvaluation)
         .values(**values)
         .on_conflict_do_update(
             index_elements=["job_id", "reviewer_id"],

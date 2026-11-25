@@ -26,7 +26,7 @@ FastAPIアプリ本体: `backend/src/caliboo_api/main.py`。CORS設定は持た�
 
 !NOTE: ログアウトを認証不要・冪等にしているのは、期限切れのセッションでログアウトを押した場合に401を返すと、画面側がエラーとして扱うか成功として扱うかの判断が必要になるため。ログアウトの目的(セッションとCookieが残らないこと)はどの状態からでも達成できる。
 
-!NOTE: バックエンドはSQLiteでDB永続化する。参照系エンドポイントはアプリ起動時にシード投入されたDBの値を返し、`POST /api/report`はDBの`reports`テーブルへ保存する。設計理由は`docs/architecture.md`を参照。
+!NOTE: バックエンドはSQLite（既定）または明示設定した共有PostgreSQLでDB永続化する。参照系エンドポイントは初回初期化時に投入されたDBの値を返し、`POST /api/report`はDBの`reports`テーブルへ保存する。設計理由は`docs/architecture.md`を参照。共有DBが接続不能な場合は起動失敗またはAPIエラー（接続障害は503）とし、無断でSQLiteへ保存しない。
 
 ## ホーム
 

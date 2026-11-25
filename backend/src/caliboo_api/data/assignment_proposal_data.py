@@ -5,7 +5,7 @@ from enum import Enum, auto
 from zoneinfo import ZoneInfo
 
 from sqlalchemy import literal, select
-from sqlalchemy.dialects.sqlite import insert
+from caliboo_api.dialect import conflict_insert, lock_user
 from sqlalchemy.orm import Session
 
 from caliboo_api.data.assignment_data import fetch_visible_assignment_statuses, insert_assignment
@@ -296,6 +296,7 @@ def proposal_inputs(session: Session, user_id: int) -> dict:
 def save_generated_proposal(session: Session, user_id: int, result: dict,
                             generator: str) -> tuple[AssignmentProposal, bool]:
     """検証済みの出力を保存する。ジョブ完了と同じトランザクションで利用できる。"""
+    lock_user(session, user_id)
     values = dict(
         target_user_id=user_id, title=result["title"], body=result["body"],
         message_for_member=_normalize_message(result["messageForMember"]),
@@ -311,7 +312,15 @@ def save_generated_proposal(session: Session, user_id: int, result: dict,
     # !NOTE: 推論中に別リクエストが生成した確認待ちを増やさない。判定とINSERTを一文にする。
     source = select(*[literal(value, type_=AssignmentProposal.__table__.c[key].type)
                       for key, value in values.items()]).where(~pending)
-    inserted = session.execute(insert(AssignmentProposal).from_select(list(values), source))
+    statement = conflict_insert(session, AssignmentProposal).from_select(list(values), source)
+    # PostgreSQLのREAD COMMITTEDではNOT EXISTSだけでは競合を防げない。
+    if session.get_bind().dialect.name == "postgresql":
+        statement = statement.on_conflict_do_nothing(
+            index_elements=[AssignmentProposal.target_user_id],
+            index_where=(AssignmentProposal.assignment_id.is_(None)
+                         & AssignmentProposal.decided_at.is_(None)),
+        )
+    inserted = session.execute(statement)
     proposal = _find_pending_proposal(session, user_id)
     return proposal, bool(inserted.rowcount)
 
@@ -357,6 +366,7 @@ def approve_proposal(
         if proposal is None:
             return ProposalActionError.NOT_FOUND
 
+        lock_user(session, proposal.target_user_id)
         assignment = insert_assignment(session, title, body)
         session.add(
             AssignmentRecipient(
@@ -391,6 +401,7 @@ def reject_proposal(
         if proposal is None:
             return ProposalActionError.NOT_FOUND
 
+        lock_user(session, proposal.target_user_id)
         updated_rows = _update_if_still_pending(
             session,
             proposal_id,

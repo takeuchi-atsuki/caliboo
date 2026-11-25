@@ -4,7 +4,7 @@ import random
 import time
 
 from sqlalchemy import case
-from sqlalchemy.dialects.sqlite import insert
+from caliboo_api.dialect import conflict_insert
 from sqlalchemy.orm import Session
 
 from caliboo_api.extension_models import QuizAttempt, QuizReview, QuizSuccess
@@ -28,7 +28,7 @@ def record_attempt(session: Session, user_id: int, question_id: str,
     intervals = [(QuizReview.correct_streak == index, days * DAY)
                  for index, days in enumerate(CORRECT_INTERVAL_DAYS[:-1])]
     next_interval = case(*intervals, else_=CORRECT_INTERVAL_DAYS[-1] * DAY)
-    session.execute(insert(QuizReview).values(
+    session.execute(conflict_insert(session, QuizReview).values(
         user_id=user_id, question_id=question_id, attempts=1,
         correct_streak=1 if correct else 0, last_correct=correct,
         last_answered_at=now, due_at=now + interval,

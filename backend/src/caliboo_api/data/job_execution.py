@@ -5,7 +5,7 @@ import uuid
 from dataclasses import dataclass
 
 from sqlalchemy import and_, or_, select
-from sqlalchemy.dialects.sqlite import insert
+from caliboo_api.dialect import conflict_insert
 
 from caliboo_api.db import session_scope
 from caliboo_api.extension_models import AccountState, AgentJob, AgentJobContext, AgentJobExecution
@@ -49,7 +49,7 @@ def claim_next(lease_seconds: int) -> ClaimedJob | None:
                 AgentJobExecution.leased_until <= now, AgentJobExecution.next_attempt_at <= now)),
         ).order_by(AgentJob.id).limit(20).all()
         for job in available:
-            session.execute(insert(AgentJobExecution).values(job_id=job.id).
+            session.execute(conflict_insert(session, AgentJobExecution).values(job_id=job.id).
                             on_conflict_do_nothing())
             token = uuid.uuid4().hex
             claimed = session.query(AgentJobExecution).filter(

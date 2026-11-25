@@ -16,6 +16,7 @@ from caliboo_api.data.account_data import (
     account_view, initialize_profile, now_iso, set_department,
 )
 from caliboo_api.db import get_session
+from caliboo_api.dialect import lock_user
 from caliboo_api.extension_models import AccountState, PasswordReset
 from caliboo_api.models import User, UserSession
 from caliboo_api.schemas.auth import Role
@@ -72,6 +73,7 @@ def update_user(user_id: int, payload: UserUpdate, session: Session = Depends(ge
     user = session.get(User, user_id)
     if user is None:
         raise HTTPException(404, "user not found")
+    lock_user(session, user.id)
     if user_id == admin.id and (not payload.active or payload.role != "admin"):
         raise HTTPException(409, "cannot disable or demote yourself")
     set_department(session, user_id, payload.departmentId, admin.id)
@@ -99,6 +101,8 @@ def issue_password_reset_code(
 ) -> dict:
     """管理者が本人確認後に伝えるコードを一度だけ返す。再発行で旧コードは失効。"""
     user = session.get(User, user_id)
+    if user is not None:
+        lock_user(session, user.id)
     state = session.get(AccountState, user_id)
     if user is None or (state is not None and not state.active):
         raise HTTPException(404, "active user not found")

@@ -14,21 +14,31 @@
 
 ```
 frontend/  React + TypeScript + Vite（画面）
-backend/   FastAPI（SQLiteでDB永続化するAPI）
+backend/   FastAPI（SQLite / PostgreSQLでDB永続化するAPI）
 docs/      本ディレクトリ（仕様書）
 ```
 
-バックエンドはSQLiteでDB永続化を行う。DB本体は`backend/var/caliboo.db`(`CALIBOO_SQLITE_PATH`環境変数で変更可能)に保存され、アプリ起動時(`main.py`の`lifespan`)に`init_engine()`→`bootstrap_db()`でテーブル作成・初回シード投入を行う。`POST /api/report`等の書き込み系エンドポイントは、DBの`reports`テーブルへINSERTする。`GET /api/report/history`により、提出済み日報の全文(Keep/Problem/Try/きもち/きもちコメント)を一覧取得できる。下書き(`status: "draft"`)は`GET /api/report/drafts`で一覧取得・`DELETE /api/report/drafts/{id}`で削除でき、一覧から選んだ内容をフロントのフォームへ反映することで編集を実現している(専用の更新APIは無く、編集後の再保存も既存の`POST /api/report`への新規INSERTで行う。詳細は`docs/screens/report.md`を参照)。
+バックエンドは既定ではSQLiteでDB永続化を行う。DB本体は`backend/var/caliboo.db`(`CALIBOO_SQLITE_PATH`環境変数で変更可能)に保存され、アプリ起動時(`main.py`の`lifespan`)に`init_engine()`→`bootstrap_db()`でテーブル作成・初回シード投入を行う。`POST /api/report`等の書き込み系エンドポイントは、DBの`reports`テーブルへINSERTする。`GET /api/report/history`により、提出済み日報の全文(Keep/Problem/Try/きもち/きもちコメント)を一覧取得できる。下書き(`status: "draft"`)は`GET /api/report/drafts`で一覧取得・`DELETE /api/report/drafts/{id}`で削除でき、一覧から選んだ内容をフロントのフォームへ反映することで編集を実現している(専用の更新APIは無く、編集後の再保存も既存の`POST /api/report`への新規INSERTで行う。詳細は`docs/screens/report.md`を参照)。
 
 課題演習機能(`assignments`/`assignment_submissions`テーブル)は、講師による課題(タイトル・課題文)の作成、新入社員によるテキスト回答の提出、講師によるコメントフィードバックという一連のワークフローを永続化する(詳細は`docs/screens/assignment.md`を参照)。個人宛ての課題は`assignment_recipients`(課題ごとに0〜1行。行なし=全員宛て)で配信先と講師のひとことを持つ。AIの課題案は`assignment_proposals`に生成時の内容・分析した材料・生成器名を記録し、配信すると作成した課題を`assignment_id`で指す。既定の生成は`services/assignment_proposal/`のルールベース生成器(`RuleBasedProposalGenerator`)で行い、強み解析PoCの`providers.py`と同じくProtocolで差し替え可能にしている。
 
-!NOTE: MySQL/PostgreSQL等の外部DBMSではなくSQLiteを選んだ理由は、DevContainerだけで完結し追加のミドルウェアインストールが不要な点(移植性)、依存関係を最小限に保つ方針、および今回のスコープが「デザイン案の動作確認」であり本格的な同時接続・スケールを想定しないためである。
+!NOTE: 初期PoCでMySQL/PostgreSQL等の外部DBMSではなくSQLiteを選んだ理由は、DevContainerだけで完結し追加のミドルウェアインストールが不要な点(移植性)、依存関係を最小限に保つ方針、および今回のスコープが「デザイン案の動作確認」であり本格的な同時接続・スケールを想定しないためである。
 
 !TIP: モック定数は削除せず`backend/src/caliboo_api/data/seed/`配下に保持し、`bootstrap_db()`の初回シード投入元、およびテストの固定データとして共用している(シードデータとテストフィクスチャの二重管理を避けるため)。シード投入は`departments`テーブルが空の場合のみ行われるため、既存の`caliboo.db`ファイルが残っている限り再投入されない(`assignments`/`assignment_submissions`等、後から追加したテーブルも同じ単一ゲートの対象で、テーブル自体は`create_all`で作られてもシードは投入されない)。ローカルのシード内容を最新化したい場合は`backend/var/caliboo.db`を削除してから再起動する。(例: AIの課題案の確認用に追加した新入社員ハルカとその日報(`report_seed.py`)は、DBを作り直すまで入らない)
 
-`bootstrap_db()`はシード投入の判定より前に旧スキーマ(`users`テーブル導入前)のDBを検知する(`db.py`の`_check_schema_compatibility()`)。`home_profile`テーブルが存在し、`departments`がシード済みであるにもかかわらず「`users`が空」または「`home_profile`に`user_id`列が無い」場合を旧スキーマとみなし、`backend/var/caliboo.db`の削除を促すメッセージ付きで起動に失敗する。マイグレーションは用意していないため、旧スキーマのDBは削除して作り直す必要がある。`users`テーブル導入前のコードへ戻す場合も、同じくDBの削除が必要になる。
+`bootstrap_db()`はシード投入の判定より前に旧スキーマ(`users`テーブル導入前)のDBを検知する(`db.py`の`_check_schema_compatibility()`)。`home_profile`テーブルが存在し、`departments`がシード済みであるにもかかわらず「`users`が空」または「`home_profile`に`user_id`列が無い」場合を旧スキーマとみなし、`backend/var/caliboo.db`の削除を促すメッセージ付きで起動に失敗する。SQLiteの旧スキーマを現行版へ自動更新するマイグレーションは用意していないため、旧スキーマのローカル検証DBは作り直す必要がある。`users`テーブル導入前のコードへ戻す場合も、同じくDBの削除が必要になる。
 
 !NOTE: 旧スキーマを検知して起動を止めるのは、`create_all`が既存テーブルに列を追加しないため。黙って起動すると「誰もログインできない」「一部APIだけ500になる」という原因の分かりにくい状態になる。
+
+## 共有DB（issue #25）
+
+`CALIBOO_DATABASE_URL`未設定時は従来のSQLite互換モード。明示設定時は`postgresql+psycopg`で1台のPostgreSQL 18に接続する。全端末は同じFastAPIを利用し、ブラウザからDBへの直接接続は行わない。管理CLIとAPI内の永続ワーカーも同じ接続先を使用する。
+
+共有モードは起動時に現行40表・列と課題案部分一意索引の存在を検査する。DDL、デモシード、アカウント追加は起動時に行わない。共有DBが利用できないときは起動またはAPI処理が失敗し、ローカルSQLiteへ切り替えない。初回構築・空DBへの単一スナップショット移行・検証は専用CLIで実行する。
+
+!NOTE: PostgreSQLは複数トランザクションが同時に判定・書込できるため、確認待ち課題案の一意性は部分一意索引でも保証する。クイズ達成率、回答とフィードバックの順序、強み候補、認証情報の変更等は対象者単位のロックと既存の条件付き更新・一意制約を組み合わせる。外部推論中はロックを保持しない。既存SQLiteの同時利用を新たに保証するものではない。
+
+詳細な操作、移行制約、復元、検証観点は[共有DBの構築・移行・検証](shared-database.md)参照。複数SQLite DBの統合、旧版スキーマの自動アップグレード、本番切替は対象外とする。
 
 ## 認証・認可
 

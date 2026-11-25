@@ -6,7 +6,7 @@ from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, ConfigDict, Field, field_validator
-from sqlalchemy.dialects.sqlite import insert
+from caliboo_api.dialect import conflict_insert
 from sqlalchemy.orm import Session
 
 from caliboo_api.auth.deps import require_admin
@@ -108,7 +108,7 @@ def create_case(payload: CaseInput, admin: User = Depends(require_admin),
     materials = normalize_strength_materials({"sources": sources})
     digest = hashlib.sha256(json.dumps(materials, ensure_ascii=False,
                                        sort_keys=True).encode()).hexdigest()
-    inserted = session.execute(insert(Case).values(
+    inserted = session.execute(conflict_insert(session, Case).values(
         report_id=report.id, materials=materials, digest=digest,
         created_by=admin.id, created_at=now_iso(), status="labeling",
     ).on_conflict_do_nothing()).rowcount
@@ -135,7 +135,7 @@ def read_case(case_id: int, admin: User = Depends(require_admin),
 def label_case(case_id: int, payload: LabelInput, admin: User = Depends(require_admin),
                session: Session = Depends(get_session)) -> dict:
     get_case(session, case_id)
-    # !NOTE: SQLiteの書込ロックを先に取得し、同時ラベルや結果登録と順序を競合させない。
+    # !NOTE: DBの書込ロックを先に取得し、同時ラベルや結果登録と順序を競合させない。
     locked = session.query(Case).filter_by(id=case_id, status="labeling").update(
         {"status": "labeling"}, synchronize_session=False)
     if not locked or session.query(Label).filter_by(case_id=case_id).count() >= 2:

@@ -10,11 +10,13 @@ from contextlib import contextmanager
 from datetime import datetime, timezone
 from typing import Generator, Iterator
 
-from sqlalchemy import create_engine, inspect
-from sqlalchemy.engine import Engine
+from sqlalchemy import create_engine, inspect, text
+from sqlalchemy.engine import Engine, URL
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session, sessionmaker
 
 from caliboo_api.auth.password import hash_password
+from caliboo_api.config import Settings
 from caliboo_api.data.account_data import initialize_extensions
 from caliboo_api.data.seed import (
     assignment_seed,
@@ -49,17 +51,101 @@ def init_engine(path: str) -> None:
 
     渡された`path`の親ディレクトリが存在しない場合は自動作成する。
     """
-    global _engine, _SessionLocal
-
     parent_dir = os.path.dirname(os.path.abspath(path))
     if parent_dir and not os.path.isdir(parent_dir):
         os.makedirs(parent_dir, exist_ok=True)
 
-    _engine = create_engine(
-        f"sqlite:///{path}",
+    _set_engine(create_engine(
+        URL.create("sqlite", database=path),
         connect_args={"check_same_thread": False},
-    )
-    _SessionLocal = sessionmaker(bind=_engine, autoflush=False, autocommit=False)
+        hide_parameters=True,
+    ))
+
+
+def _set_engine(engine: Engine) -> None:
+    global _engine, _SessionLocal
+    if _engine is not None:
+        _engine.dispose()
+    _engine = engine
+    _SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
+
+
+def shared_engine(url: URL) -> Engine:
+    """パスワードや業務データをSQLログに残さず、切断後の接続を使い回さない。"""
+    return create_engine(url, pool_pre_ping=True, hide_parameters=True,
+                         connect_args={"connect_timeout": 5})
+
+
+def configure_engine(settings: Settings) -> None:
+    if settings.database_url is None:
+        init_engine(settings.sqlite_path)
+    else:
+        _set_engine(shared_engine(settings.database_url))
+
+
+def get_engine() -> Engine:
+    if _engine is None:
+        raise RuntimeError("engine is not initialized. call init_engine() first.")
+    return _engine
+
+
+def prepare_runtime(settings: Settings) -> None:
+    """共有モードでは起動時のDDL・シード再実行を禁止する。"""
+    configure_engine(settings)
+    if settings.database_url is None:
+        bootstrap_db()
+    else:
+        try:
+            with get_engine().connect() as connection:
+                validate_shared_schema(connection)
+        except SQLAlchemyError:
+            raise RuntimeError("共有DBに接続できません。設定とサービス状態を確認してください。") from None
+
+
+def validate_shared_schema(connection) -> None:
+    inspector = inspect(connection)
+    if not set(Base.metadata.tables).issubset(inspector.get_table_names()):
+        raise RuntimeError("共有DBのスキーマが未初期化です。管理CLIで初期化または移行してください。")
+    for table in Base.metadata.sorted_tables:
+        if set(table.c.keys()) != {c["name"] for c in inspector.get_columns(table.name)}:
+            raise RuntimeError(f"共有DBのスキーマが異なります: {table.name}")
+    indexes = inspector.get_indexes("assignment_proposals")
+    if not any(item["name"] == "uq_assignment_proposals_pending_user"
+               and item["unique"] for item in indexes):
+        raise RuntimeError("共有DBの課題案一意制約が不足しています。")
+
+
+def lock_shared_initialization(connection) -> None:
+    # !NOTE: 初期化・移行は同じDB内で一つだけ許し、DDLを含めて一括rollback可能にする。
+    connection.execute(text("SELECT pg_advisory_xact_lock(902503250)"))
+
+
+def require_empty_shared_db(connection) -> None:
+    if inspect(connection).get_table_names():
+        raise RuntimeError("共有DBが空ではありません。既存DBへの上書き・追加入力はできません。")
+
+
+def initialize_shared_db(url: URL, demo: bool = False) -> None:
+    engine = shared_engine(url)
+    try:
+        with engine.begin() as connection:
+            lock_shared_initialization(connection)
+            require_empty_shared_db(connection)
+            Base.metadata.create_all(connection)
+            with Session(bind=connection, autoflush=False,
+                         join_transaction_mode="rollback_only") as session:
+                if demo:
+                    users = _seed_users(session)
+                    _seed_home(session, users)
+                    _seed_assignment(session, users)
+                    _seed_report(session, users)
+                _seed_ojt(session)
+                _seed_study(session)
+                session.flush()
+                initialize_extensions(session)
+            validate_shared_schema(connection)
+    finally:
+        engine.dispose()
 
 
 def get_session() -> Generator[Session, None, None]:
@@ -146,6 +232,9 @@ def _seed_ojt(session: Session) -> None:
                 knowledge_count=dept["knowledge_count"],
             )
         )
+
+    # PostgreSQLは外部キーを検査するため、親テーブルを先に確定する。
+    session.flush()
 
     for dept_id, messages in ojt_seed.INITIAL_MESSAGES_SEED.items():
         for ordinal, message in enumerate(messages, start=1):
@@ -295,6 +384,8 @@ def bootstrap_db() -> None:
     if _engine is None or _SessionLocal is None:
         raise RuntimeError("engine is not initialized. call init_engine() first.")
 
+    if _engine.dialect.name != "sqlite":
+        raise RuntimeError("共有DBは起動時に初期化できません。管理CLIを使ってください。")
     Base.metadata.create_all(_engine)
 
     with session_scope() as session:
