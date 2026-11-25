@@ -2,7 +2,7 @@
 
 **対象**：Caliboo（キャリブー）社内展開提案・発表・質疑応答・公開体験  
 **正本**：`takeuchi-atsuki/caliboo` の `docs/caliboo-proposal-materials` ブランチ  
-**確認日**：2026-11-25
+**確認日**：2026-11-26
 
 このページは Codex で Caliboo の作業を継続するための入口。印刷・配布はPDF、原稿の改訂はMarkdown、画像やHTMLは該当する最新版を使用する。旧版は履歴として保持し、正本のブランチを変更しない限り、下記の相対リンクから最新版として確認した成果物にアクセスできる。
 
@@ -10,10 +10,10 @@
 
 | 成果物 | 印刷用PDF | 編集・プレビュー |
 | --- | --- | --- |
-| ポスター v3 | [PDF](caliboo-poster-v3.pdf) | [HTML](caliboo-poster-v3.html)・[PNG](caliboo-poster-v3.png) |
+| ポスター v4 | [PDF](caliboo-poster-v4.pdf) | [HTML](caliboo-poster-v4.html)・[PNG](caliboo-poster-v4.png) |
 | パンフレット v3 | [PDF](caliboo-pamphlet-v3.pdf) | [HTML](caliboo-pamphlet-v3.html)・[表面PNG](caliboo-pamphlet-v3-front.png)・[裏面PNG](caliboo-pamphlet-v3-back.png) |
-| POP（QRコードあり） | [PDF](caliboo-pop-qr.pdf) | [HTML](caliboo-pop-qr.html)・[PNG](caliboo-pop-qr.png) |
-| POP（QRコードなし） | [PDF](caliboo-pop.pdf) | [HTML](caliboo-pop.html)・[PNG](caliboo-pop.png) |
+| POP v2（QRコードあり） | [PDF](caliboo-pop-v2-qr.pdf) | [HTML](caliboo-pop-v2-qr.html)・[PNG](caliboo-pop-v2-qr.png) |
+| POP v2（QRコードなし） | [PDF](caliboo-pop-v2.pdf) | [HTML](caliboo-pop-v2.html)・[PNG](caliboo-pop-v2.png) |
 
 ## 2. 公式ブランド・ロゴ
 
