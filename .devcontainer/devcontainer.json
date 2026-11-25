@@ -12,8 +12,8 @@
         }
     },
     "remoteUser": "vscode",
-    "postCreateCommand": "/bin/sh -e ./.devcontainer/setup.sh",
-    "postStartCommand": "/bin/sh -e ./.devcontainer/startup.sh",
+    "postCreateCommand": "/bin/bash -e ./.devcontainer/setup.sh",
+    "postStartCommand": "/bin/bash -e ./.devcontainer/startup.sh",
     "customizations": {
         "vscode": {
             "settings": {

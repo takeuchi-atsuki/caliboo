@@ -2,7 +2,7 @@
 
 ## 対象と起動条件
 
-[品質ゲート](../.github/workflows/quality-gates.yml)は、公開リポジトリで利用可能な標準の `ubuntu-24.04` ランナーだけで動かす。Python 3.12、Node.js 22.23.4（22.22.2以降の22系）、プロジェクトの依存定義・npm lockfile、固定版の Playwright 1.62.0 と対応する Chromium を使用する。
+[品質ゲート](../.github/workflows/quality-gates.yml)は、公開リポジトリで利用可能な標準の `ubuntu-24.04` ランナーで動かす。Windows配布の追加検証に限り、標準の `windows-2022`（x64）ランナーを独立して1ジョブ使用する。Python 3.12、Node.js 22.23.4（22.22.2以降の22系）、プロジェクトの依存定義・npm lockfile、固定版の Playwright 1.62.0 と対応する Chromium を使用する。
 
 > [!NOTE]
 > 外部投稿者の Actions 実行承認設定が未確認のため、初期導入時は main 宛PRのコードをそのまま実行せず、管理者が差分を確認した同一リポジトリの検証専用ブランチへの push のみを対象にする。forkのPRや `pull_request_target`、mainへの直接pushを起点とする実行は設定しない。外部投稿者の承認設定を確認し、実行対象を変更する場合は別途判断する。
@@ -16,12 +16,13 @@ mainから作成した検証候補に #32 を適用し、対象課題の変更�
 | `ci/verify-32-package` | #29、#32 | クリーン配布ZIP |
 | `ci/verify-32-assignment` | #30、#32 | ブラウザーで通常の課題導線 |
 | `ci/verify-32-gui` | #26、#32 | ブラウザーで画面遷移・読み込み |
-| `ci/verify-32-all` | #25、#29、#30、#26、#32 | すべての追加ゲート |
+| `ci/verify-32-all` | #25、#29、#30、#26、#32 | Linux側のすべての追加ゲート |
+| `ci/verify-32-windows-package` | #29、#32 | Windows Git Bashクリーン配布のみ（Linuxジョブは起動しない） |
 
 > [!NOTE]
 > 検証ブランチは用途ごとに明示し、対象課題を含まない候補で追加試験が偶然スキップされた状態を合格とは扱わない。対象候補に必要なスクリプト・テスト・機能がなければ失敗させる。複数候補を組み合わせるときは、各課題が独立に作成した `CHANGELOG.md` の記載を失わないよう統合する。
 
-## 共通ゲート
+## 共通ゲート（Windows専用ブランチを除く）
 
 | 対象 | 実行内容と合格条件 |
 | --- | --- |
@@ -50,6 +51,19 @@ PostgreSQL必須試験では、pytestの生の標準出力・標準エラー・J
 - #30：強み画面から配信課題の詳細を開く通常導線を実ブラウザーで確認する。
 - #26：実ブラウザーで初期読み込みと主要画面への遷移を確認する。経過時間は参考値とし、実行環境の速度の違いだけで失敗としない。
 
+## Windows Git Bash配布ゲート
+
+竹内さんの利用環境に合わせ、#29を含む候補で Windows Server 2022 x64 の Git Bash、Windows版Python 3.12、Node.js 22.23.4を確認する。専用ブランチはLinux/PGジョブに依存せず、Windowsジョブだけを起動する。checkout時のBashスクリプトはLFを保持する（checkoutステップ内のGit設定のみ。リポジトリ設定は変更しない）。Windowsジョブの親Pythonと子Pythonでは `PYTHONUTF8=1`、`PYTHONIOENCODING=utf-8` を設定し、両CI入口の標準出力・標準エラーもUTF-8に明示する。子プロセスの取得出力はUTF-8としてデコードし、生ログは公開しない。
+
+1. 実際の `devel/windows/build-windows.sh` でZIPを作成し、内容・CRC・Windows用スクリプトの同梱を確認する。
+2. 空白を含む新規ディレクトリへ展開し、`setup-windows.sh` で展開先の依存関係を導入する。
+3. 展開先の `backend/.venv/Scripts/python.exe` で `tzdata` の導入、`PYTHONTZPATH` が空でも `ZoneInfo("Asia/Tokyo")` がUTCから日本時間へ正しく変換できることを確認する。
+4. 管理者作成CLIで対話入力により合成管理者を作成し、実際の `dev-server-windows.sh` で起動する。通常操作で合成新人の日報提出、所有サーバー群を停止して再起動後の保持を確認する。CIは制御イベントを試行し、必要な場合のみ所有プロセス群の停止に切り替え、停止方式を記録する。利用者が対話的に行うCtrl+Cの操作確認とは区別する。
+5. 固定版Chromiumをサンドボックス有効で利用可能な場合は、通常の実画面操作を検証する。導入・安全な起動ができない場合は、通常APIの業務フローを部分確認し、UIは未完と記録する。ブラウザー検証をスキップして全ゲート成功とは扱わない。
+
+> [!NOTE]
+> Windows Server 2022 のGit Bash実測はWindows 10/11実機の動作保証ではない。ランナーの安全設定変更、Chromiumのsandbox無効化、実運用の認証値・DB・外部AI使用は行わない。ZIP・一時展開先・ログは成果物として保存しない。
+
 ## ローカルでの再現
 
 Python 3.12 と Node.js 22.22.2以上の22系を用意して、リポジトリのルートから実行する。既存の開発テストと同じ入口を使用する。試験は合成データ専用・独立したローカル環境で行う。配布ZIPではなく、開発テストを含む完全なチェックアウトが必要。
@@ -77,9 +91,20 @@ python devel/ci/browser_e2e.py
 - #25: `python devel/ci/postgres_gate.py`。使い捨ての `postgres:18` コンテナを用意し、動的ホストポートを `CALIBOO_CI_POSTGRES_PORT`、コンテナIDを `CALIBOO_CI_POSTGRES_CONTAINER`、合成のサービス初期化用パスワードを `CALIBOO_CI_POSTGRES_PASSWORD` に設定する。実運用のDBは指定しない。
 - #29: `python devel/ci/package_gate.py`。PlaywrightとChromiumを準備したうえで、`release/` が存在しないクリーンな候補から実行する。ZIPや展開先は試験終了時に保存しない。
 
+Windows Git Bashから完全な #29 候補を検証する場合もワークフローと同じ入口を使う。Windowsゲートの合成自己テストも実行する（CIでは0件・skipも失敗）。
+
+```bash
+python -m unittest discover -s devel/ci -p 'test_windows_*.py'
+python -m pip install -r devel/ci/browser-requirements.txt
+python -m playwright install chromium
+python devel/ci/windows_package_gate.py
+```
+
+Chromium導入が失敗してもWindows配布ゲートを実行すると、通常APIによる部分確認とUI未完の結果が残る。新規の候補チェックアウトと空きローカルポート8000/5173が必要。
+
 ## 費用・実行範囲
 
-- 標準GitHub-hosted runnerだけを使用する。公開リポジトリでの標準ランナーは無償。扱いは [GitHub Actions billing and usage](https://docs.github.com/en/actions/concepts/billing-and-usage) を参照する。
+- 標準GitHub-hosted runnerだけを使用する。公開リポジトリでの標準ランナー（ここではUbuntu 24.04とWindows Server 2022 x64）は無償。[標準runner一覧](https://docs.github.com/en/actions/reference/runners/github-hosted-runners#standard-github-hosted-runners-for-public-repositories)と [GitHub Actions billing and usage](https://docs.github.com/en/actions/concepts/billing-and-usage) を参照する。
 - 権限は `contents: read`、checkoutの資格情報永続化は無効、利用する公式Actionは40文字のcommit SHAに固定する。Actionsキャッシュと成果物アップロードは使用しない。
 - 外部AI、組織の実データ、実運用の秘密情報を使わない。PostgreSQLサービスのテスト用文字列はそのジョブの合成データ用に限る。
 - 依存パッケージ・ブラウザーはインストール段階で配布元から取得する。テストケースによる外部サービスへの接続は行わず、独立したテスト環境で実行する。
@@ -123,3 +148,20 @@ ChromiumおよびPostgreSQLの実試験、候補を含めた検証ブランチ�
 | 配布 | 対象候補でないためskip。 |
 
 PG失敗に対し、必須試験の条件は変更せず、公開ログに値を出さない構造化診断を追加した。新診断のローカル自己テストは12件成功。故意に失敗・skip・収集失敗する合成pytest、5段階の静的識別、SQLSTATEの形式確認を含む。さらに #25 候補 `1b7fe93` の実テストを静的に確認し、5処理段階の既知チェック位置が一致した。新しい診断入口でSQLite対照2件の成功・実PG未設定2件のskipを確認した（本ゲートはskipを合格にしない）。診断を組み込んだ実PGの再実行は未確認。
+
+
+### Windows専用ジョブの初期ローカル確認（2026-11-25）
+
+- YAML構造・Bash構文、7つの限定起動ブランチ、Windows専用分岐、最小権限、固定SHA、永続キャッシュ・アーティファクトなしを確認。
+- Windowsゲートの合成自己テスト15件成功。ZIP構成/CRC/LF、空白パス、Windows/Node判定、tzdataの判定、公開ログの制限、sandbox起動不可時の部分確認、起動後のUIエラーの失敗扱い、所有プロセス停止方針を検査。
+- Linuxで #29 候補の実ZIP（230ファイル）を作成し、Windows用3スクリプトの同梱・LF・CRCを確認。通常HTTPの部分検証もLinuxの実アプリで管理者CLI、新人、日報、2入口、再起動後の履歴保持を確認。
+- Windows Server 2022での実build/setup、Windows venv実動・tzdata変換、実起動/再起動、Chromium・UI、利用者の対話Ctrl+C、Windows 10/11実機はいずれも未確認。Linuxの結果をWindows実測として扱わない。
+
+
+### Windows初回Actions実測とCIの文字コード修正
+
+[Run 45656422144](https://github.com/takeuchi-atsuki/caliboo/actions/runs/45656422144) では専用Windowsジョブのみ実行され、Linux/PG/配布ジョブは条件分岐でskipした。Windows x64、Git Bash、Python/Nodeの導入、合成自己テスト15件、固定Chromium導入は成功。Windows配布ゲートの `PASS: Windows x64 Node.js 22.23.4` 直後で `UnicodeEncodeError` が発生し、ZIP生成以降には未到達。
+
+この位置は #29 の配布スクリプトを呼ぶ前の、#32 親Pythonによる日本語の確認出力に一致する。子プロセスだけに設定したUTF-8モードでは親の出力を制御できないため、ジョブ起動時のUTF-8環境とCI入口の標準出力/エラー再設定を追加した。実際の失敗時のコードページ自体は未記録であり、ローカルではCP1252を用いて同種のエラーを再現した。
+
+失敗時は `START stage=...`、`FAIL stage=... exception=...` と、可能な範囲で原因例外の型・CIファイルの相対名と行番号を記録する。認証値・入力本文・例外の生メッセージ・子プロセスの生ログは出さない。Windowsゲートの自己テスト18件、実CLIの `--help` をレガシー出力設定で実行する試験、flake8・YAML/Bash構文検査は成功。修正後のWindows実ランナー実行は未確認。#29 の配布スクリプト自体には変更していない。

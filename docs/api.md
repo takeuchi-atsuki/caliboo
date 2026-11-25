@@ -321,7 +321,7 @@ FastAPIアプリ本体: `backend/src/caliboo_api/main.py`。CORS設定は持た�
   "materials": [
     { "kind": "report", "date": "2026-09-22", "quote": "報告で結論が後回しになり、聞き返された。", "sourceLabel": "日報 Problem" }
   ],
-  "progress": { "submittedCount": 0, "reviewedCount": 0, "notSubmittedCount": 3, "recentMoods": ["foggy", "tired", "foggy"] },
+  "progress": { "submittedCount": 0, "reviewedCount": 0, "notSubmittedCount": 3, "recentMoods": ["foggy", "tired", "foggy"], "recentReportCount": 3 },
   "generator": "rule_based_v1",
   "assignmentId": 4,
   "rejectReason": null,
@@ -335,7 +335,7 @@ FastAPIアプリ本体: `backend/src/caliboo_api/main.py`。CORS設定は持た�
 - `materials[].kind`は`"report"`(日報)|`"feedback"`(講師フィードバック)|`"mood"`(直近のきもち)|`"progress"`(課題の進捗)。`date`は気分・進捗の材料では`null`。フィードバック材料の`date`は日本時間(`Asia/Tokyo`)の日付。フィードバック確定前(`feedback_at`未設定)は`null`。
 
 !NOTE: 日付を日本時間基準にしているのは、UTC基準のまま日付だけ切り出すと日本時間の日付と1日ずれる場合があるため(他のAPIのタイムスタンプ自体はUTCのまま`+00:00`で返す。日付のみへ変換する箇所に限った対応)。
-- `progress`は生成時点の状況(提出数・フィードバック済み数・未提出数・直近5件の日報のきもち)。
+- `progress`は生成時点の状況(課題の提出数・フィードバック済み数・未提出数・直近5件の日報のきもち)。`recentReportCount`は、生成器が使用した対象者の直近の提出済み日報数(整数0〜5)。下書き・他人の日報は含めない。旧データでは`null`(生成時点の件数不明)になり、後日の提出で値を補完・更新しない。`recentMoods`の記録や`materials`の件数とは独立する。
 - `generator`は生成に使った生成器の名前。
 
 異常系:
@@ -636,5 +636,7 @@ ProposalAgentResultはtrace/title/body/messageForMember/rationale/estimateMinute
 | POST | /api/development/holdout/cases/{case_id}/labels | `{skillCodes,comment,outputUnseen:true}`。スキル6種、該当なし可。別アカウント2名まで。確定済み/受付終了409 |
 | POST | /api/development/holdout/cases/{case_id}/result | `{materialsDigest,result:StrengthResult}`。2名のラベル確定後のみ。材料ハッシュ違い/結果固定済み/人数不足409、引用・コード違反422 |
 | POST | /api/development/holdout/cases/{case_id}/acceptance | `{accepted,comment}`。結果登録後、本人のラベルに受容性を1回確定。未解析/ラベルなし/記録済み409 |
+
+管理画面では解析担当者向けに `{materialsDigest,materials}` を出力し、解析担当者が返した `{materialsDigest,result}` をそのまま登録する。選択中のケースのハッシュで補完しない。登録済みの `result` は従来の形式のまま返す。
 
 ラベルにはreviewerId/skillCodes/comment/labeledAt、結果登録後にはmatch、受容記録後にはaccepted/acceptanceComment/acceptedAtが含まれる。結果登録前に他者のラベルを返さず、結果登録後はラベルの追加・変更を受け付けない。

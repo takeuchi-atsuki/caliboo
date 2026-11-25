@@ -9,7 +9,7 @@
 
 import caliboo_api.db as db
 from caliboo_api.extension_models import AgentJob
-from caliboo_api.models import Assignment, AssignmentSubmission, PocRun, Report
+from caliboo_api.models import Assignment, AssignmentProposal, AssignmentSubmission, PocRun, Report
 
 
 def test_password_reset_end_to_end(admin_client, client, anonymous_client):
@@ -710,6 +710,8 @@ def test_assignment_proposal_generate_edit_approve_visibility_flow(
     # ハルカのシードは「報告の構成」テーマを引くように投入している(report_seed.py)。
     assert created["title"] == "報告の構成を整理してみよう"
     assert any(material["kind"] == "mood" for material in created["materials"])
+    assert created["progress"]["recentReportCount"] == 5
+    assert created["progress"]["recentMoods"] == ["tired", "foggy", "happy", "foggy", "tired"]
 
     approved = admin_client.post(
         f"/api/assignment-proposals/{created['id']}/approve",
@@ -721,6 +723,7 @@ def test_assignment_proposal_generate_edit_approve_visibility_flow(
     ).json()
     assert approved["status"] == "approved"
     assert approved["edited"] is True
+    assert approved["progress"] == created["progress"]
     assignment_id = approved["assignmentId"]
 
     haruka_list = third_member_client.get("/api/assignments").json()["assignments"]
@@ -759,6 +762,75 @@ def test_assignment_proposal_generate_edit_approve_visibility_flow(
 
     haruka_detail = third_member_client.get(f"/api/assignments/{assignment_id}").json()
     assert haruka_detail["submission"]["feedbackComment"] == "結論から話せていて良いです"
+
+
+def test_proposal_recent_reports_snapshot_flow(client, admin_client, other_member_client):
+    """生成に使用した本人の提出済み日報だけが、課題案の進捗に固定される。"""
+    user_id = _member_id(client)
+
+    def save_report(member, day, moods, status="submitted"):
+        response = member.post("/api/report", json={
+            "date": f"2026-10-{day:02d}", "keep": "特に無い。",
+            "problem": "特に無い。", "try": "特に無い。", "mood": moods, "status": status,
+        })
+        assert response.status_code == 200
+        assert response.json()["status"] == status
+
+    def create():
+        response = admin_client.post("/api/assignment-proposals", json={"userId": user_id})
+        assert response.status_code == 201
+        return response.json()
+
+    def check_snapshot(proposal):
+        detail = admin_client.get(f"/api/assignment-proposals/{proposal['id']}")
+        assert detail.status_code == 200
+        assert detail.json()["progress"] == proposal["progress"]
+        with db.session_scope() as session:
+            assert session.get(AssignmentProposal, proposal["id"]).progress == proposal["progress"]
+
+    # 直近の日付であっても、本人の下書き・他人の提出は生成時の件数や気分に含めない。
+    save_report(client, 30, ["happy"], status="draft")
+    save_report(other_member_client, 31, ["tired"])
+    first = create()
+    assert first["progress"]["recentReportCount"] == 0
+    assert first["progress"]["recentMoods"] == []
+    assert first["progress"]["submittedCount"] == 2  # 課題の提出数は日報件数と無関係
+
+    save_report(client, 10, [])
+    check_snapshot(first)
+    repeat = admin_client.post("/api/assignment-proposals", json={"userId": user_id})
+    assert repeat.status_code == 200
+    assert repeat.json() == first
+
+    rejected = admin_client.post(f"/api/assignment-proposals/{first['id']}/reject", json={})
+    assert rejected.status_code == 200
+    assert rejected.json()["status"] == "rejected"
+    assert rejected.json()["progress"] == first["progress"]
+
+    second = create()
+    assert second["progress"]["recentReportCount"] == 1
+    assert second["progress"]["recentMoods"] == []
+    assert not [m for m in second["materials"] if m["kind"] in ("report", "feedback")]
+
+    # 7日分の提出があっても、最新5件だけが対象。複数選択時は現行どおり先頭の気分。
+    for day, moods in [(11, ["tired"]), (12, ["happy"]), (13, []),
+                       (14, ["foggy", "tired"]), (15, []), (16, ["fun"])]:
+        save_report(client, day, moods)
+    check_snapshot(first)
+    check_snapshot(second)
+
+    approved = admin_client.post(f"/api/assignment-proposals/{second['id']}/approve", json={
+        "title": second["title"], "body": second["body"],
+    })
+    assert approved.status_code == 200
+    assert approved.json()["status"] == "approved"
+    assert approved.json()["progress"] == second["progress"]
+
+    third = create()
+    assert third["progress"]["recentReportCount"] == 5
+    assert third["progress"]["recentMoods"] == ["fun", "foggy", "happy"]
+    for proposal in (first, second, third):
+        check_snapshot(proposal)
 
 
 def test_assignment_proposal_reject_then_regenerate_excludes_theme_flow(

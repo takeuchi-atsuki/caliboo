@@ -141,38 +141,95 @@ def test_concurrent_labels_do_not_duplicate_reviewer(evaluation):
     assert second.get(f"{BASE}/{case['id']}").json()["labelCount"] == 1
 
 
-def test_holdout_thresholds_and_nonmatching_codes(user_ids):
+def test_match_codes_empty_and_nonmatching():
     assert match_codes([], {"candidates": []}) == "exact"
     assert match_codes(["PROG"], {"candidates": [{"skillCode": "TEST"}]}) == "none"
+
+
+TRACE = dict(provider="codex_agent", model="fixture", promptVersion="v1")
+
+
+def add_evaluated_case(session, user_ids, index, *, agreement_votes=40, acceptance_votes=40,
+                       trace=None, partial=False):
+    report = Report(user_id=user_ids["yuki"], date=f"2026-08-{index + 1:02d}",
+                    keep="合成日報", problem="", try_="", status="submitted", saved_at="1")
+    session.add(report)
+    session.flush()
+    case = Case(report_id=report.id, materials={}, digest="fixture", created_at="1",
+                created_by=user_ids["sensei"], status="result_ready", result_at="3",
+                result={"trace": TRACE if trace is None else trace,
+                        "candidates": [{"skillCode": "TEST"}]})
+    session.add(case)
+    session.flush()
+    for offset, reviewer in enumerate((user_ids["sensei"], user_ids["sora"])):
+        vote_index = index * 2 + offset
+        accepted = None if partial and offset == 1 else vote_index < acceptance_votes
+        session.add(Label(case_id=case.id, reviewer_id=reviewer,
+                          skill_codes=["TEST"] if vote_index < agreement_votes else ["PROG"],
+                          comment="合成fixture", labeled_at="2", accepted=accepted,
+                          acceptance_comment=None if accepted is None else "合成fixture",
+                          accepted_at=None if accepted is None else "4"))
+    return case
+
+
+@pytest.mark.parametrize("agreement_votes,acceptance_votes,status", [
+    (31, 40, "failed"), (32, 40, "passed"), (40, 31, "failed"), (40, 32, "passed"),
+])
+def test_holdout_vote_thresholds(user_ids, agreement_votes, acceptance_votes, status):
     with session_scope() as session:
         for index in range(20):
-            report = Report(user_id=user_ids["yuki"], date=f"2026-08-{index + 1:02d}",
-                            keep="合成日報", problem="", try_="", status="submitted", saved_at="1")
-            session.add(report)
-            session.flush()
-            case = Case(report_id=report.id, materials={}, digest="fixture", created_at="1",
-                        created_by=user_ids["sensei"], status="result_ready", result_at="3",
-                        result={"trace": {"provider": "codex_agent", "model": "fixture",
-                                          "promptVersion": "v1"},
-                                "candidates": [{"skillCode": "TEST"}]})
-            session.add(case)
-            session.flush()
-            for reviewer in (user_ids["sensei"], user_ids["sora"]):
-                session.add(Label(case_id=case.id, reviewer_id=reviewer, skill_codes=["TEST"],
-                                  comment="合成fixture", labeled_at="2", accepted=index < 16,
-                                  acceptance_comment="合成fixture", accepted_at="4"))
+            add_evaluated_case(session, user_ids, index, agreement_votes=agreement_votes,
+                               acceptance_votes=acceptance_votes)
         session.commit()
         result = summary(session)
-        assert result["status"] == "passed" and result["evaluatedJobs"] == 20
-        assert result["acceptance"] == 0.8
-        session.query(Label).filter_by(case_id=case.id).update({"skill_codes": []})
-        session.query(Label).filter(Label.case_id != case.id).update({"accepted": False})
-        session.commit()
-        assert summary(session)["status"] == "failed"
+        assert result["evaluatedJobs"] == 20
+        assert result["agreement"] == agreement_votes / 40
+        assert result["acceptance"] == acceptance_votes / 40
+        assert result["status"] == status
 
-        new_trace = dict(provider="codex_agent", model="new-model", promptVersion="v2")
-        case.result = {**case.result, "trace": new_trace}
+
+def test_holdout_report_threshold_and_one_missing_acceptance(user_ids):
+    with session_scope() as session:
+        for index in range(19):
+            add_evaluated_case(session, user_ids, index)
         session.commit()
-        changed = summary(session)
-        assert changed["status"] == "insufficient_data" and changed["evaluatedJobs"] == 1
-        assert changed["trace"]["model"] == "new-model"
+        assert summary(session)["evaluatedJobs"] == 19
+        assert summary(session)["status"] == "insufficient_data"
+
+        case = add_evaluated_case(session, user_ids, 19, agreement_votes=38,
+                                  acceptance_votes=38, partial=True)
+        session.commit()
+        pending = summary(session)
+        assert pending["evaluatedJobs"] == 19
+        assert pending["status"] == "insufficient_data"
+        assert pending["agreement"] == pending["acceptance"] == 1.0
+
+        label = session.get(Label, (case.id, user_ids["sora"]))
+        label.accepted, label.acceptance_comment, label.accepted_at = True, "合成fixture", "4"
+        session.commit()
+        complete = summary(session)
+        assert complete["evaluatedJobs"] == 20
+        assert complete["status"] == "passed"
+        assert complete["agreement"] == 38 / 40
+        assert complete["acceptance"] == 39 / 40
+
+
+@pytest.mark.parametrize("field,value", [
+    ("provider", "openai"), ("model", "fixture-v2"), ("promptVersion", "v2"),
+])
+def test_holdout_groups_by_each_trace_field(user_ids, field, value):
+    with session_scope() as session:
+        for index in range(20):
+            add_evaluated_case(session, user_ids, index)
+        session.commit()
+        assert summary(session)["status"] == "passed"
+
+        trace = {**TRACE, field: value}
+        add_evaluated_case(session, user_ids, 20, trace=trace,
+                           agreement_votes=42, acceptance_votes=41)
+        session.commit()
+        current = summary(session)
+        assert current["trace"] == trace
+        assert current["evaluatedJobs"] == 1
+        assert current["agreement"] == 1.0 and current["acceptance"] == 0.5
+        assert current["status"] == "insufficient_data"

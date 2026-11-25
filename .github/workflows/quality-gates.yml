@@ -10,6 +10,7 @@ on:
       - ci/verify-32-assignment
       - ci/verify-32-gui
       - ci/verify-32-all
+      - ci/verify-32-windows-package
 
 permissions:
   contents: read
@@ -23,7 +24,9 @@ env:
 
 jobs:
   quality:
-    if: github.repository == 'takeuchi-atsuki/caliboo' && github.event_name == 'push'
+    if: >-
+      github.repository == 'takeuchi-atsuki/caliboo' && github.event_name == 'push' &&
+      github.ref_name != 'ci/verify-32-windows-package'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
@@ -125,3 +128,65 @@ jobs:
           python -m playwright install --with-deps chromium
       - name: Clean release ZIP smoke
         run: python devel/ci/package_gate.py
+
+  windows_package:
+    # This branch runs only the Windows distribution gate, independent of the Linux jobs.
+    if: >-
+      github.repository == 'takeuchi-atsuki/caliboo' && github.event_name == 'push' &&
+      github.ref_name == 'ci/verify-32-windows-package'
+    runs-on: windows-2022
+    timeout-minutes: 30
+    env:
+      PYTHONUTF8: '1'
+      PYTHONIOENCODING: utf-8
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
+        # Keep checked-in Bash entrypoints LF; step-local Git config, not a repo/runner setting.
+        env:
+          GIT_CONFIG_COUNT: '1'
+          GIT_CONFIG_KEY_0: core.autocrlf
+          GIT_CONFIG_VALUE_0: 'false'
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: '3.12'
+          architecture: x64
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: '22.23.4'
+          architecture: x64
+          package-manager-cache: false
+      - name: Verify native Windows x64 and Git Bash
+        run: |
+          test "$RUNNER_OS" = Windows
+          test "$RUNNER_ARCH" = X64
+          case "$(uname -s)" in MINGW*|MSYS*) ;; *) exit 1 ;; esac
+          command -v cygpath
+          uname -s
+          python -c 'import sys,struct; assert sys.platform == "win32" and struct.calcsize("P") == 8 and sys.version_info[:2] == (3,12); print(sys.platform, sys.version.split()[0])'
+          node -e 'if(process.platform!=="win32"||process.arch!=="x64"||process.versions.node!=="22.23.4") process.exit(1); console.log(process.platform,process.arch,process.version)'
+      - name: Windows gate script self-tests
+        run: |
+          python - <<'PY'
+          import sys
+          import unittest
+          suite = unittest.defaultTestLoader.discover("devel/ci", pattern="test_windows_*.py")
+          expected = suite.countTestCases()
+          result = unittest.TextTestRunner(verbosity=2).run(suite)
+          sys.exit(0 if expected > 0 and result.testsRun == expected and result.wasSuccessful()
+                   and not result.skipped and not result.expectedFailures else 1)
+          PY
+      - name: Attempt pinned Chromium installation (UI is incomplete if unavailable)
+        run: |
+          if python -m pip install -r devel/ci/browser-requirements.txt &&
+             python -m playwright install chromium; then
+            echo "Pinned browser installed; sandboxed launch will be verified by the gate."
+          else
+            echo "Pinned browser installation incomplete; gate will still verify package/API stages and report UI separately."
+          fi
+      - name: Windows Git Bash clean distribution smoke
+        run: python devel/ci/windows_package_gate.py

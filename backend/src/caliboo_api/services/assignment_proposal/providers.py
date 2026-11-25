@@ -33,8 +33,7 @@ _LOW_MOODS = {"foggy", "tired"}
 _MOOD_MATERIAL_THRESHOLD = 3
 
 # 直近の日報を何件まで見るか(`data/assignment_proposal_data.py`のDB問い合わせ
-# 件数にもこの値を使い、定数を1か所にまとめている)。呼び出し側が既にこの件数まで
-# 絞り込んで渡してくる前提のため、本モジュール側では再度スライスしない。
+# 件数にもこの値を使い、定数を1か所にまとめている)。生成器側でも上限を守る。
 RECENT_REPORT_COUNT = 5
 
 
@@ -156,6 +155,8 @@ def _progress_summary(submission_statuses: list[str], reports: list[dict]) -> di
             1 for status in submission_statuses if status == "not_submitted"
         ),
         "recentMoods": recent_moods,
+        # !NOTE: 課題案生成に使用した日報数を保存し、後日の日報追加で変えない。
+        "recentReportCount": len(reports),
     }
 
 
@@ -200,6 +201,7 @@ class RuleBasedProposalGenerator:
         feedbacks: list[dict],
         excluded_themes: set[str],
     ) -> dict:
+        reports = reports[:RECENT_REPORT_COUNT]
         texts = _weighted_texts(reports, feedbacks)
         theme, quote_materials = _select_theme(texts, excluded_themes)
         quote_materials = _sort_materials(quote_materials)
