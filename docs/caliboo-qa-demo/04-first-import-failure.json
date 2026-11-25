@@ -1,0 +1,14 @@
+{
+  "httpStatus": 422,
+  "response": {
+    "detail": [
+      {
+        "type": "string_type",
+        "loc": ["body", "notes"],
+        "msg": "Input should be a valid string",
+        "input": ["材料は架空の演習日報。提出物や講師所見による裏づけはない。confidenceは引用が候補をどの程度支えるかの判断であり、能力のスコアや実測確率ではない。"]
+      }
+    ]
+  },
+  "resolution": "独立解析エージェントに、内容は変えず notes の型だけ string に修正するよう依頼。元の出力を保持。現行実装の型チェックで保存を拒否した記録。"
+}

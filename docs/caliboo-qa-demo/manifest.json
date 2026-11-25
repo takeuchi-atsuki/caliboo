@@ -1,0 +1,150 @@
+{
+  "dataset": "完全架空の新入社員日報2件。個人情報・現場の機密を含まない。",
+  "base_commit": "bbddd81b766fb0ed37f90eb41b98bfdd54d21c5c",
+  "provider": "manual",
+  "ai_model": "gpt-6.2-astra",
+  "ai_execution": "Codex independent agent, exact exported material only; paid API calls: 0",
+  "first_import_http": 422,
+  "retry_import_http": 200,
+  "imported_candidates": 2,
+  "member_candidate_count_before_approval": 0,
+  "instructor_candidate_count_pending": 2,
+  "simulated_approvals_http": [
+    200,
+    200
+  ],
+  "member_candidate_count_after_approval": 2,
+  "home_strength_count": 2,
+  "limitations": [
+    "real employees, real reporters, accuracy or utility not tested",
+    "mock instructor approvals in isolated database",
+    "member screen does not render raw quotes; operational information controls remain to be reviewed",
+    "replay uses recorded response, not live inference"
+  ],
+  "files": {
+    "01-report-20261124.json": {
+      "sha256": "a43df71410a6da10e033b5b5359268f35fe7dbf5c1fe1c265ceef0cdf0f594c7",
+      "bytes": 710
+    },
+    "01-report-entry.png": {
+      "sha256": "2767ca7b15b31d3f83903f04195e4bed4c674a141b21bacce75e7e2204314414",
+      "bytes": 103099
+    },
+    "02-report-browser.json": {
+      "sha256": "534c18b26bc85a76e467744a8ea376b8c70788a50a51b90dfe40f2f960f764ae",
+      "bytes": 728
+    },
+    "02-report-submitted.png": {
+      "sha256": "972b0ef98793fadf1e9556cb270e41102e25c60cbbce07e2fcecb5ee56d9eeea",
+      "bytes": 101870
+    },
+    "03-job-before.json": {
+      "sha256": "bea7b86391c632bae8ce3fff791fbe3eb2a0980db9ad672a51ea2c2b75ec08b6",
+      "bytes": 150
+    },
+    "03-material-export.json": {
+      "sha256": "c98d7caf9b6cf870e24bd2102e2acef1906705ed01b7bc64d02bf4ff878e81d0",
+      "bytes": 13151
+    },
+    "03-member-pending.png": {
+      "sha256": "f43e0442460980a1ee81fed279489b2b125ac8c9074cd16208ba87844de6436c",
+      "bytes": 106502
+    },
+    "04-ai-analysis-result.json": {
+      "sha256": "0d165f03798e26bb5f28dbf28da4d1fc64e8f2550cb1ae8627d7edca6cee1717",
+      "bytes": 2769
+    },
+    "04-ai-analysis-retry.json": {
+      "sha256": "f17f5dcc63b2128c4a2e930ceb724345b3a24298cf04ea3b6e2ef35fceccff21",
+      "bytes": 2759
+    },
+    "04-first-import-failure.json": {
+      "sha256": "7ab29adb1f1cb9404456388d873da44eedd6a518e2780900d6e9cc5bb003d3a1",
+      "bytes": 648
+    },
+    "04-member-review-pending.png": {
+      "sha256": "668171cdb57caf559442d4381273ef384a2b7081dbc13de6a4f4de5a5cafd0ef",
+      "bytes": 106907
+    },
+    "05-import-response.json": {
+      "sha256": "70a239df46f34032f86e7b2d43126af933ac8ea5b861af8d31fb7b601e0d7713",
+      "bytes": 289
+    },
+    "05-instructor-review.png": {
+      "sha256": "ec666bdef44004d3e3f663e14757ae3e9d6a0f6d9afbbca5e860825321fb4caa",
+      "bytes": 154041
+    },
+    "05-job-completed.json": {
+      "sha256": "b45c572daba60e07d0e9a03bf2f6e7a770f5844f385392629f07b8f14084e88f",
+      "bytes": 166
+    },
+    "06-instructor-candidate-1.png": {
+      "sha256": "7dfb912e8dd238f0b42c700c206bbd11d4727d3a7a50ccf88517e18a5cd95fd5",
+      "bytes": 113115
+    },
+    "06-instructor-candidate-2.png": {
+      "sha256": "1a255e6abd69c901c4fd5464e8f5d9e36b79faaf35fcec5a1ba80390bbbb43e9",
+      "bytes": 145395
+    },
+    "06-instructor-pending.json": {
+      "sha256": "3e71de81ca767657b46f5b93f75b6914ad9a0e4061df03c39bc2588513c63d51",
+      "bytes": 4365
+    },
+    "06-member-before-approval.json": {
+      "sha256": "7f378fc2373cf9a3af2f025af518fe6ad3489a277d145d3ce8b07376f0901090",
+      "bytes": 461
+    },
+    "07-instructor-approved.png": {
+      "sha256": "5fe247ee29941efbe1cf75dd2c65e567b399d0e955a41dcfd743fa500eb46450",
+      "bytes": 136812
+    },
+    "07-simulated-approvals.json": {
+      "sha256": "6b79083fb20c40b465dd630737b4e2250848fdfa4b359aa84214c2b052e0b465",
+      "bytes": 5867
+    },
+    "08-instructor-after-approval.json": {
+      "sha256": "b73676564d080e70ccebb5dc6c913d25c053e413a9c82f7b78dd1f16d623fe03",
+      "bytes": 4428
+    },
+    "08-member-after-approval.json": {
+      "sha256": "b73676564d080e70ccebb5dc6c913d25c053e413a9c82f7b78dd1f16d623fe03",
+      "bytes": 4428
+    },
+    "08-member-approved-full.png": {
+      "sha256": "3f97cfe53c3160e10c31577d263fbf493a3258cf3a72d891b80ea7ed8e687d1c",
+      "bytes": 202327
+    },
+    "08-member-approved.png": {
+      "sha256": "0092536c73b501b55bfcb440fd75a3688fa049ff03c4b865b0eeca5be8f2ebaf",
+      "bytes": 163722
+    },
+    "09-member-home-summary.json": {
+      "sha256": "4f2f5574b812866ad3fcc109aebc55b52d6f04638f9aa7ae20e21ef9d70d5f47",
+      "bytes": 3714
+    },
+    "09-member-home.png": {
+      "sha256": "040ca8e0e44290d1b64f447bae58b5595d1b1e447ad87a6eee5a9bcaac4e6210",
+      "bytes": 230423
+    },
+    "10-replay-verification.txt": {
+      "sha256": "30456412a13b2fb8e31ec6952c819b2221450a920d004770307c0380c0ec1012",
+      "bytes": 746
+    },
+    "README.md": {
+      "sha256": "1b228e4055b736c13dea5203bf8d5c377f0155feedd822bc94a37639c9952f0e",
+      "bytes": 9879
+    },
+    "caliboo-qa-demo-screens.html": {
+      "sha256": "766273c249fa3c98b3fe01b77b9897e0a8ecbd611e81a2c00adf02c92d4e3205",
+      "bytes": 9619
+    },
+    "caliboo-qa-demo-screens.pdf": {
+      "sha256": "dcc89d881f9045d90445cc3ab436a324f385d362e1d49ea3532930b355e9ba69",
+      "bytes": 876506
+    },
+    "replay_demo.py": {
+      "sha256": "28563a78d13d2ae2e3e6b21358b65e13eadcbab8bd1c99020608cc59e0811b99",
+      "bytes": 9194
+    }
+  }
+}

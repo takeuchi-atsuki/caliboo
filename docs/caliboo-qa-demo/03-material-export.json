@@ -1,0 +1,453 @@
+{
+  "inputSchema": {
+    "$defs": {
+      "AnswerSource": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "pattern": "^(report|submission):[1-9][0-9]*:[A-Za-z]+$",
+            "title": "Id",
+            "type": "string"
+          },
+          "text": {
+            "description": "引用用の原文。空白・改行も変更しない。",
+            "minLength": 1,
+            "title": "Text",
+            "type": "string"
+          },
+          "date": {
+            "description": "保存済み日付/提出日時/講師コメント更新日時。書式変換せず保持する。",
+            "title": "Date",
+            "type": "string"
+          },
+          "evidenceEligible": {
+            "const": true,
+            "title": "Evidenceeligible",
+            "type": "boolean"
+          },
+          "kind": {
+            "const": "submission",
+            "title": "Kind",
+            "type": "string"
+          },
+          "field": {
+            "const": "answer",
+            "title": "Field",
+            "type": "string"
+          },
+          "sourceRole": {
+            "const": "work_product",
+            "description": "本人の提出物。指示の転記等は除く。",
+            "title": "Sourcerole",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "text",
+          "date",
+          "evidenceEligible",
+          "kind",
+          "field",
+          "sourceRole"
+        ],
+        "title": "AnswerSource",
+        "type": "object"
+      },
+      "FeedbackSource": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "pattern": "^(report|submission):[1-9][0-9]*:[A-Za-z]+$",
+            "title": "Id",
+            "type": "string"
+          },
+          "text": {
+            "description": "引用用の原文。空白・改行も変更しない。",
+            "minLength": 1,
+            "title": "Text",
+            "type": "string"
+          },
+          "date": {
+            "description": "保存済み日付/提出日時/講師コメント更新日時。書式変換せず保持する。",
+            "title": "Date",
+            "type": "string"
+          },
+          "evidenceEligible": {
+            "const": true,
+            "title": "Evidenceeligible",
+            "type": "boolean"
+          },
+          "kind": {
+            "const": "submission",
+            "title": "Kind",
+            "type": "string"
+          },
+          "field": {
+            "const": "feedback",
+            "title": "Field",
+            "type": "string"
+          },
+          "sourceRole": {
+            "const": "mentor_feedback",
+            "description": "講師の所見。単独で確定しない。",
+            "title": "Sourcerole",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "text",
+          "date",
+          "evidenceEligible",
+          "kind",
+          "field",
+          "sourceRole"
+        ],
+        "title": "FeedbackSource",
+        "type": "object"
+      },
+      "KeepSource": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "pattern": "^(report|submission):[1-9][0-9]*:[A-Za-z]+$",
+            "title": "Id",
+            "type": "string"
+          },
+          "text": {
+            "description": "引用用の原文。空白・改行も変更しない。",
+            "minLength": 1,
+            "title": "Text",
+            "type": "string"
+          },
+          "date": {
+            "description": "保存済み日付/提出日時/講師コメント更新日時。書式変換せず保持する。",
+            "title": "Date",
+            "type": "string"
+          },
+          "evidenceEligible": {
+            "const": true,
+            "title": "Evidenceeligible",
+            "type": "boolean"
+          },
+          "kind": {
+            "const": "report",
+            "title": "Kind",
+            "type": "string"
+          },
+          "field": {
+            "const": "keep",
+            "title": "Field",
+            "type": "string"
+          },
+          "sourceRole": {
+            "const": "self_report",
+            "description": "本人の申告。達成の事実性は別途判断。",
+            "title": "Sourcerole",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "text",
+          "date",
+          "evidenceEligible",
+          "kind",
+          "field",
+          "sourceRole"
+        ],
+        "title": "KeepSource",
+        "type": "object"
+      },
+      "MoodCommentSource": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "pattern": "^(report|submission):[1-9][0-9]*:[A-Za-z]+$",
+            "title": "Id",
+            "type": "string"
+          },
+          "text": {
+            "description": "引用用の原文。空白・改行も変更しない。",
+            "minLength": 1,
+            "title": "Text",
+            "type": "string"
+          },
+          "date": {
+            "description": "保存済み日付/提出日時/講師コメント更新日時。書式変換せず保持する。",
+            "title": "Date",
+            "type": "string"
+          },
+          "evidenceEligible": {
+            "const": false,
+            "title": "Evidenceeligible",
+            "type": "boolean"
+          },
+          "kind": {
+            "const": "report",
+            "title": "Kind",
+            "type": "string"
+          },
+          "field": {
+            "const": "moodComment",
+            "title": "Field",
+            "type": "string"
+          },
+          "sourceRole": {
+            "const": "emotion",
+            "description": "感情の文脈。技能の根拠にはしない。",
+            "title": "Sourcerole",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "text",
+          "date",
+          "evidenceEligible",
+          "kind",
+          "field",
+          "sourceRole"
+        ],
+        "title": "MoodCommentSource",
+        "type": "object"
+      },
+      "ProblemSource": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "pattern": "^(report|submission):[1-9][0-9]*:[A-Za-z]+$",
+            "title": "Id",
+            "type": "string"
+          },
+          "text": {
+            "description": "引用用の原文。空白・改行も変更しない。",
+            "minLength": 1,
+            "title": "Text",
+            "type": "string"
+          },
+          "date": {
+            "description": "保存済み日付/提出日時/講師コメント更新日時。書式変換せず保持する。",
+            "title": "Date",
+            "type": "string"
+          },
+          "evidenceEligible": {
+            "const": false,
+            "title": "Evidenceeligible",
+            "type": "boolean"
+          },
+          "kind": {
+            "const": "report",
+            "title": "Kind",
+            "type": "string"
+          },
+          "field": {
+            "const": "problem",
+            "title": "Field",
+            "type": "string"
+          },
+          "sourceRole": {
+            "const": "difficulty",
+            "description": "困りごと。達成の根拠にはしない。",
+            "title": "Sourcerole",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "text",
+          "date",
+          "evidenceEligible",
+          "kind",
+          "field",
+          "sourceRole"
+        ],
+        "title": "ProblemSource",
+        "type": "object"
+      },
+      "TrySource": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "pattern": "^(report|submission):[1-9][0-9]*:[A-Za-z]+$",
+            "title": "Id",
+            "type": "string"
+          },
+          "text": {
+            "description": "引用用の原文。空白・改行も変更しない。",
+            "minLength": 1,
+            "title": "Text",
+            "type": "string"
+          },
+          "date": {
+            "description": "保存済み日付/提出日時/講師コメント更新日時。書式変換せず保持する。",
+            "title": "Date",
+            "type": "string"
+          },
+          "evidenceEligible": {
+            "const": false,
+            "title": "Evidenceeligible",
+            "type": "boolean"
+          },
+          "kind": {
+            "const": "report",
+            "title": "Kind",
+            "type": "string"
+          },
+          "field": {
+            "const": "try",
+            "title": "Field",
+            "type": "string"
+          },
+          "sourceRole": {
+            "const": "plan",
+            "description": "今後の計画。実施済みと扱わない。",
+            "title": "Sourcerole",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "text",
+          "date",
+          "evidenceEligible",
+          "kind",
+          "field",
+          "sourceRole"
+        ],
+        "title": "TrySource",
+        "type": "object"
+      }
+    },
+    "additionalProperties": false,
+    "properties": {
+      "schemaVersion": {
+        "const": "strength-materials.v1",
+        "title": "Schemaversion",
+        "type": "string"
+      },
+      "sources": {
+        "items": {
+          "discriminator": {
+            "mapping": {
+              "answer": "#/$defs/AnswerSource",
+              "feedback": "#/$defs/FeedbackSource",
+              "keep": "#/$defs/KeepSource",
+              "moodComment": "#/$defs/MoodCommentSource",
+              "problem": "#/$defs/ProblemSource",
+              "try": "#/$defs/TrySource"
+            },
+            "propertyName": "field"
+          },
+          "oneOf": [
+            {
+              "$ref": "#/$defs/KeepSource"
+            },
+            {
+              "$ref": "#/$defs/ProblemSource"
+            },
+            {
+              "$ref": "#/$defs/TrySource"
+            },
+            {
+              "$ref": "#/$defs/MoodCommentSource"
+            },
+            {
+              "$ref": "#/$defs/AnswerSource"
+            },
+            {
+              "$ref": "#/$defs/FeedbackSource"
+            }
+          ]
+        },
+        "maxItems": 120,
+        "title": "Sources",
+        "type": "array"
+      }
+    },
+    "required": [
+      "schemaVersion",
+      "sources"
+    ],
+    "title": "StrengthAnalysisMaterials",
+    "type": "object"
+  },
+  "materials": {
+    "schemaVersion": "strength-materials.v1",
+    "sources": [
+      {
+        "id": "report:2:keep",
+        "text": "前日の集計手順をチェックリスト化し、別の演習データ10件に適用。境界値と空欄の結果を手計算と照合し、誤りがないことを確認した。",
+        "date": "2026-11-25",
+        "evidenceEligible": true,
+        "kind": "report",
+        "field": "keep",
+        "sourceRole": "self_report"
+      },
+      {
+        "id": "report:2:problem",
+        "text": "例外条件の説明に時間がかかった。",
+        "date": "2026-11-25",
+        "evidenceEligible": false,
+        "kind": "report",
+        "field": "problem",
+        "sourceRole": "difficulty"
+      },
+      {
+        "id": "report:2:try",
+        "text": "次回、チェックリストとサンプルを受講者に共有する予定。",
+        "date": "2026-11-25",
+        "evidenceEligible": false,
+        "kind": "report",
+        "field": "try",
+        "sourceRole": "plan"
+      },
+      {
+        "id": "report:2:moodComment",
+        "text": "確認の手順が明確になって安心した。",
+        "date": "2026-11-25",
+        "evidenceEligible": false,
+        "kind": "report",
+        "field": "moodComment",
+        "sourceRole": "emotion"
+      },
+      {
+        "id": "report:1:keep",
+        "text": "演習用の受講記録20件を集計し、手計算と照合したところ未入力1件を発見。抽出条件を修正し、3パターンで再確認した。",
+        "date": "2026-11-24",
+        "evidenceEligible": true,
+        "kind": "report",
+        "field": "keep",
+        "sourceRole": "self_report"
+      },
+      {
+        "id": "report:1:problem",
+        "text": "例外条件の説明に時間がかかった。",
+        "date": "2026-11-24",
+        "evidenceEligible": false,
+        "kind": "report",
+        "field": "problem",
+        "sourceRole": "difficulty"
+      },
+      {
+        "id": "report:1:try",
+        "text": "集計手順をチェックリスト化して別データでも試す予定。",
+        "date": "2026-11-24",
+        "evidenceEligible": false,
+        "kind": "report",
+        "field": "try",
+        "sourceRole": "plan"
+      },
+      {
+        "id": "report:1:moodComment",
+        "text": "照合で見落としに気づけた。",
+        "date": "2026-11-24",
+        "evidenceEligible": false,
+        "kind": "report",
+        "field": "moodComment",
+        "sourceRole": "emotion"
+      }
+    ]
+  }
+}
