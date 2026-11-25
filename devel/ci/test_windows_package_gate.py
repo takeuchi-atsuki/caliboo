@@ -60,6 +60,8 @@ class WindowsPackageGateTests(unittest.TestCase):
             with redirect_stdout(StringIO()):
                 verify_tzdata(Path("synthetic root"), Path("python.exe"), {"PATH": "synthetic"})
             self.assertEqual(run.call_args.kwargs["environment"]["PYTHONTZPATH"], "")
+            self.assertEqual(run.call_args.kwargs["environment"]["PYTHONUTF8"], "1")
+            self.assertEqual(run.call_args.kwargs["environment"]["PYTHONIOENCODING"], "utf-8")
         for changes in ({"native_x64": False}, {"venv": False}, {"no_system_tzpath": False},
                         {"tokyo": "2026-01-01T03:04:05+00:00"}, {"tzdata": ""}):
             with self.subTest(changes=changes), patch(

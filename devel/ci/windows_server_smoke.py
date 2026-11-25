@@ -17,8 +17,11 @@ from time import monotonic, sleep
 from urllib.error import URLError
 from urllib.request import HTTPCookieProcessor, ProxyHandler, Request, build_opener
 
+from windows_ci_log import StageLog, configure_utf8_stdio
+
 
 ROOT = Path(__file__).resolve().parents[2]
+LOG = StageLog()
 API = "http://127.0.0.1:8000"
 WEB = "http://127.0.0.1:5173"
 PORTS = (8000, 5173)
@@ -51,7 +54,7 @@ def clean_environment() -> dict[str, str]:
     # !NOTE: 配布版手順の既定SQLiteを使う。外部AI、DB URL、代理接続、認証情報は継承しない。
     env.update(CALIBOO_DEMO_SEED="false", CALIBOO_AI_PROVIDER="manual",
                CALIBOO_COOKIE_SECURE="false", NODE_OPTIONS="--dns-result-order=ipv4first",
-               NO_PROXY="127.0.0.1,localhost", PYTHONUTF8="1")
+               NO_PROXY="127.0.0.1,localhost", PYTHONUTF8="1", PYTHONIOENCODING="utf-8")
     return env
 
 
@@ -146,7 +149,11 @@ def windows_servers(root: Path, git_bash: Path, env: dict[str, str]):
         print("PASS: Windows Git Bash配布版の実サーバー起動", flush=True)
         yield WEB
     finally:
-        terminate_owned_tree(process, env)
+        try:
+            terminate_owned_tree(process, env)
+        except Exception:
+            LOG.begin("server-stop")
+            raise
         print("PASS: 所有サーバープロセス群停止・ポート解放", flush=True)
 
 
@@ -191,7 +198,9 @@ def check_clean_admin(base: str, admin_password: str) -> None:
 
 def api_smoke(server, admin_password: str, member_password: str) -> None:
     """ブラウザー未利用時のみ、通常HTTP操作を部分確認する（UI合格とはしない）。"""
+    LOG.begin("api-first-start")
     with server() as base:
+        LOG.begin("api-first-operation")
         check_html_entries(base)
         check_clean_admin(base, admin_password)
         client = api_client()
@@ -210,7 +219,9 @@ def api_smoke(server, admin_password: str, member_password: str) -> None:
             raise GateError("合成日報の提出状態が一致しません")
         api_call(client, base, "/api/auth/logout", {})
         print("PARTIAL PASS: 通常HTTPによる合成新人作成・日報提出", flush=True)
+    LOG.begin("api-restart")
     with server() as base:
+        LOG.begin("api-persistence")
         check_html_entries(base)
         client = api_client()
         login(client, base, MEMBER_LOGIN, member_password, "member")
@@ -227,9 +238,11 @@ def run_ui_if_available(server, env: dict[str, str], admin_password: str,
                         member_password: str) -> bool:
     # Playwright導入が失敗しても通常APIの証跡は記録する。実ブラウザー操作失敗の場合は
     # ここでfallbackせず例外を伝え、UI検証失敗として終了する。
+    LOG.begin("playwright-launch")
     try:
         installed = version("playwright")
-    except PackageNotFoundError:
+    except PackageNotFoundError as error:
+        LOG.failure(error)
         print("UNVERIFIED UI: Playwright未導入", flush=True)
         return False
     if installed != PLAYWRIGHT_VERSION:
@@ -238,25 +251,30 @@ def run_ui_if_available(server, env: dict[str, str], admin_password: str,
     try:
         from playwright.sync_api import Error, sync_playwright
         import browser_e2e as e2e
-    except ImportError:
+    except ImportError as error:
+        LOG.failure(error)
         print("UNVERIFIED UI: Playwrightの読み込み不可", flush=True)
         return False
     try:
         playwright = sync_playwright().start()
-    except (Error, OSError):
+    except (Error, OSError) as error:
+        LOG.failure(error)
         print("UNVERIFIED UI: Playwrightドライバー起動不可", flush=True)
         return False
     try:
         try:
             browser = playwright.chromium.launch(chromium_sandbox=True, env=env)
-        except (Error, OSError):
+        except (Error, OSError) as error:
+            LOG.failure(error)
             print("UNVERIFIED UI: 固定Chromiumをsandbox有効で起動不可", flush=True)
             return False
         try:
             print(f"Playwright {installed} / Chromium {browser.version} / sandbox=enabled",
                   flush=True)
             print("START: Windows実ブラウザー通常操作", flush=True)
+            LOG.begin("ui-first-start")
             with server() as base:
+                LOG.begin("ui-first-operation")
                 check_html_entries(base)
                 check_clean_admin(base, admin_password)
                 with e2e.fresh_page(browser, base) as page:
@@ -265,7 +283,9 @@ def run_ui_if_available(server, env: dict[str, str], admin_password: str,
                 with e2e.fresh_page(browser, base) as page:
                     e2e.login_at_home(page, base, MEMBER_LOGIN, member_password)
                     date = e2e.submit_report(page)
+            LOG.begin("ui-restart")
             with server() as base:
+                LOG.begin("ui-persistence")
                 check_html_entries(base)
                 with e2e.fresh_page(browser, base) as page:
                     e2e.login_at_home(page, base, MEMBER_LOGIN, member_password)
@@ -278,6 +298,7 @@ def run_ui_if_available(server, env: dict[str, str], admin_password: str,
 
 
 def main() -> int:
+    LOG.begin("server-preflight")
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--root", type=Path, required=True, help="クリーンZIP展開先")
     parser.add_argument("--git-bash", type=Path, required=True, help="WindowsのGit Bash実行ファイル")
@@ -301,6 +322,7 @@ def main() -> int:
         env = clean_environment()
         if "SystemRoot" not in env:
             raise GateError("Windows起動に必要なSystemRootがありません")
+        LOG.begin("init-admin")
         print("START: Windows配布版 初期管理者CLI", flush=True)
         admin_password = initialize_admin(root, python, env)
         member_password = secrets.token_urlsafe(24)
@@ -312,6 +334,7 @@ def main() -> int:
         if not ui_verified:
             print("START: UI不可時の通常HTTP部分検証", flush=True)
             api_smoke(server, admin_password, member_password)
+        LOG.begin("verify-default-db")
         if not (root / "backend/var/caliboo.db").is_file():
             raise GateError("展開先既定SQLiteが作成されていません")
         if not ui_verified:
@@ -321,13 +344,18 @@ def main() -> int:
         print("PASS: Windows配布版の実ブラウザー・再起動検証（skipなし）", flush=True)
         return 0
     except GateError as failure:
+        LOG.failure(failure)
         print(f"FAIL: {failure}", file=sys.stderr, flush=True)
     except Exception as failure:
         # Playwright/CLI/HTTPの生ログやリクエスト本文は公開CIへ出さない。
-        print(f"FAIL: Windows配布版の必須検証で {type(failure).__name__}",
-              file=sys.stderr, flush=True)
+        LOG.failure(failure)
     return 1
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    try:
+        configure_utf8_stdio()
+        sys.exit(main())
+    except Exception as error:
+        LOG.failure(error)
+        sys.exit(1)

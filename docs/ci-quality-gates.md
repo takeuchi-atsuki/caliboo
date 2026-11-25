@@ -53,7 +53,7 @@ PostgreSQL必須試験では、pytestの生の標準出力・標準エラー・J
 
 ## Windows Git Bash配布ゲート
 
-竹内さんの利用環境に合わせ、#29を含む候補で Windows Server 2022 x64 の Git Bash、Windows版Python 3.12、Node.js 22.23.4を確認する。専用ブランチはLinux/PGジョブに依存せず、Windowsジョブだけを起動する。checkout時のBashスクリプトはLFを保持する（checkoutステップ内のGit設定のみ。リポジトリ設定は変更しない）。
+竹内さんの利用環境に合わせ、#29を含む候補で Windows Server 2022 x64 の Git Bash、Windows版Python 3.12、Node.js 22.23.4を確認する。専用ブランチはLinux/PGジョブに依存せず、Windowsジョブだけを起動する。checkout時のBashスクリプトはLFを保持する（checkoutステップ内のGit設定のみ。リポジトリ設定は変更しない）。Windowsジョブの親Pythonと子Pythonでは `PYTHONUTF8=1`、`PYTHONIOENCODING=utf-8` を設定し、両CI入口の標準出力・標準エラーもUTF-8に明示する。子プロセスの取得出力はUTF-8としてデコードし、生ログは公開しない。
 
 1. 実際の `devel/windows/build-windows.sh` でZIPを作成し、内容・CRC・Windows用スクリプトの同梱を確認する。
 2. 空白を含む新規ディレクトリへ展開し、`setup-windows.sh` で展開先の依存関係を導入する。
@@ -156,3 +156,12 @@ PG失敗に対し、必須試験の条件は変更せず、公開ログに値を
 - Windowsゲートの合成自己テスト15件成功。ZIP構成/CRC/LF、空白パス、Windows/Node判定、tzdataの判定、公開ログの制限、sandbox起動不可時の部分確認、起動後のUIエラーの失敗扱い、所有プロセス停止方針を検査。
 - Linuxで #29 候補の実ZIP（230ファイル）を作成し、Windows用3スクリプトの同梱・LF・CRCを確認。通常HTTPの部分検証もLinuxの実アプリで管理者CLI、新人、日報、2入口、再起動後の履歴保持を確認。
 - Windows Server 2022での実build/setup、Windows venv実動・tzdata変換、実起動/再起動、Chromium・UI、利用者の対話Ctrl+C、Windows 10/11実機はいずれも未確認。Linuxの結果をWindows実測として扱わない。
+
+
+### Windows初回Actions実測とCIの文字コード修正
+
+[Run 45656422144](https://github.com/takeuchi-atsuki/caliboo/actions/runs/45656422144) では専用Windowsジョブのみ実行され、Linux/PG/配布ジョブは条件分岐でskipした。Windows x64、Git Bash、Python/Nodeの導入、合成自己テスト15件、固定Chromium導入は成功。Windows配布ゲートの `PASS: Windows x64 Node.js 22.23.4` 直後で `UnicodeEncodeError` が発生し、ZIP生成以降には未到達。
+
+この位置は #29 の配布スクリプトを呼ぶ前の、#32 親Pythonによる日本語の確認出力に一致する。子プロセスだけに設定したUTF-8モードでは親の出力を制御できないため、ジョブ起動時のUTF-8環境とCI入口の標準出力/エラー再設定を追加した。実際の失敗時のコードページ自体は未記録であり、ローカルではCP1252を用いて同種のエラーを再現した。
+
+失敗時は `START stage=...`、`FAIL stage=... exception=...` と、可能な範囲で原因例外の型・CIファイルの相対名と行番号を記録する。認証値・入力本文・例外の生メッセージ・子プロセスの生ログは出さない。Windowsゲートの自己テスト18件、実CLIの `--help` をレガシー出力設定で実行する試験、flake8・YAML/Bash構文検査は成功。修正後のWindows実ランナー実行は未確認。#29 の配布スクリプト自体には変更していない。
