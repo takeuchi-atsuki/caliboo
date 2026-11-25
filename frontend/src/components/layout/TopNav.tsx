@@ -3,6 +3,8 @@ import { Link, useLocation } from "react-router-dom";
 import { AppBar, Avatar, Box, ButtonBase, Drawer, IconButton, List, ListItemButton, Toolbar, Typography, useMediaQuery } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 
+import wordmarkUrl from "../../assets/brand/caliboo-wordmark.svg";
+import appIconUrl from "../../assets/brand/caliboo-app-icon.svg";
 import { Mascot } from "../mascot/Mascot";
 import { StreakBadge } from "../badge/StreakBadge";
 import { PhosphorIcon } from "../icon/PhosphorIcon";
@@ -66,20 +68,40 @@ export function TopNav({ streakDays }: TopNavProps) {
             <PhosphorIcon name="ph ph-list" size={23} />
           </IconButton>
           <Box component={Link} to="/home" aria-label="Caliboo ホーム" sx={{ display: "flex", alignItems: "center", gap: 1, textDecoration: "none", flexShrink: 0 }}>
-            <Mascot size={32} color="var(--color-green-300)" mood="cheer" />
-            <Typography sx={{ display: { xs: "none", sm: "block" }, fontFamily: "'Nunito', sans-serif", fontWeight: 800, fontSize: 24, letterSpacing: "-0.04em", color: "var(--color-text)" }}>Caliboo</Typography>
+            {/* !NOTE: 公式SVGの色は変更せず、暗色背景ではブランド指定のミルク色の台紙で可読性を保つ。 */}
+            <Box sx={{ display: { xs: "none", sm: "flex" }, alignItems: "center", gap: 1 }}>
+              <Mascot size={32} color="var(--color-green-300)" mood="cheer" />
+              <Box sx={{ p: "8px", borderRadius: "10px", "[data-theme=dark] &": { bgcolor: "#FFFCF6" } }}>
+                <Box
+                  component="img"
+                  src={wordmarkUrl}
+                  alt=""
+                  width={438}
+                  height={137}
+                  sx={{ display: "block", width: { sm: 120, lg: 144 }, height: "auto" }}
+                />
+              </Box>
+            </Box>
+            <Box
+              component="img"
+              src={appIconUrl}
+              alt=""
+              width={192}
+              height={192}
+              sx={{ display: { xs: "block", sm: "none" }, width: 36, height: "auto" }}
+            />
           </Box>
           <Typography sx={{ display: { xs: "none", md: "block" }, ml: 2, color: "text.secondary", fontSize: 12 }}>小さな一歩を、毎日の成長に。</Typography>
-          <Box sx={{ ml: "auto", display: "flex", alignItems: "center", gap: { xs: 0.25, sm: 1 } }}>
+          <Box sx={{ ml: "auto", display: "flex", alignItems: "center", minWidth: 0, gap: { xs: 0.25, sm: 1 } }}>
             <StreakBadge days={streakDays ?? user.streakDays ?? 0} />
             <IconButton onClick={toggleMode} aria-label={mode === "dark" ? "ライトモードに切り替える" : "ダークモードに切り替える"} sx={{ color: "var(--color-text-sub2)" }}>
               <PhosphorIcon name={mode === "dark" ? "ph ph-sun" : "ph ph-moon"} size={21} />
             </IconButton>
-            <Box sx={{ display: { xs: "none", sm: "flex" }, alignItems: "center", gap: 1, ml: 0.5 }}>
-              <Avatar sx={{ width: 34, height: 34, bgcolor: "var(--color-purple-100)", color: "var(--color-purple-500)", fontSize: 14, fontWeight: 700 }}>{user.displayName.slice(0, 1)}</Avatar>
-              <Box sx={{ maxWidth: 140 }}>
+            <Box sx={{ display: { xs: "none", sm: "flex" }, alignItems: "center", gap: 1, ml: 0.5, minWidth: 0 }}>
+              <Avatar sx={{ width: 34, height: 34, flexShrink: 0, bgcolor: "var(--color-purple-100)", color: "var(--color-purple-500)", fontSize: 14, fontWeight: 700 }}>{user.displayName.slice(0, 1)}</Avatar>
+              <Box sx={{ minWidth: 0, maxWidth: 140 }}>
                 <Typography noWrap sx={{ fontWeight: 700, fontSize: 12 }}>{user.displayName}</Typography>
-                <Typography sx={{ color: "text.secondary", fontSize: 11 }}>{ROLE_LABEL[user.role]}</Typography>
+                <Typography noWrap sx={{ color: "text.secondary", fontSize: 11 }}>{ROLE_LABEL[user.role]}</Typography>
               </Box>
             </Box>
             <IconButton onClick={() => void logout()} aria-label="ログアウト" sx={{ color: "var(--color-text-sub2)" }}>
