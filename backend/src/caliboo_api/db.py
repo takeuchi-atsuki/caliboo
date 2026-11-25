@@ -58,8 +58,15 @@ def init_engine(path: str) -> None:
     _engine = create_engine(
         f"sqlite:///{path}",
         connect_args={"check_same_thread": False},
+        hide_parameters=True,
     )
     _SessionLocal = sessionmaker(bind=_engine, autoflush=False, autocommit=False)
+
+
+def get_engine() -> Engine:
+    if _engine is None:
+        raise RuntimeError("engine is not initialized. call init_engine() first.")
+    return _engine
 
 
 def get_session() -> Generator[Session, None, None]:

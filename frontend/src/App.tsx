@@ -28,6 +28,13 @@ export default function App() {
   return (
     <ThemeModeProvider>
       <CssBaseline />
+      {/* !NOTE: ログイン・再設定・認証済み全画面で共通に表示し、通常ビルドでは表示しない。 */}
+      {import.meta.env.MODE === "trial" && (
+        <aside className="trial-notice" aria-label="限定試用環境の注意事項">
+          <strong>限定試用環境（合成データ専用）</strong>
+          <span>実データ・個人情報・機密情報を入力しないでください。再起動・停止などで入力データは失われます。</span>
+        </aside>
+      )}
       <AuthProvider>
         <BrowserRouter>
           <Routes>

@@ -1,15 +1,27 @@
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vitest/config";
 import { fileURLToPath } from "node:url";
+import { readFileSync } from "node:fs";
 
-export default defineConfig({
-  plugins: [react()],
+export default defineConfig(({ mode }) => ({
+  plugins: [react(), {
+    name: "caliboo-font-licenses",
+    apply: "build",
+    generateBundle() {
+      const packages = ["@fontsource/m-plus-rounded-1c", "@fontsource/nunito", "@phosphor-icons/web"];
+      const source = packages.map((name) => `${name}\n${readFileSync(
+        new URL(`./node_modules/${name}/LICENSE`, import.meta.url), "utf8",
+      )}`).join("\n\n");
+      this.emitFile({ type: "asset", fileName: "assets/font-licenses.txt", source });
+    },
+  }],
   build: {
     // !NOTE: 竹内PoCのモデル閲覧ページも成果物として配布するため、通常画面と同時にビルドする。
     rollupOptions: {
       input: [
         fileURLToPath(new URL("./index.html", import.meta.url)),
-        fileURLToPath(new URL("./takeuchi-model.html", import.meta.url)),
+        // 限定試用用ビルドでは独立したPoCサンプルページを配信対象にしない。
+        ...(mode === "trial" ? [] : [fileURLToPath(new URL("./takeuchi-model.html", import.meta.url))]),
       ],
     },
   },
@@ -91,4 +103,4 @@ export default defineConfig({
       },
     },
   },
-});
+}));
