@@ -40,6 +40,12 @@ Calibooは、新人研修向けのパーソナライズ学習支援アプリで�
 
 以下のコマンドは、リポジトリのルートディレクトリで実行します。
 
+### 配布ZIPから動かす
+
+ZIPを空のフォルダに展開し、`Caliboo/`に移動して以下のセットアップと起動を実行してください。元のSQLite DB・秘密設定・作業記録は同梱されず、初回起動時に開発用のDBが新規作成されます。外部AI接続や実際の日報は不要です。
+
+送る側の配布ZIP作成手順、Windows Git Bash用スクリプト、合成日報での再起動確認については[開発用スクリプト](devel/README.md)を参照してください。配布内容の変更履歴は[CHANGELOG.md](CHANGELOG.md)に記録します。
+
 ### ローカル環境で動かす
 
 前提となるツールは次のとおりです。
@@ -48,11 +54,16 @@ Calibooは、新人研修向けのパーソナライズ学習支援アプリで�
 - Node.js 22.4以降とnpm
 - Bash（WindowsではWSLを使用）
 
-依存パッケージをインストールし、開発サーバーを起動します。
+依存パッケージをインストールします。
 
 ```bash
 bash ./devel/setup.sh --venv
-bash ./devel/dev-server.sh
+```
+
+初回は[ローカルアカウント設定](devel/README.md#初回起動前のローカルアカウント設定)で、利用者自身がローカルPoC専用の管理者と架空の新入社員を用意する手順を確認してください。管理者作成後に起動します。
+
+```bash
+CALIBOO_DEMO_SEED=false CALIBOO_AI_PROVIDER=manual bash ./devel/dev-server.sh
 ```
 
 セットアップはPythonの仮想環境を`backend/.venv/`に作成し、バックエンドの開発用依存とフロントエンドの依存をインストールします。起動スクリプトは両方の開発サーバーを立ち上げます。停止は`Ctrl+C`です。
@@ -61,7 +72,7 @@ Pythonのコマンドを指定する場合は、セットアップ・起動の�
 
 ```bash
 PYTHON=python3.12 bash ./devel/setup.sh --venv
-PYTHON=python3.12 bash ./devel/dev-server.sh
+CALIBOO_DEMO_SEED=false CALIBOO_AI_PROVIDER=manual PYTHON=python3.12 bash ./devel/dev-server.sh
 ```
 
 > [!TIP]
@@ -74,10 +85,10 @@ DockerとVS Codeの「Dev Containers」拡張機能を用意します。Windows�
 1. リポジトリをVS Codeで開きます。
 2. コマンドパレットから「Dev Containers: Reopen in Container」を実行します。
 3. コンテナ作成時の依存インストールが完了するまで待ちます。
-4. コンテナ内のターミナルで次のコマンドを実行します。
+4. 初回はコンテナ内で[ローカルアカウント設定](devel/README.md#初回起動前のローカルアカウント設定)の管理者作成を行い、次のコマンドで起動します。
 
 ```bash
-bash ./devel/dev-server.sh
+CALIBOO_DEMO_SEED=false CALIBOO_AI_PROVIDER=manual bash ./devel/dev-server.sh
 ```
 
 依存のインストールを再実行する場合は、コンテナ内で`bash ./devel/setup.sh`を実行してください。
@@ -90,14 +101,9 @@ bash ./devel/dev-server.sh
 | APIドキュメント（Swagger UI） | <http://localhost:8000/docs> |
 | OpenAPI定義 | <http://localhost:8000/openapi.json> |
 
-アプリを開き、次の開発用アカウントでログインします。
+アプリを開き、[ローカルアカウント設定](devel/README.md#初回起動前のローカルアカウント設定)で作成したアカウントでログインします。講師のユーザー管理画面から合成の新入社員アカウントを作成し、そのアカウントで日報の動作を確認します。ログイン情報は利用者がローカルで決め、公開ドキュメントに記載しません。既定のデモアカウントを投入しない起動方法は[アーキテクチャの設定手順](docs/architecture.md#デモアカウントを作らない起動)を参照してください。
 
-| ロール | ログインID | パスワード |
-| --- | --- | --- |
-| 新入社員 | `yuki` | `caliboo-yuki` |
-| 講師 | `sensei` | `caliboo-sensei` |
-
-初回起動時に投入される開発専用のアカウントです。その他のアカウントは[シードデータ](backend/src/caliboo_api/data/seed/user_seed.py)を参照してください。Dev Containerで画面を開けない場合は、VS Codeの「ポート」タブで`5173`の転送を確認してください。
+Dev Containerで画面を開けない場合は、VS Codeの「ポート」タブで`5173`の転送を確認してください。
 
 ## データ保存と設定
 
@@ -113,7 +119,9 @@ SQLiteのデータベースは初回起動時に自動作成され、以後の�
 > [!NOTE]
 > 開発時はHTTPで利用するため、`CALIBOO_COOKIE_SECURE`は既定で無効です。また、フロントエンドからの`/api`リクエストはViteがバックエンドへ転送し、Cookie認証に必要な同一オリジンでの通信を保ちます。
 
-## 開発・検証コマンド
+## 開発・検証コマンド（完全チェックアウトのみ）
+
+以下はGitリポジトリを完全にチェックアウトした開発者向けです。配布ZIPには開発専用のテストや`.codex/`を含めません。配布版の受け入れ確認は[セットアップ・起動・合成日報の手順](devel/README.md#動作確認配布zip)に従ってください。セットアップ後のフロントエンドビルド（`npm run build`）は配布版でも実行できます。
 
 ローカル環境で`--venv`によるセットアップを行った場合は、検証前に仮想環境を有効にします。
 

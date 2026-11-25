@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Windows + Git Bash 用。devel/setup-windows.sh に配置してください。
-# bash ./devel/setup-windows.sh
-# PYTHON='/c/path/to/python.exe' bash ./devel/setup-windows.sh
+# Windows + Git Bash 用。
+# bash ./devel/windows/setup-windows.sh
+# PYTHON='/c/path/to/python.exe' bash ./devel/windows/setup-windows.sh
 # Python 3.12+ / Node.js 22.4+ / npm が必要です。
 set -euo pipefail
 
@@ -18,7 +18,11 @@ case "$(uname -s)" in
 esac
 command -v cygpath >/dev/null 2>&1 || die "Git Bash の cygpath が見つかりません。"
 script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-repo_root="$(dirname -- "$script_dir")"
+devel_dir="$script_dir"
+if [[ "$(basename -- "$script_dir")" == windows ]]; then
+  devel_dir="$(dirname -- "$script_dir")"
+fi
+repo_root="$(dirname -- "$devel_dir")"
 backend_dir="$repo_root/backend"
 frontend_dir="$repo_root/frontend"
 venv_dir="$backend_dir/.venv"
