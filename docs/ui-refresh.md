@@ -34,6 +34,25 @@ React + TypeScript + MUIを継続し、CSS変数とMUIテーマの共通設定�
 
 !NOTE: 下部ナビに全機能を詰め込むと文字とタップ領域が小さくなるため5項目に絞り、全機能への既存リンクはDrawerに保持する。上部の1200px境界は作業開始時の実装に合わせ、管理者向けのリンク増加でも衝突しにくくする。
 
+## 公式ロゴの適用（issue #38）
+
+[公式素材・配置ガイド](https://github.com/takeuchi-atsuki/caliboo/tree/cc7beea4bd41120ebe3d4f3c2d495cf86211be33/docs/caliboo-brand)（コミット `cc7beea4bd41120ebe3d4f3c2d495cf86211be33`）から、次の3点を改変せず `frontend/src/assets/brand/` に配置する。表のSHAはGit blob SHA（`git hash-object` で検証可能）。
+
+| 素材 | 用途 | Git blob SHA |
+| --- | --- | --- |
+| `caliboo-wordmark.svg` | ログイン画面・TopNavのワードマーク | `11b97b6dfd4bd7de523b61a997f44496e00fbb41` |
+| `caliboo-app-icon.svg` | 狭幅のTopNav・favicon | `d0505754cc227dd72c4614b7d07e9614b969714d` |
+| `caliboo-app-icon-opaque.png` | Apple Touch Icon | `0fe5aebb8414662a7c13312323d6341246c813ca` |
+
+- ログイン画面では、従来の文字見出しを公式ワードマークの `h1` に置き換える。読み上げ名は「Caliboo（キャリブー）」とし、既存の72pxマスコットは別に表示する。ワードマークの表示幅は通常160〜200px、320px幅の画面でも120px以上とする。
+- TopNavでは、600px以上で既存マスコットと幅120〜144pxのワードマークを併記する。600px未満では公式正方形アイコン（32px以上）だけに切り替える。ホームリンクの既存読み上げ名「Caliboo ホーム」、遷移先 `/home`、Tabの位置は維持し、リンク内の公式画像は空の代替テキストで重複読み上げを避ける。その他のナビ、本人ストリーク、テーマ切替、ログアウトの動作は維持する。
+- 公式素材の縦横比・配色は維持し、ワードマークの周囲に文字高の約1/5の余白を確保してマスコットや他要素と重ねない。ライトモードのロゴは明るい地に、ダークモードでは公式のミルク色（`#FFFCF6`）の台紙に載せる。
+- 通常のSPA入口（`frontend/index.html`）と独立3Dモデル閲覧入口（`frontend/takeuchi-model.html`）の両方に、公式SVG faviconと不透明PNG Apple Touch Iconを指定する。深いSPA URLから直接読み込んでも画像が解決され、本番ビルドの出力からも利用できるようにする。
+
+!NOTE: 公式ワードマークとアプリアイコンの形・色は変更せず、モードごとの背景は表示側で調整する。TopNavの600px境界は既存の `sm` と一致させ、公式の最小表示幅を守りながら他の操作を狭幅でも画面内に残す。
+
+確認手順は [公式ロゴの表示・導線確認](manual-test-cases.md#公式ロゴの表示導線確認issue-38) を参照する。
+
 ## ホーム
 
 - ページ見出しと短い案内の下に、強み→今日のふり返り→3つのショートカット→資格の学習度の順に配置する（2026-09-28の追加依頼による優先順位）。表示・DOM・Tab操作の順序を揃える。
