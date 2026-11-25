@@ -1,0 +1,22 @@
+# 限定試用Web公開専用。devel/package_trial.py で選別した source/ だけをビルド対象にする。
+FROM node:22-bookworm-slim AS frontend-build
+WORKDIR /build/frontend
+COPY frontend/package.json frontend/package-lock.json ./
+RUN npm ci --include=dev --no-audit --no-fund
+COPY frontend/index.html frontend/tsconfig.json frontend/vite.config.ts frontend/tailwind.config.ts ./
+COPY frontend/src/ ./src/
+RUN npm run build -- --mode trial
+
+FROM python:3.12-slim-bookworm
+WORKDIR /app
+ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
+COPY backend/pyproject.toml ./backend/
+COPY backend/src/ ./backend/src/
+RUN python -m pip install --no-cache-dir --disable-pip-version-check -e ./backend \
+    && useradd --system --create-home --no-log-init caliboo
+COPY --from=frontend-build /build/frontend/dist/ ./frontend/dist/
+USER caliboo
+EXPOSE 10000
+# !NOTE: 起動時の専用入口が設定を検証し、新しい一時SQLiteを作成する。
+# 秘密値はイメージ構築時ではなく実行時の環境変数でのみ設定する。
+CMD ["python", "-m", "caliboo_api.trial"]

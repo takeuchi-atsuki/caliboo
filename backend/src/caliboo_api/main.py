@@ -15,7 +15,9 @@ from pathlib import Path
 from fastapi.staticfiles import StaticFiles
 from typing import AsyncIterator
 
-from fastapi import Depends, FastAPI
+from fastapi import Depends, FastAPI, Request
+from fastapi.responses import JSONResponse
+from sqlalchemy.exc import OperationalError, InterfaceError
 
 from caliboo_api.auth.deps import get_current_user
 from caliboo_api.config import get_settings
@@ -56,24 +58,33 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
             await task
 
 
-app = FastAPI(title="Caliboo API", lifespan=lifespan)
+async def database_unavailable(_request: Request, _exc: Exception) -> JSONResponse:
+    # !NOTE: DBエラーの詳細やSQLパラメーターをレスポンスに含めない。
+    return JSONResponse(status_code=503, content={"detail": "database unavailable"})
 
-app.include_router(auth.router)
-app.include_router(home.router, dependencies=[Depends(get_current_user)])
-app.include_router(report.router, dependencies=[Depends(get_current_user)])
-app.include_router(ojt.router, dependencies=[Depends(get_current_user)])
-app.include_router(study.router, dependencies=[Depends(get_current_user)])
-app.include_router(quiz.router, dependencies=[Depends(get_current_user)])
-app.include_router(assignment.router, dependencies=[Depends(get_current_user)])
-app.include_router(assignment_proposal.router, dependencies=[Depends(get_current_user)])
-app.include_router(poc_strength.router, dependencies=[Depends(get_current_user)])
 
-app.include_router(users.router, dependencies=[Depends(get_current_user)])
-app.include_router(development.router, dependencies=[Depends(get_current_user)])
-app.include_router(proposal_agent.router, dependencies=[Depends(get_current_user)])
-app.include_router(learning_actions.router, dependencies=[Depends(get_current_user)])
+def create_app(lifespan_handler=lifespan, *, include_docs: bool = True) -> FastAPI:
+    """通常運用と限定試用で同じ認証・業務ルーターを構成する。"""
+    app = FastAPI(
+        title="Caliboo API", lifespan=lifespan_handler,
+        docs_url="/docs" if include_docs else None,
+        redoc_url="/redoc" if include_docs else None,
+        openapi_url="/openapi.json" if include_docs else None,
+    )
+    if not include_docs:
+        app.add_exception_handler(OperationalError, database_unavailable)
+        app.add_exception_handler(InterfaceError, database_unavailable)
 
-app.mount("/quiz-assets", StaticFiles(directory=Path(__file__).parent / "quiz_assets"),
-          name="quiz-assets")
+    app.include_router(auth.router)
+    for router in (
+        home, report, ojt, study, quiz, assignment, assignment_proposal, poc_strength,
+        users, development, proposal_agent, learning_actions, holdout,
+    ):
+        app.include_router(router.router, dependencies=[Depends(get_current_user)])
 
-app.include_router(holdout.router, dependencies=[Depends(get_current_user)])
+    app.mount("/quiz-assets", StaticFiles(directory=Path(__file__).parent / "quiz_assets"),
+              name="quiz-assets")
+    return app
+
+
+app = create_app()
