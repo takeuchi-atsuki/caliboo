@@ -637,4 +637,6 @@ ProposalAgentResultはtrace/title/body/messageForMember/rationale/estimateMinute
 | POST | /api/development/holdout/cases/{case_id}/result | `{materialsDigest,result:StrengthResult}`。2名のラベル確定後のみ。材料ハッシュ違い/結果固定済み/人数不足409、引用・コード違反422 |
 | POST | /api/development/holdout/cases/{case_id}/acceptance | `{accepted,comment}`。結果登録後、本人のラベルに受容性を1回確定。未解析/ラベルなし/記録済み409 |
 
+管理画面では解析担当者向けに `{materialsDigest,materials}` を出力し、解析担当者が返した `{materialsDigest,result}` をそのまま登録する。選択中のケースのハッシュで補完しない。登録済みの `result` は従来の形式のまま返す。
+
 ラベルにはreviewerId/skillCodes/comment/labeledAt、結果登録後にはmatch、受容記録後にはaccepted/acceptanceComment/acceptedAtが含まれる。結果登録前に他者のラベルを返さず、結果登録後はラベルの追加・変更を受け付けない。
