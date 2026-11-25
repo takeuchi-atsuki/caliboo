@@ -43,7 +43,7 @@ const assetNames = readdirSync(assets);
 function pageChunk(name) {
   const matches = assetNames.filter((file) => file.startsWith(name + "-") && file.endsWith(".js"));
   if (matches.length > 1) throw new Error("JSチャンクを1件に特定できません: " + name);
-  // 分割前のビルドでは個別チャンクが存在せず、初期エントリに含まれている。
+  // 初期ロードに含める画面（分割前のビルドも含む）は個別チャンクを持たない。
   return matches.map((file) => resolve(assets, file));
 }
 
@@ -72,9 +72,12 @@ function measure(files) {
 
 const login = pageChunk("LoginPage");
 const home = pageChunk("HomePage");
+const strengths = pageChunk("DevelopmentPage");
 console.log(JSON.stringify({
   initial: measure(root),
   coldLogin: measure([...root, ...login]),
   coldAuthenticatedHome: measure([...root, ...home]),
   loginThenHome: measure([...root, ...login, ...home]),
+  coldAuthenticatedStrengths: measure([...root, ...strengths]),
+  loginThenHomeThenStrengths: measure([...root, ...login, ...home, ...strengths]),
 }, null, 2));

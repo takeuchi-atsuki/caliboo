@@ -6,9 +6,13 @@ import { ThemeModeProvider } from "./components/theme/ThemeModeProvider";
 import { AuthProvider } from "./components/auth/AuthProvider";
 import { RequireAuth } from "./components/auth/RequireAuth";
 
-// !NOTE: 画面単位で読み込みを遅延させ、初回表示に不要な画面のJSは取得しない。
-// 認証・テーマ・ルーターは常に起動し、保護された画面は認証が済むまで読み込まない。
-const HomePage = lazy(() => import("./features/home/HomePage").then((module) => ({ default: module.HomePage })));
+import { LoginPage } from "./features/auth/LoginPage";
+import { HomePage } from "./features/home/HomePage";
+import { DevelopmentPage } from "./features/development/DevelopmentPage";
+
+// !NOTE: ログイン・ホーム・強みは通常利用で頻繁に使うため初期JSに含め、
+// 初回遷移時の追加のJS取得をなくす。その他の画面は画面単位で遅延読み込みする。
+// 認証・テーマ・ルーターは常に起動し、保護された画面は認証が済むまで描画しない。
 const ReportPage = lazy(() => import("./features/report/ReportPage").then((module) => ({ default: module.ReportPage })));
 const OjtChatPage = lazy(() => import("./features/ojt/OjtChatPage").then((module) => ({ default: module.OjtChatPage })));
 const OjtThreePanePage = lazy(() => import("./features/ojt/OjtThreePanePage").then((module) => ({ default: module.OjtThreePanePage })));
@@ -19,12 +23,10 @@ const AssignmentListPage = lazy(() => import("./features/assignment/AssignmentLi
 const AssignmentDetailPage = lazy(() => import("./features/assignment/AssignmentDetailPage").then((module) => ({ default: module.AssignmentDetailPage })));
 const AssignmentProposalPage = lazy(() => import("./features/assignment/AssignmentProposalPage").then((module) => ({ default: module.AssignmentProposalPage })));
 const StrengthsPage = lazy(() => import("./features/strengths/StrengthsPage").then((module) => ({ default: module.StrengthsPage })));
-const LoginPage = lazy(() => import("./features/auth/LoginPage").then((module) => ({ default: module.LoginPage })));
 const PasswordPage = lazy(() => import("./features/auth/PasswordPage").then((module) => ({ default: module.PasswordPage })));
 const UsersPage = lazy(() => import("./features/admin/UsersPage").then((module) => ({ default: module.UsersPage })));
 const OjtInboxPage = lazy(() => import("./features/admin/OjtInboxPage").then((module) => ({ default: module.OjtInboxPage })));
 const AgentJobsPage = lazy(() => import("./features/admin/AgentJobsPage").then((module) => ({ default: module.AgentJobsPage })));
-const DevelopmentPage = lazy(() => import("./features/development/DevelopmentPage").then((module) => ({ default: module.DevelopmentPage })));
 
 export default function App() {
   return (
