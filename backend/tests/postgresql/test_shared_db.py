@@ -4,6 +4,7 @@
 """
 
 from concurrent.futures import ThreadPoolExecutor
+from threading import Barrier
 import os
 import secrets
 
@@ -13,10 +14,11 @@ from sqlalchemy import inspect
 
 from caliboo_api import db, db_admin, manage
 from caliboo_api.config import parse_database_url
+from caliboo_api.data import assignment_proposal_data as proposal_data
 from caliboo_api.main import app
 from caliboo_api.migration import verify_migration
 from caliboo_api.extension_models import QuizSuccess, UserProgress
-from caliboo_api.models import AssignmentSubmission, QuizQuestion, User
+from caliboo_api.models import AssignmentProposal, AssignmentSubmission, QuizQuestion, User
 
 
 def isolated_url(name):
@@ -183,13 +185,33 @@ def test_migration_and_independent_sessions(tmp_path, monkeypatch, ephemeral_see
         login(another_admin, "sensei", passwords["sensei"])
         with db.session_scope() as session:
             user_id = session.query(User).filter_by(login_id="sora").one().id
-        with ThreadPoolExecutor(max_workers=2) as executor:
-            futures = [executor.submit(client.post, "/api/assignment-proposals",
-                                       json={"userId": user_id})
-                       for client in (admin, another_admin)]
-            responses = [future.result(timeout=30) for future in futures]
-        assert sorted(response.status_code for response in responses) == [200, 201]
+        # 両方の通常生成が既存案なしの判定を通ってから保存に進むよう、合成試験だけ同期する。
+        ready = Barrier(2)
+        generate = proposal_data._run_generator
+
+        def synchronize_generation(session, target_user):
+            output = generate(session, target_user)
+            ready.wait(timeout=10)
+            return output
+
+        with monkeypatch.context() as patch:
+            patch.setattr(proposal_data, "_run_generator", synchronize_generation)
+            with ThreadPoolExecutor(max_workers=2) as executor:
+                futures = [executor.submit(client.post, "/api/assignment-proposals",
+                                           json={"userId": user_id})
+                           for client in (admin, another_admin)]
+                responses = [future.result(timeout=30) for future in futures]
+        # 応答本文を出さず、合成試験のHTTPステータス数値だけで失敗を切り分ける。
+        proposal_status_codes = sorted(response.status_code for response in responses)
+        assert proposal_status_codes == [200, 201], f"HTTP statuses: {proposal_status_codes}"
         assert responses[0].json()["id"] == responses[1].json()["id"]
+        with db.session_scope() as session:
+            pending = session.query(AssignmentProposal).filter(
+                AssignmentProposal.target_user_id == user_id,
+                AssignmentProposal.assignment_id.is_(None),
+                AssignmentProposal.decided_at.is_(None),
+            )
+            assert pending.count() == 1
         another_admin.close()
         member = TestClient(app)
         login(member, "yuki", passwords["yuki"])
