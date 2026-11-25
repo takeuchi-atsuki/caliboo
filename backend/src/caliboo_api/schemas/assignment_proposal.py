@@ -2,7 +2,7 @@
 
 from typing import Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from caliboo_api.schemas.assignment import NonEmptyText
 from caliboo_api.schemas.report import Mood
@@ -30,6 +30,8 @@ class ProposalProgress(BaseModel):
     reviewedCount: int
     notSubmittedCount: int
     recentMoods: list[Mood]
+    # !NOTE: 旧課題案では対象の日報数が不明なため、0ではなくNoneとして扱う。
+    recentReportCount: int | None = Field(default=None, ge=0, le=5)
 
 
 class ProposalListItem(BaseModel):

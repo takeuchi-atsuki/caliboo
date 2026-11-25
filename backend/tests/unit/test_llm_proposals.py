@@ -34,6 +34,7 @@ def test_llm_uses_progress_and_sources_without_identity(monkeypatch, proposal_in
         assert proposal_inputs["member_name"] not in str(materials)
         assert materials["progress"]["notSubmittedCount"] == 1
         assert materials["progress"]["reviewedCount"] == 1
+        assert materials["progress"]["recentReportCount"] == 1
         assert any(source["kind"] == "feedback" for source in materials["sources"])
         return generated()
     monkeypatch.setattr(llm, "generate_json", generate)
@@ -41,7 +42,39 @@ def test_llm_uses_progress_and_sources_without_identity(monkeypatch, proposal_in
     result = provider.generate(**proposal_inputs)
     assert result["materials"] == [dict(kind="report", date="2026-09-29",
                                         sourceLabel="日報 Problem", quote="説明が難しい。")]
+    assert result["progress"]["recentReportCount"] == 1
+    assert result["progress"]["recentMoods"] == []
     assert provider.name.startswith("openai:model:")
+
+
+@pytest.mark.parametrize("report_count", range(8))
+def test_llm_progress_matches_the_reports_used_for_generation(
+    monkeypatch, proposal_inputs, report_count,
+):
+    reports = [dict(date=f"2026-09-{day:02d}", keep="", problem=f"観測{day}。",
+                    try_="", mood=[], moodComment="") for day in range(report_count, 0, -1)]
+    for report in reports:
+        report["try"] = report.pop("try_")
+    proposal_inputs["reports"] = reports
+
+    def generate(instructions, materials, output_type, config):
+        report_sources = [source for source in materials["sources"] if source["kind"] == "report"]
+        assert [source["text"] for source in report_sources] == [
+            report["problem"] for report in reports[:5]
+        ]
+        assert materials["progress"]["recentReportCount"] == min(report_count, 5)
+        assert materials["progress"]["recentMoods"] == []
+        # 日報0件でも、講師FBがあれば従来どおり課題案を生成できる。
+        source = next(source for source in materials["sources"] if source["kind"] == "feedback")
+        return generated(evidence=[dict(materialId=source["id"], quote=source["text"])])
+
+    monkeypatch.setattr(llm, "generate_json", generate)
+    provider = LLMProposalGenerator(llm.LLMSettings("model", "test-only-secret"))
+    result = provider.generate(**proposal_inputs)
+
+    assert result["progress"]["recentReportCount"] == min(report_count, 5)
+    assert result["progress"]["submittedCount"] == 1
+    assert result["progress"]["recentMoods"] == []
 
 
 @pytest.mark.parametrize("changes,code", [

@@ -5,7 +5,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from caliboo_api.schemas.agent_jobs import Evidence, Text
 from caliboo_api.services import llm
 from . import theme_catalog as catalog
-from .providers import _progress_summary, _weighted_texts
+from .providers import RECENT_REPORT_COUNT, _progress_summary, _weighted_texts
 
 PROMPT_VERSION = "proposal-2026-09-29.1"
 INSTRUCTIONS = """あなたは新人研修の課題案を作る支援者です。日本語で回答してください。
@@ -38,15 +38,16 @@ class LLMProposalGenerator:
     def generate(self, *, member_name: str, reports: list[dict], submission_statuses: list[str],
                  feedbacks: list[dict], excluded_themes: set[str]) -> dict:
         # !NOTE: 対象者名は送信しない。直近材料に絞り、本文を切り詰めて引用を変えない。
+        reports = reports[:RECENT_REPORT_COUNT]
         sources = [dict(id=f"material:{index}", text=text, date=date, sourceLabel=label,
                         kind="feedback" if label == "講師フィードバック" else "report")
                    for index, (text, date, weight, label) in enumerate(
-                       _weighted_texts(reports[:5], feedbacks[-20:])) if text.strip()]
+                       _weighted_texts(reports, feedbacks[-20:])) if text.strip()]
         if not sources:
             raise llm.LLMError("insufficient_materials")
         allowed = [theme.key for theme in catalog.THEME_CATALOG
                    if theme.key not in excluded_themes or theme.key == catalog.FALLBACK_THEME_KEY]
-        progress = _progress_summary(submission_statuses, reports[:5])
+        progress = _progress_summary(submission_statuses, reports)
         materials_input = dict(sources=sources, progress=progress, allowedThemes=allowed)
         result = llm.generate_json(INSTRUCTIONS, materials_input, GeneratedProposal, self.config)
         if result.themeKey not in allowed:

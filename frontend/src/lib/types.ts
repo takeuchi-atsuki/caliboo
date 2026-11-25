@@ -231,6 +231,8 @@ export interface ProposalProgress {
   submittedCount: number;
   reviewedCount: number;
   notSubmittedCount: number;
+  // 課題案の生成時点に分析対象となった提出済み日報の件数(最大5件)。旧データでは未記録。
+  recentReportCount?: number | null;
   // 直近5件の日報の先頭moodを新しい順に並べたもの。
   recentMoods: Mood[];
 }
