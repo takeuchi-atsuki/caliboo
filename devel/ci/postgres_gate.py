@@ -17,14 +17,10 @@ import psycopg
 from psycopg import sql
 from sqlalchemy.engine import URL
 
+from postgres_diagnostics import REQUIRED_TESTS, diagnostic_lines, execute_required_tests
+
 
 ROOT = Path(__file__).resolve().parents[2]
-REQUIRED_TESTS = {
-    "test_ephemeral_seed_credentials_on_sqlite",
-    "test_ephemeral_initial_admin_credentials_on_sqlite",
-    "test_migration_and_independent_sessions",
-    "test_separate_first_initialization_without_demo",
-}
 
 
 class GateError(RuntimeError):
@@ -97,13 +93,27 @@ def create_databases(port, password, names, owner, owner_password):
 
 
 def run_required_tests(environment, report):
-    tests = [f"tests/postgresql/test_shared_db.py::{name}" for name in sorted(REQUIRED_TESTS)]
-    subprocess.run(
-        [sys.executable, "-m", "pytest", "--disable-socket", "-q", "--tb=no",
-         "-p", "no:cacheprovider", f"--junitxml={report}", *tests],
-        cwd=ROOT / "backend", env=environment, check=True, timeout=300,
-    )
-    cases = ET.parse(report).getroot().findall(".//testcase")
+    diagnostics = report.with_suffix(".diagnostics.json")
+    returncode = execute_required_tests(ROOT / "backend", environment, report, diagnostics)
+    # !NOTE: We never publish pytest stdout/stderr or JUnit failure contents.
+    # Failed call/fixture metadata is generated separately without values or source text.
+    lines = diagnostic_lines(diagnostics)
+    for line in lines:
+        print(line, flush=True)
+    if report.is_file():
+        cases = ET.parse(report).getroot().findall(".//testcase")
+        failed = sum(case.find("failure") is not None for case in cases)
+        errors = sum(case.find("error") is not None for case in cases)
+        skipped = sum(case.find("skipped") is not None for case in cases)
+        passed = len(cases) - failed - errors - skipped
+        print(f"PostgreSQL pytest result: passed={passed} failed={failed} "
+              f"errors={errors} skipped={skipped}", flush=True)
+    else:
+        cases = []
+    if returncode != 0 and not lines:
+        print("PostgreSQL pytest: no safe test diagnostic (collection/internal error or timeout)",
+              flush=True)
+    require(returncode == 0, f"PostgreSQL必須テスト失敗 (pytest exit={returncode})")
     require(len(cases) == len(REQUIRED_TESTS)
             and {case.get("name") for case in cases} == REQUIRED_TESTS,
             "PostgreSQL必須テストの件数・識別子が一致しません。")
