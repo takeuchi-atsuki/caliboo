@@ -35,6 +35,10 @@ export function HoldoutEvaluation({ reviewerId }: { reviewerId: number }) {
   </Stack>;
 }
 
+function isJsonObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
 function CaseForm({ caseId, reviewerId }: { caseId: number; reviewerId: number }) {
   const path = `/api/development/holdout/cases/${caseId}`;
   const resource = useResource<HoldoutCase>(path);
@@ -48,9 +52,15 @@ function CaseForm({ caseId, reviewerId }: { caseId: number; reviewerId: number }
   const own = item?.labels.find((label) => label.reviewerId === reviewerId);
   const saveResult = () => {
     try {
-      const result: unknown = JSON.parse(resultJson);
+      const payload: unknown = JSON.parse(resultJson);
+      if (!isJsonObject(payload) || typeof payload.materialsDigest !== "string" ||
+          !/^[a-f0-9]{64}$/.test(payload.materialsDigest) || !isJsonObject(payload.result)) {
+        setParseError(true);
+        return;
+      }
       setParseError(false);
-      void resource.act(`${path}/result`, { materialsDigest: item!.materialsDigest, result });
+      // !NOTE: 解析担当者から返されたハッシュを保持し、材料との照合はAPIで行う。
+      void resource.act(`${path}/result`, payload);
     } catch { setParseError(true); }
   };
   return <Stack spacing={2}>
@@ -61,7 +71,7 @@ function CaseForm({ caseId, reviewerId }: { caseId: number; reviewerId: number }
       <Typography>独立ラベル: {item.labelCount}/2名</Typography>
       {item.materials.sources.map((source) => <Typography key={source.id} sx={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>{source.id}: {source.text}</Typography>)}
       <Typography sx={{ overflowWrap: "anywhere" }}>材料SHA-256: {item.materialsDigest}</Typography>
-      <details><summary>解析担当者向けの凍結材料JSON</summary><Typography component="pre" sx={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>{JSON.stringify(item.materials, null, 2)}</Typography></details>
+      <details><summary>解析担当者向けの凍結材料JSON</summary><Typography component="pre" sx={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>{JSON.stringify({ materialsDigest: item.materialsDigest, materials: item.materials }, null, 2)}</Typography></details>
       {!item.ownLabelSubmitted && item.labelCount < 2 && <>
         <TextField label="独立に判断したスキルコード（カンマ区切り、該当なしは空欄）" value={codes} onChange={(e) => setCodes(e.target.value)} />
         <TextField label="判断の理由" multiline value={comment} onChange={(e) => setComment(e.target.value)} />
@@ -72,10 +82,11 @@ function CaseForm({ caseId, reviewerId }: { caseId: number; reviewerId: number }
       </>}
       {item.ownLabelSubmitted && <Typography>あなたの独立ラベルは確定済みです。</Typography>}
       {item.labelCount === 2 && item.result === null && <>
-        <Typography>2名のラベルが確定しました。凍結材料を解析した結果を登録してください。</Typography>
-        <TextField label="解析結果JSON" multiline minRows={4} value={resultJson} onChange={(e) => setResultJson(e.target.value)} />
+        <Typography>2名のラベルが確定しました。凍結材料の解析結果と、解析担当者から返された材料SHA-256を登録してください。</Typography>
+        <TextField label="解析結果JSON" helperText="返却形式: { materialsDigest, result }（材料SHA-256と解析結果）"
+          multiline minRows={4} value={resultJson} onChange={(e) => setResultJson(e.target.value)} />
         <Button disabled={resource.busy || !resultJson.trim()} onClick={saveResult}>解析結果を固定する（変更不可）</Button>
-        {parseError && <Alert severity="error">JSONの形式を確認してください。入力は保持されています。</Alert>}
+        {parseError && <Alert severity="error">JSONの形式を確認してください。材料SHA-256と解析結果が必要です。入力は保持されています。</Alert>}
       </>}
       {item.result !== null && <>
         <Typography component="pre" sx={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>{JSON.stringify(item.result, null, 2)}</Typography>
