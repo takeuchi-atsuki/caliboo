@@ -34,6 +34,7 @@
 | B案：二つのメッセージを届ける | [Markdown](caliboo-presentation-v4-b.md)・[PDF](caliboo-presentation-v4-b.pdf) | [MP3](caliboo-presentation-v4-b.mp3)（9:12） | [MP3](caliboo-presentation-v4-b-short.mp3)（5:26） |
 
 - [v4の比較・独立レビュー・想定質疑応答](caliboo-presentation-v4-review.md)
+- 想定質疑応答集（24問・2026-11-26版）：[Markdown](caliboo-presentation-qa.md)・[PDF](caliboo-presentation-qa.pdf)
 - 通常稿の合成音声書き出し後の実測は、A案 9分18.48秒、B案 9分11.76秒。短縮稿はA案 5分28.80秒、B案 5分25.73秒。間と操作時間を含む。竹内本人の実演時間ではない。
 - 発表本編は投影10枚で完結し、実機デモは質疑応答用とする。
 
