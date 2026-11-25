@@ -12,8 +12,8 @@
 | --- | --- | --- |
 | ポスター v4 | [PDF](caliboo-poster-v4.pdf) | [HTML](caliboo-poster-v4.html)・[PNG](caliboo-poster-v4.png) |
 | パンフレット v3 | [PDF](caliboo-pamphlet-v3.pdf) | [HTML](caliboo-pamphlet-v3.html)・[表面PNG](caliboo-pamphlet-v3-front.png)・[裏面PNG](caliboo-pamphlet-v3-back.png) |
-| POP v2（QRコードあり） | [PDF](caliboo-pop-v2-qr.pdf) | [HTML](caliboo-pop-v2-qr.html)・[PNG](caliboo-pop-v2-qr.png) |
-| POP v2（QRコードなし） | [PDF](caliboo-pop-v2.pdf) | [HTML](caliboo-pop-v2.html)・[PNG](caliboo-pop-v2.png) |
+| POP v3（QRコードあり） | [PDF](caliboo-pop-v3-qr.pdf) | [HTML](caliboo-pop-v3-qr.html)・[PNG](caliboo-pop-v3-qr.png) |
+| POP v3（QRコードなし） | [PDF](caliboo-pop-v3.pdf) | [HTML](caliboo-pop-v3.html)・[PNG](caliboo-pop-v3.png) |
 
 ## 2. 公式ブランド・ロゴ
 
