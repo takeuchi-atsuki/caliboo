@@ -14,10 +14,12 @@ import zipfile
 
 from package_gate import GateError, clean_environment, require, validate_archive
 from quality_gate import validate_node
+from windows_ci_log import StageLog, configure_utf8_stdio
 
 
 ROOT = Path(__file__).resolve().parents[2]
 CI_DIR = Path(__file__).resolve().parent
+LOG = StageLog()
 WINDOWS_SCRIPTS = {
     "Caliboo/devel/windows/build-windows.sh",
     "Caliboo/devel/windows/setup-windows.sh",
@@ -123,7 +125,8 @@ def validate_windows_archive(archive):
 
 
 def verify_tzdata(extracted, backend_python, environment):
-    test_environment = dict(environment, PYTHONTZPATH="", PYTHONUTF8="1")
+    test_environment = dict(environment, PYTHONTZPATH="", PYTHONUTF8="1",
+                            PYTHONIOENCODING="utf-8")
     output = run_captured(
         "tzdata", [backend_python, "-c", TOKYO_CHECK], cwd=extracted,
         environment=test_environment, timeout=30,
@@ -146,6 +149,7 @@ def verify_tzdata(extracted, backend_python, environment):
 
 
 def install_build_smoke(extracted, bash, environment):
+    LOG.begin("setup-windows")
     label = "Windows Git Bash setup-windows.sh"
     run_captured(label, [bash, "./devel/windows/setup-windows.sh"], cwd=extracted,
                  environment=environment, timeout=900)
@@ -154,8 +158,10 @@ def install_build_smoke(extracted, bash, environment):
             and (extracted / "frontend/node_modules/vite/bin/vite.js").is_file(),
             "新規展開先にWindows Python環境またはnpm依存がありません。")
     print(f"PASS: {label} / 空白を含む新規パス", flush=True)
+    LOG.begin("tzdata")
     verify_tzdata(extracted, backend_python, environment)
 
+    LOG.begin("frontend-build")
     run_captured("Windows フロントエンドビルド", [bash, "-c", "npm run build"],
                  cwd=extracted / "frontend", environment=environment, timeout=240)
     require(all((extracted / "frontend/dist" / name).is_file()
@@ -165,6 +171,7 @@ def install_build_smoke(extracted, bash, environment):
 
     # 通常のdev-server-windows.shによる起動・停止・再起動は専用ヘルパーで検証。
     # ヘルパーは検証段階を安全な要約だけで表示する。必須ブラウザー未実行は非ゼロ。
+    LOG.begin("server-smoke")
     try:
         result = subprocess.run(
             [sys.executable, str(CI_DIR / "windows_server_smoke.py"),
@@ -180,6 +187,7 @@ def install_build_smoke(extracted, bash, environment):
 
 
 def main():
+    LOG.begin("package-preflight")
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--root", type=Path, default=ROOT,
                         help="#29配布候補のクリーンなチェックアウト")
@@ -195,20 +203,24 @@ def main():
     require(not os.path.lexists(release),
             "release が既に存在します。クリーンな候補を指定してください。")
     environment = clean_environment()
-    environment["PYTHONUTF8"] = "1"
+    environment.update(PYTHONUTF8="1", PYTHONIOENCODING="utf-8")
+    LOG.begin("git-bash")
     bash, msys_python = find_git_bash(args.git_bash, root, environment)
     environment["PYTHON"] = msys_python
+    LOG.begin("native-node")
     verify_node(root, bash, environment)
     print(f"Windows x64 / Python {platform.python_version()} / Git Bash 確認済み", flush=True)
     # !NOTE: Windows固有のパス処理を実際に通す。短いrunner temp直下に空白を含める。
     runner_temp = os.environ.get("RUNNER_TEMP")
     try:
+        LOG.begin("build-zip")
         run_captured("Windows Git Bash build-windows.sh",
                      [bash, "./devel/windows/build-windows.sh"],
                      cwd=root, environment=environment, timeout=120)
         archives = list(release.glob("*_Caliboo.zip"))
         require(len(archives) == 1, "今回作成されたWindows ZIPが一意ではありません。")
         print("PASS: Windows Git Bash build-windows.sh", flush=True)
+        LOG.begin("validate-extract")
         with tempfile.TemporaryDirectory(prefix="caliboo windows zip ", dir=runner_temp) as temp:
             with zipfile.ZipFile(archives[0]) as archive:
                 validate_windows_archive(archive)
@@ -221,21 +233,28 @@ def main():
             install_build_smoke(extracted, bash, environment)
     finally:
         # 新規生成された配布ZIPのみローカルで後始末する。アップロードしない。
-        if release.is_dir() and not release.is_symlink():
-            for archive in release.glob("*_Caliboo.zip"):
-                if archive.is_file():
-                    archive.unlink()
-            if not any(release.iterdir()):
-                release.rmdir()
+        # 本来の失敗段階を正常な後始末で上書きしない。
+        try:
+            if release.is_dir() and not release.is_symlink():
+                for archive in release.glob("*_Caliboo.zip"):
+                    if archive.is_file():
+                        archive.unlink()
+                if not any(release.iterdir()):
+                    release.rmdir()
+        except OSError:
+            LOG.begin("cleanup-zip")
+            raise
 
 
 if __name__ == "__main__":
     try:
+        configure_utf8_stdio()
         main()
     except GateError as error:
-        print(f"Windows配布ゲート失敗: {error}", file=sys.stderr)
+        LOG.failure(error)
+        # GateError の固定チェック名・終了コードのみ。子プロセスの生出力は含まない。
+        print(f"Windows配布ゲート失敗: {error}", file=sys.stderr, flush=True)
         sys.exit(1)
     except Exception as error:
-        # 例外値にはユーザー環境のパス等が含まれる。型名のみ出す。
-        print(f"Windows配布ゲート失敗: {type(error).__name__}", file=sys.stderr)
+        LOG.failure(error)
         sys.exit(1)

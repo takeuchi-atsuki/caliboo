@@ -35,6 +35,9 @@ class WindowsSmokeTest(unittest.TestCase):
         self.stdout = patch("sys.stdout", new_callable=io.StringIO)
         self.stdout.start()
         self.addCleanup(self.stdout.stop)
+        self.stderr = patch("sys.stderr", new_callable=io.StringIO)
+        self.stderr.start()
+        self.addCleanup(self.stderr.stop)
 
     def test_allowlist_drops_external_and_inherited_python(self):
         with patch.dict(os.environ, {
@@ -47,6 +50,8 @@ class WindowsSmokeTest(unittest.TestCase):
             self.assertNotIn(name, result)
         self.assertEqual(result["CALIBOO_DEMO_SEED"], "false")
         self.assertEqual(result["CALIBOO_AI_PROVIDER"], "manual")
+        self.assertEqual(result["PYTHONUTF8"], "1")
+        self.assertEqual(result["PYTHONIOENCODING"], "utf-8")
 
     def test_missing_playwright_is_only_unavailable(self):
         server = Mock()
