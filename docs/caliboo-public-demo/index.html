@@ -7,13 +7,13 @@
 <meta name="robots" content="noindex,nofollow,noarchive">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; form-action 'none'; base-uri 'none'">
 <title>Caliboo｜日報から強みに・体験版</title>
-<link rel="stylesheet" href="./style.css">
-<script defer src="./demo.js"></script>
+<link rel="stylesheet" href="./style.css?v=2">
+<script defer src="./demo.js?v=2"></script>
 </head>
 <body>
 <a class="skip" href="#main">本文へ移動</a>
 <header class="top">
-  <div class="top-inner"><span class="brand"><span class="brand-mark" aria-hidden="true">✿</span> Caliboo<span class="brand-ja">キャリブー</span></span><span class="badge preview">公開体験版</span></div>
+  <div class="top-inner"><span class="brand"><span class="brand-mark" aria-hidden="true">✿</span> Caliboo<span class="brand-ja">キャリブー</span></span><span class="badge preview">公開体験版 v2</span></div>
 </header>
 <main class="wrap" id="main">
   <div class="notice"><strong>架空データのデモ・本体ではありません。</strong> AI解析は事前生成サンプルの再現です。入力・認証・サーバー保存・外部AI通信は行いません。</div>
@@ -33,22 +33,19 @@
       <div class="section-heading"><div><p class="kicker">STEP 1</p><h2 id="stage0title" tabindex="-1">一日の行動を残そう</h2></div><span class="pill">2026/11/25 · 架空日報</span></div>
       <p class="small">Keep（できたこと）、Problem（課題）、Try（次に挑戦すること）を記録します。前日の日報1件も架空サンプルとして用意しています。</p>
       <div class="report-fields">
-        <div class="field keep"><label for="keep"><span>K</span> Keep <small>できたこと</small></label><textarea id="keep" rows="3" readonly placeholder="下のボタンで架空日報を入力します"></textarea></div>
+        <div class="field keep"><label for="keep"><span>K</span> Keep <small>できたこと</small></label><textarea id="keep" rows="5" readonly placeholder="下のボタンで架空日報を入力します"></textarea></div>
         <div class="field problem"><label for="problem"><span>P</span> Problem <small>課題</small></label><textarea id="problem" rows="2" readonly placeholder="下のボタンで架空日報を入力します"></textarea></div>
         <div class="field try"><label for="try"><span>T</span> Try <small>次に挑戦すること</small></label><textarea id="try" rows="2" readonly placeholder="下のボタンで架空日報を入力します"></textarea></div>
       </div>
-      <div class="mood"><span>今日のきもち</span> <span id="mood" class="moodvalue">未選択</span></div>
+      <div class="mood"><span>今日のきもち</span> <span id="mood" class="moodvalue">未選択</span></div><p class="small mood-comment" id="mood-comment" hidden></p>
       <div class="actions"><button class="secondary" id="fill">架空の日報を入力</button><button class="primary" id="submit" disabled>日報を提出する（体験）</button></div>
     </section>
     <section id="stage-1" class="stage" aria-labelledby="stage1title" hidden>
       <div class="section-heading"><div><p class="kicker">STEP 2</p><h2 id="stage1title" tabindex="-1">行動から、強みの候補へ</h2></div><span class="pill purple">AI解析のサンプル再生</span></div>
-      <p class="small">2件の架空の日報（原文）を材料に、独立したAI解析セッションで生成した強み候補を固定収録し、そのサンプルを表示します。この体験版では外部AIを呼び出しません。</p>
-      <div class="source-list">
-        <div class="source-item"><span class="source-day">11/24</span><span>提出済み · 演習データ集計と照合</span><span class="badge done">架空</span></div>
-        <div class="source-item"><span class="source-day">11/25</span><span>提出済み · チェックリストと再確認</span><span class="badge done">架空</span></div>
-      </div>
+      <p class="small">2件の架空の日報（原文）を材料に、独立したAI解析セッションで生成した強み候補を固定収録し、そのサンプルを表示します。短い見出しで強みを表し、具体的な行動は詳細で確認できます。この体験版では外部AIを呼び出しません。</p>
+      <div class="source-list" id="source-list"></div>
       <div class="analysisbox" aria-live="polite"><div id="analysis-indicator" class="orb">✦</div><div><strong id="analysis-status">解析サンプルを待機中</strong><p id="analysis-description">原文に基づく候補の再生を開始しましょう。</p></div></div>
-      <div id="candidate-preview" class="candidate-preview" hidden><p class="small">サンプル候補：2件 · 本人にはまだ表示されません。</p><div class="tags"><span class="tag green">集計結果から未入力を見つけ、抽出条件を見直す</span><span class="tag purple">手計算を比較対象にして集計結果を確かめる</span></div></div>
+      <div id="candidate-preview" class="candidate-preview" hidden><p class="small" id="candidate-count"></p><div class="tags" id="candidate-tags"></div></div>
       <div class="actions"><button id="analyze" class="primary">解析例を表示</button><button id="review" class="primary" disabled>講師の確認へ</button></div>
     </section>
     <section id="stage-2" class="stage" aria-labelledby="stage2title" hidden>
@@ -60,7 +57,7 @@
     </section>
     <section id="stage-3" class="stage" aria-labelledby="stage3title" hidden>
       <div class="section-heading"><div><p class="kicker">STEP 4</p><h2 id="stage3title" tabindex="-1">いま見つかった、あなたの強み</h2></div><span class="pill">講師承認済み</span></div>
-      <p class="small">承認された候補だけを本人に表示します。強みを理解し、次の学習につなげましょう。</p>
+      <p class="small">承認された候補だけを本人に表示します。強みの見出しを覚え、具体的な行動や得意な場面を知り、次の学習につなげましょう。</p>
       <div id="result-cards"></div>
       <article class="next"><h3>次の一歩</h3><p id="growth"></p><p class="small">実際のCalibooでは、本人が行動・達成の目安・期限を決めて実践と振り返りを記録できます。</p></article>
       <div class="finish"><strong>記録が、育成につながる。</strong><p>日常の小さな行動を見える化し、学びを次につなぐ仕組みです。</p></div>
