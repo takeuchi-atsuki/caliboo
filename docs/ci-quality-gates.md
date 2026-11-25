@@ -31,6 +31,18 @@ mainから作成した検証候補に #32 を適用し、対象課題の変更�
 
 pytest、Vitestの各必須テスト群は終了コードだけでなく、一時レポートを検査して未実行・スキップ・0件を失敗とする。テスト時は既存の外部サービス設定やテスト選択オプションを引き継がず、バックエンドの予備DBも一時SQLiteに限定する。レポートはローカルの一時領域にのみ生成し、外部保存しない。
 
+PostgreSQL必須試験では、pytestの生の標準出力・標準エラー・JUnitの例外本文を公開ログへ転送しない。失敗時はテスト名、setup/call/teardown、次の処理段階、静的なチェック識別子、許可されたソースの相対パス・行番号、例外型、5文字の定型SQLSTATEだけを出力する。例外のメッセージ、引数、ローカル変数、assert式や応答内容は出力しない。
+
+| 診断の処理段階 | 内容 |
+| --- | --- |
+| `01-copy-sequences-verification` | 全表コピー・採番・内容照合 |
+| `02-login-independent-report` | ログイン・独立セッション・日報反映 |
+| `03-parallel-quiz-progress` | 通常の並行クイズ回答・達成率 |
+| `04-assignment-proposal` | 通常課題案生成 |
+| `05-submission-feedback` | 提出・フィードバック |
+
+候補テストの構造から段階を特定できない場合は `unlocated` と表示し、コード位置から確認する。収集エラー・タイムアウト等で詳細が得られない場合も合格にはしない。
+
 追加ゲートは、合成データ・ループバック通信のみで次を実行する。
 
 - #25：PostgreSQL 18 のサービスと psycopg 3 を使用し、独立した初期化、SQLiteからの移行、実DBでの通常業務処理の同時実行とバックアップの復元を確認する。
@@ -96,3 +108,18 @@ python devel/ci/browser_e2e.py
 | GitHub Actions | リポジトリや外部PR承認設定を変更しておらず、GitHub上のワークフロー実行、各ゲートの実行URL、候補組み合わせ全体の合否は未確認。 |
 
 ChromiumおよびPostgreSQLの実試験、候補を含めた検証ブランチのActions実行は、承認済みの方法で引き続き確認する。上記の部分確認のみで追加ゲートを合格とはしない。
+
+
+### GitHub Actions 初回実測と安全な診断の追記
+
+[#25/#32 検証 run 45648940493](https://github.com/takeuchi-atsuki/caliboo/actions/runs/45648940493) は標準ランナーで実行した。
+
+| 項目 | 結果 |
+| --- | --- |
+| Backend | lint成功、単体637件（97.18%）、統合75件成功。 |
+| Frontend | 型検査、334テスト、カバレッジ statements 99.81%、branches 97.78%、functions 99.48%、lines 99.81%、2入口ビルド成功。 |
+| SQLiteブラウザー | Chromium導入成功。sandbox有効の起動が `TargetClosedError / No usable sandbox` で失敗し、画面操作未到達。sandbox無効化なし。 |
+| PostgreSQL | 18.7 / psycopg 3.3.9。4件中3件成功、`test_migration_and_independent_sessions` 失敗。バックアップ復元未到達。旧診断の `--tb=no` では原因未特定。 |
+| 配布 | 対象候補でないためskip。 |
+
+PG失敗に対し、必須試験の条件は変更せず、公開ログに値を出さない構造化診断を追加した。新診断のローカル自己テストは12件成功。故意に失敗・skip・収集失敗する合成pytest、5段階の静的識別、SQLSTATEの形式確認を含む。さらに #25 候補 `1b7fe93` の実テストを静的に確認し、5処理段階の既知チェック位置が一致した。新しい診断入口でSQLite対照2件の成功・実PG未設定2件のskipを確認した（本ゲートはskipを合格にしない）。診断を組み込んだ実PGの再実行は未確認。
