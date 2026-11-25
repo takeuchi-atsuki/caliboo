@@ -319,10 +319,14 @@ def save_generated_proposal(session: Session, user_id: int, result: dict,
             index_elements=[AssignmentProposal.target_user_id],
             index_where=(AssignmentProposal.assignment_id.is_(None)
                          & AssignmentProposal.decided_at.is_(None)),
-        )
-    inserted = session.execute(statement)
+        ).returning(AssignmentProposal.id)
+        # !NOTE: INSERTのrowcountはドライバーによって-1(取得不可)になる。
+        # 実際にINSERTされたIDだけを新規作成(201)の根拠にする。
+        is_new = session.execute(statement).scalar_one_or_none() is not None
+    else:
+        is_new = bool(session.execute(statement).rowcount)
     proposal = _find_pending_proposal(session, user_id)
-    return proposal, bool(inserted.rowcount)
+    return proposal, is_new
 
 
 def get_proposal_detail(proposal_id: int) -> ProposalDetail | None:

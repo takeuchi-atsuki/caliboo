@@ -65,6 +65,34 @@ def test_pg_pending_index_is_partial_and_sqlite_unchanged():
     assert index.name not in names
 
 
+@pytest.mark.parametrize("inserted_id, expected_new", [(42, True), (None, False)])
+def test_pg_proposal_creation_uses_returning_not_rowcount(monkeypatch, inserted_id, expected_new):
+    from caliboo_api.data import assignment_proposal_data as data
+
+    session = Mock()
+    session.get_bind.return_value.dialect = postgresql.dialect()
+    # PostgreSQLのINSERT件数を取得できない場合も、新規/既存の判定を誤らない。
+    result = session.execute.return_value
+    result.rowcount = -1
+    result.scalar_one_or_none.return_value = inserted_id
+    pending = AssignmentProposal(id=42, target_user_id=123)
+    monkeypatch.setattr(data, "_find_pending_proposal", Mock(return_value=pending))
+    output = dict(title="合成案", body="合成課題本文", messageForMember="",
+                  aim="確認", rationale="合成理由", estimateMinutes=10,
+                  materials=[], progress={}, themeKey="synthetic")
+
+    proposal, is_new = data.save_generated_proposal(session, 123, output, "manual")
+
+    assert proposal is pending
+    assert is_new is expected_new
+    result.scalar_one_or_none.assert_called_once()
+    statement = session.execute.call_args.args[0]
+    sql = str(statement.compile(dialect=postgresql.dialect()))
+    assert "ON CONFLICT" in sql
+    assert "DO NOTHING RETURNING assignment_proposals.id" in sql
+    data._find_pending_proposal.assert_called_once_with(session, 123)
+
+
 def test_lock_business_mutation_uses_pg_transaction_scoped_lock():
     session = Mock()
     session.get_bind.return_value.dialect = postgresql.dialect()
