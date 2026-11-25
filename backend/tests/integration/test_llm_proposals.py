@@ -74,11 +74,27 @@ def test_llm_proposal_requires_instructor_delivery(
     assert hidden.status_code == 404
 
 
-def test_bad_output_does_not_save_and_can_retry(client, admin_client, provider, monkeypatch):
+@pytest.mark.parametrize("missing", [None, "messageForMember", "quote"])
+def test_bad_output_does_not_save_and_can_retry(
+        client, admin_client, provider, monkeypatch, missing):
     report(client)
     user_id = client.get("/api/auth/me").json()["id"]
     valid = llm.urlopen
-    monkeypatch.setattr(llm, "urlopen", lambda request, timeout: BytesIO(b'{"secret":"body"}'))
+
+    def malformed_response(request, timeout):
+        if missing is None:
+            return BytesIO(b'{"secret":"body"}')
+        packet = json.load(valid(request, timeout))
+        part = packet["output"][0]["content"][0]
+        output = json.loads(part["text"])
+        if missing == "quote":
+            del output["evidence"][0][missing]
+        else:
+            del output[missing]
+        part["text"] = json.dumps(output)
+        return BytesIO(json.dumps(packet).encode())
+
+    monkeypatch.setattr(llm, "urlopen", malformed_response)
     response = admin_client.post("/api/assignment-proposals", json={"userId": user_id})
     assert response.status_code == 503 and "secret" not in response.text
     with session_scope() as session:

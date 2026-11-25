@@ -2,8 +2,9 @@
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from caliboo_api.schemas.agent_jobs import Evidence, Text
+from caliboo_api.schemas.agent_jobs import Text
 from caliboo_api.services import llm
+from caliboo_api.services.provider_output import ProviderEvidence
 from . import theme_catalog as catalog
 from .providers import _progress_summary, _weighted_texts
 
@@ -27,7 +28,7 @@ class GeneratedProposal(BaseModel):
     aim: Text
     rationale: Text
     estimateMinutes: int = Field(ge=5, le=480)
-    evidence: list[Evidence] = Field(min_length=1, max_length=10)
+    evidence: list[ProviderEvidence] = Field(min_length=1, max_length=10)
 
 
 class LLMProposalGenerator:

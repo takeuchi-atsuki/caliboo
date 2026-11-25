@@ -111,3 +111,28 @@ def test_changes_during_inference_prevent_stale_save(client, admin_client, monke
             session.commit()
         client.post("/api/auth/login", json={"loginId": "yuki", "password": "caliboo-yuki"})
     assert len(client.get("/api/ojt/departments/research/messages").json()["messages"]) == 1
+
+
+@pytest.mark.parametrize("missing", [
+    "answer", "insufficientEvidence", "evidence", "knowledgeId", "quote",
+])
+def test_missing_provider_field_does_not_save_turn(client, admin_client, monkeypatch, missing):
+    configure(admin_client, "research", "実験記録", "条件と結果を記録する。")
+    enable(monkeypatch)
+    output = dict(answer="条件を記録する", insufficientEvidence=False,
+                  evidence=[dict(knowledgeId="k1", quote="条件と結果を記録")])
+    if missing in output:
+        del output[missing]
+    else:
+        del output["evidence"][0][missing]
+    packet = dict(status="completed", output=[dict(type="message", content=[dict(
+        type="output_text", text=json.dumps(output))])])
+    monkeypatch.setattr(llm, "urlopen",
+                        lambda request, timeout: BytesIO(json.dumps(packet).encode()))
+    payload = {"deptId": "research", "text": "実験記録の手順は？"}
+    assert client.post("/api/ojt/chat", json=payload).status_code == 503
+    history = "/api/ojt/departments/research/messages"
+    assert len(client.get(history).json()["messages"]) == 1
+    monkeypatch.setenv("CALIBOO_AI_PROVIDER", "manual")
+    assert client.post("/api/ojt/chat", json=payload).status_code == 200
+    assert len(client.get(history).json()["messages"]) == 3
