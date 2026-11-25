@@ -73,6 +73,7 @@ function measure(files) {
 const login = pageChunk("LoginPage");
 const home = pageChunk("HomePage");
 const strengths = pageChunk("DevelopmentPage");
+const assignments = pageChunk("AssignmentListPage");
 console.log(JSON.stringify({
   initial: measure(root),
   coldLogin: measure([...root, ...login]),
@@ -80,4 +81,6 @@ console.log(JSON.stringify({
   loginThenHome: measure([...root, ...login, ...home]),
   coldAuthenticatedStrengths: measure([...root, ...strengths]),
   loginThenHomeThenStrengths: measure([...root, ...login, ...home, ...strengths]),
+  coldAuthenticatedAssignments: measure([...root, ...assignments]),
+  loginThenHomeThenAssignments: measure([...root, ...login, ...home, ...assignments]),
 }, null, 2));

@@ -349,7 +349,7 @@ def check_running(processes, result):
         raise RuntimeError("unexpected page/API error; benchmark stopped")
 
 
-def browser_measure(base, processes, count, result, browser_executable):
+def browser_measure(base, processes, count, result, browser_executable, single_small=False):
     blocked = set()
 
     def route_request(route):
@@ -376,7 +376,8 @@ def browser_measure(base, processes, count, result, browser_executable):
                 options["executable_path"] = browser_executable
             browser = playwright.chromium.launch(**options)
             try:
-                for index in range(count):
+                indices = range(1, count + 1) if single_small else range(count)
+                for index in indices:
                     check_running(processes, result)
                     context = browser.new_context(
                         viewport={"width": 1360, "height": 900}, locale="ja-JP",
@@ -386,7 +387,7 @@ def browser_measure(base, processes, count, result, browser_executable):
                     page = context.new_page()
                     page.set_default_timeout(12000)
                     events = observe_page(page, base, result)
-                    sessions.append((context, page, events))
+                    sessions.append((index, context, page, events))
                     result["rows"].append(login_form(page, base, events, index))
                     page.get_by_label("ログインID").fill(f"synthetic-{index:02d}")
                     page.locator("input[type=password]").fill(PASSWORD)
@@ -395,28 +396,45 @@ def browser_measure(base, processes, count, result, browser_executable):
                         lambda: page.get_by_role("button", name="ログイン", exact=True).click(),
                         (("POST", "/api/auth/login"), ("GET", "/api/home/summary")),
                     ))
-                    target = route_for(index)
+                    if single_small:
+                        # Terraの1ブラウザ手順: ホームから強み→ホーム→課題一覧。
+                        result["rows"].append(navigation(
+                            page, events, index, "route_cold", "/strengths"
+                        ))
+                        result["rows"].append(navigation(
+                            page, events, index, "return_home", "/home"
+                        ))
+                    target = "/assignments" if single_small else route_for(index)
                     result["rows"].append(navigation(page, events, index, "route_cold", target))
                     result["cold_contexts"] += 1
-                    print(f"{result['label']}: cold {index + 1}/{count}",
+                    print(f"{result['label']}: cold {result['cold_contexts']}/{count}",
                           file=sys.stderr, flush=True)
                     # Terraと同じ2秒以上の参加間隔。先に開いたセッションは通常更新を続ける。
                     page.wait_for_timeout(DWELL_MS)
-                sessions[-1][1].wait_for_timeout(FINAL_DWELL_MS)
+                sessions[-1][2].wait_for_timeout(FINAL_DWELL_MS)
                 # 全セッションを開いた状態を維持し、各参加者が通常の間隔で再訪する。
-                for index, (_context, page, events) in enumerate(sessions):
+                for index, _context, page, events in sessions:
                     check_running(processes, result)
                     page.bring_to_front()
                     result["rows"].append(navigation(page, events, index, "route_warm", "/home"))
                     page.wait_for_timeout(DWELL_MS)
+                    target = "/assignments" if single_small else route_for(index)
                     result["rows"].append(navigation(
-                        page, events, index, "route_warm", route_for(index)
+                        page, events, index, "route_warm", target
                     ))
+                    if single_small:
+                        # 再訪も独立検証時と同じ順序・待機時間にする。
+                        result["rows"].append(navigation(
+                            page, events, index, "return_home", "/home"
+                        ))
+                        result["rows"].append(navigation(
+                            page, events, index, "route_warm", "/strengths"
+                        ))
                     result["warm_contexts"] += 1
-                    print(f"{result['label']}: warm {index + 1}/{count}",
+                    print(f"{result['label']}: warm {result['warm_contexts']}/{count}",
                           file=sys.stderr, flush=True)
                     page.wait_for_timeout(DWELL_MS)
-                sessions[-1][1].wait_for_timeout(FINAL_DWELL_MS)
+                sessions[-1][2].wait_for_timeout(FINAL_DWELL_MS)
                 check_running(processes, result)
             finally:
                 browser.close()
@@ -474,9 +492,10 @@ def run(args):
             or not (source / "backend/src/caliboo_api/main.py").is_file()
             or json.loads((frontend / "package.json").read_text())["name"] != "caliboo-frontend"):
         raise RuntimeError("正式ビルド済みのローカルCalibooチェックアウトを指定してください")
-    count = 3 if args.smoke else CONTEXTS
+    count = 1 if args.single_small else 3 if args.smoke else CONTEXTS
     result = {
         "label": args.label, "profile": args.profile, "contexts_requested": count,
+        "single_small": args.single_small,
         "cold_contexts": 0, "warm_contexts": 0, "rows": [], "statuses": Counter(),
         "requests": Counter(), "errors": [], "blocked_hosts": [],
         "min_available_mb": available_mb(), "stopped": None,
@@ -520,7 +539,9 @@ def run(args):
                     ))
                     wait_port(backend_port)
                     wait_port(frontend_port)
-                    browser_measure(base, processes, count, result, args.browser_executable)
+                    browser_measure(
+                        base, processes, count, result, args.browser_executable, args.single_small
+                    )
                 finally:
                     for process in reversed(processes):
                         stop_process(process)
@@ -541,9 +562,14 @@ def main():
                         help="正式ビルド済みのローカルCalibooチェックアウト")
     parser.add_argument("--label", required=True, help="比較結果の識別子")
     parser.add_argument("--profile", choices=("small", "populated"), default="populated")
-    parser.add_argument("--smoke", action="store_true", help="3コンテキストの動作確認だけ行う")
+    modes = parser.add_mutually_exclusive_group()
+    modes.add_argument("--smoke", action="store_true", help="3コンテキストの動作確認だけ行う")
+    modes.add_argument("--single-small", action="store_true",
+                       help="少量データでメンバー1人の通常導線を1回ずつ比較する")
     parser.add_argument("--browser-executable", help="ローカルのChromium実行ファイル（省略可）")
     args = parser.parse_args()
+    if args.single_small and args.profile != "small":
+        parser.error("--single-small requires --profile small")
     result = run(args)
     print(json.dumps(result, ensure_ascii=False, indent=2))
     if result["stopped"] or result["errors"] or (

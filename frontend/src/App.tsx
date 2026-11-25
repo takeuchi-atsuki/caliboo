@@ -9,8 +9,9 @@ import { RequireAuth } from "./components/auth/RequireAuth";
 import { LoginPage } from "./features/auth/LoginPage";
 import { HomePage } from "./features/home/HomePage";
 import { DevelopmentPage } from "./features/development/DevelopmentPage";
+import { AssignmentListPage } from "./features/assignment/AssignmentListPage";
 
-// !NOTE: ログイン・ホーム・強みは通常利用で頻繁に使うため初期JSに含め、
+// !NOTE: ログイン・ホーム・強み・課題一覧は通常利用で頻繁に使うため初期JSに含め、
 // 初回遷移時の追加のJS取得をなくす。その他の画面は画面単位で遅延読み込みする。
 // 認証・テーマ・ルーターは常に起動し、保護された画面は認証が済むまで描画しない。
 const ReportPage = lazy(() => import("./features/report/ReportPage").then((module) => ({ default: module.ReportPage })));
@@ -19,7 +20,6 @@ const OjtThreePanePage = lazy(() => import("./features/ojt/OjtThreePanePage").th
 const OjtSettingsPage = lazy(() => import("./features/ojt/OjtSettingsPage").then((module) => ({ default: module.OjtSettingsPage })));
 const QuizPage = lazy(() => import("./features/study/QuizPage").then((module) => ({ default: module.QuizPage })));
 const StudyChatPage = lazy(() => import("./features/study/StudyChatPage").then((module) => ({ default: module.StudyChatPage })));
-const AssignmentListPage = lazy(() => import("./features/assignment/AssignmentListPage").then((module) => ({ default: module.AssignmentListPage })));
 const AssignmentDetailPage = lazy(() => import("./features/assignment/AssignmentDetailPage").then((module) => ({ default: module.AssignmentDetailPage })));
 const AssignmentProposalPage = lazy(() => import("./features/assignment/AssignmentProposalPage").then((module) => ({ default: module.AssignmentProposalPage })));
 const StrengthsPage = lazy(() => import("./features/strengths/StrengthsPage").then((module) => ({ default: module.StrengthsPage })));

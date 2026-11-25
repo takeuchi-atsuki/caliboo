@@ -4,11 +4,13 @@ import { act, fireEvent, render, screen } from "@testing-library/react";
 import App from "./App";
 import { ApiError, apiClient } from "./lib/apiClient";
 
-const { homeRendered, strengthsRendered, reportRequested, reportReady, resolveReport } = vi.hoisted(() => {
+const {
+  homeRendered, strengthsRendered, assignmentsRendered, reportRequested, reportReady, resolveReport,
+} = vi.hoisted(() => {
   let resolveReport!: () => void;
   const reportReady = new Promise<void>((resolve) => { resolveReport = resolve; });
   return {
-    homeRendered: vi.fn(), strengthsRendered: vi.fn(), reportRequested: vi.fn(),
+    homeRendered: vi.fn(), strengthsRendered: vi.fn(), assignmentsRendered: vi.fn(), reportRequested: vi.fn(),
     reportReady, resolveReport,
   };
 });
@@ -38,10 +40,22 @@ vi.mock("./features/development/DevelopmentPage", async () => {
     strengthsRendered();
     return <>
       <h1>強み</h1>
-      <Link to="/report">日報へ</Link>
+      <Link to="/assignments">課題へ</Link>
     </>;
   }
   return { DevelopmentPage };
+});
+
+vi.mock("./features/assignment/AssignmentListPage", async () => {
+  const { Link } = await import("react-router-dom");
+  function AssignmentListPage() {
+    assignmentsRendered();
+    return <>
+      <h1>課題一覧</h1>
+      <Link to="/report">日報へ</Link>
+    </>;
+  }
+  return { AssignmentListPage };
 });
 
 vi.mock("./features/report/ReportPage", async () => {
@@ -70,6 +84,7 @@ it("認証を維持し、頻用画面の即時遷移とその他画面の遅延�
   const loginButton = await screen.findByRole("button", { name: "ログイン" });
   expect(homeRendered).not.toHaveBeenCalled();
   expect(strengthsRendered).not.toHaveBeenCalled();
+  expect(assignmentsRendered).not.toHaveBeenCalled();
   expect(reportRequested).not.toHaveBeenCalled();
   fireEvent.change(screen.getByLabelText("ログインID"), { target: { value: "test-member" } });
   fireEvent.change(screen.getByLabelText("パスワード"), { target: { value: "test-password" } });
@@ -83,6 +98,12 @@ it("認証を維持し、頻用画面の即時遷移とその他画面の遅延�
   fireEvent.click(screen.getByRole("link", { name: "強みへ" }));
   expect(screen.getByRole("heading", { name: "強み" })).toBeInTheDocument();
   expect(window.location.pathname).toBe("/strengths");
+  expect(assignmentsRendered).not.toHaveBeenCalled();
+  expect(reportRequested).not.toHaveBeenCalled();
+
+  fireEvent.click(screen.getByRole("link", { name: "課題へ" }));
+  expect(screen.getByRole("heading", { name: "課題一覧" })).toBeInTheDocument();
+  expect(window.location.pathname).toBe("/assignments");
   expect(reportRequested).not.toHaveBeenCalled();
 
   fireEvent.click(screen.getByRole("link", { name: "日報へ" }));
