@@ -4,6 +4,8 @@
 `docs/test-perspectives.md`の「AIの課題案」節に対応する最小の入力で検証する。
 """
 
+import pytest
+
 from caliboo_api.services.assignment_proposal.providers import RuleBasedProposalGenerator
 from caliboo_api.services.assignment_proposal.theme_catalog import FALLBACK_THEME_KEY
 
@@ -206,6 +208,7 @@ def test_progress_material_appears_when_there_is_a_not_submitted_assignment():
         "submittedCount": 2,
         "reviewedCount": 1,
         "notSubmittedCount": 1,
+        "recentReportCount": 0,
         "recentMoods": [],
     }
 
@@ -217,6 +220,19 @@ def test_progress_material_is_absent_when_everything_is_submitted():
     assert result["progress"]["notSubmittedCount"] == 0
 
 
+@pytest.mark.parametrize("report_count", range(8))
+def test_progress_counts_recent_reports_even_without_moods_or_theme_materials(report_count):
+    reports = [_report(f"2026-09-{day:02d}") for day in range(report_count, 0, -1)]
+
+    result = _generate(reports=reports, submission_statuses=["submitted", "reviewed"])
+
+    assert result["progress"]["submittedCount"] == 2
+    assert result["progress"]["recentReportCount"] == min(report_count, 5)
+    assert result["progress"]["recentMoods"] == []
+    assert result["themeKey"] == FALLBACK_THEME_KEY
+    assert result["materials"] == []
+
+
 def test_progress_recent_moods_reflects_first_mood_of_each_recent_report_newest_first():
     reports = [
         _report("2026-09-05", mood=["tired", "foggy"]),
@@ -226,6 +242,7 @@ def test_progress_recent_moods_reflects_first_mood_of_each_recent_report_newest_
 
     result = _generate(reports=reports)
 
+    assert result["progress"]["recentReportCount"] == 3
     assert result["progress"]["recentMoods"] == ["tired", "happy"]
 
 

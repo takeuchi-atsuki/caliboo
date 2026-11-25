@@ -2,12 +2,15 @@
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import ValidationError
-from sqlalchemy.dialects.sqlite import insert
+from caliboo_api.dialect import conflict_insert, lock_user
 from sqlalchemy.orm import Session
 
 from caliboo_api.auth.deps import get_current_user, require_admin
 from caliboo_api.data.account_data import is_active, now_iso
-from caliboo_api.data.agent_jobs import candidate_kind, candidate_view, enqueue_strength, job_view
+from caliboo_api.data.agent_jobs import (
+    candidate_kind, candidate_rows, candidate_view, candidate_view_with_interpretation,
+    enqueue_strength, job_view,
+)
 from caliboo_api.db import get_session
 from caliboo_api.extension_models import (
     AgentJob, AgentJobContext, AgentJobExecution, StrengthCandidate, StrengthEvaluation,
@@ -48,6 +51,8 @@ def pending_job(session: Session, job_id: int, kind: str) -> AgentJob:
     job = session.get(AgentJob, job_id)
     if job is None or job.kind != kind:
         raise HTTPException(404, "job not found")
+    lock_user(session, job.user_id)
+    session.refresh(job)
     if job.status != "pending":
         raise HTTPException(409, "job is no longer pending")
     member_or_404(session, job.user_id)
@@ -63,20 +68,19 @@ def list_strengths(
     target = userId if userId is not None else user.id
     if user.role != "admin" and target != user.id:
         raise HTTPException(403, "forbidden")
-    query = session.query(StrengthCandidate).filter_by(user_id=target)
-    if user.role != "admin":
-        query = query.filter_by(status="approved")
+    candidates = candidate_rows(session, target, approved_only=user.role != "admin")
     jobs = (
-        session.query(AgentJob)
-        .filter_by(user_id=target, kind="strength")
+        session.query(AgentJob, AgentJobExecution)
+        .outerjoin(AgentJobExecution, AgentJobExecution.job_id == AgentJob.id)
+        .filter(AgentJob.user_id == target, AgentJob.kind == "strength")
         .order_by(AgentJob.id.desc())
         .limit(20)
         .all()
     )
     return {
-        "candidates": [candidate_view(row, session)
-                       for row in query.order_by(StrengthCandidate.id.desc())],
-        "jobs": [job_view(job, execution=session.get(AgentJobExecution, job.id)) for job in jobs],
+        "candidates": [candidate_view_with_interpretation(row, interpretation)
+                       for row, interpretation in candidates],
+        "jobs": [job_view(job, execution=execution) for job, execution in jobs],
         "reviewPending": session.query(StrengthCandidate).filter_by(
             user_id=target, status="pending").count() > 0,
     }
@@ -97,10 +101,15 @@ def request_strength(
 def list_jobs(
     _admin: User = Depends(require_admin), session: Session = Depends(get_session)
 ) -> dict:
-    rows = session.query(AgentJob).filter(AgentJob.status.in_(["pending", "failed"])).order_by(
-        AgentJob.id).all()
-    return {"jobs": [job_view(row, execution=session.get(AgentJobExecution, row.id))
-                     for row in rows], "provider": provider_name()}
+    rows = (
+        session.query(AgentJob, AgentJobExecution)
+        .outerjoin(AgentJobExecution, AgentJobExecution.job_id == AgentJob.id)
+        .filter(AgentJob.status.in_(["pending", "failed"]))
+        .order_by(AgentJob.id)
+        .all()
+    )
+    return {"jobs": [job_view(row, execution=execution) for row, execution in rows],
+            "provider": provider_name()}
 
 
 @router.post("/jobs/{job_id}/retry")
@@ -194,6 +203,7 @@ def decide_strength(
     row = session.get(StrengthCandidate, candidate_id)
     if row is None:
         raise HTTPException(404, "candidate not found")
+    lock_user(session, row.user_id)
     member_or_404(session, row.user_id)
     kind = candidate_kind(session, row)
     if payload.kind is not None and payload.kind != kind:
@@ -290,7 +300,7 @@ def evaluate(
         comment=payload.comment,
     )
     session.execute(
-        insert(StrengthEvaluation)
+        conflict_insert(session, StrengthEvaluation)
         .values(**values)
         .on_conflict_do_update(
             index_elements=["job_id", "reviewer_id"],

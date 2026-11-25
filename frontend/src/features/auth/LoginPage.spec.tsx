@@ -1,8 +1,9 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 
 import { LoginPage } from "./LoginPage";
+import wordmark from "../../assets/brand/caliboo-wordmark.svg";
 import { useAuth } from "../../components/auth/AuthProvider";
 import type { CurrentUser } from "../../lib/types";
 
@@ -68,6 +69,19 @@ describe("LoginPage", () => {
     renderWithFrom({ pathname: "/assignment/1" });
 
     expect(screen.getByText("ログインして始めよう")).toBeInTheDocument();
+  });
+
+  it("ログイン画面のh1は公式ワードマークの読み上げ名を持つ", () => {
+    mockedUseAuth.mockReturnValue(authValue("unauthenticated"));
+    renderWithFrom();
+
+    const heading = screen.getByRole("heading", { level: 1, name: "Caliboo（キャリブー）" });
+    expect(screen.getAllByRole("heading", { level: 1 })).toEqual([heading]);
+    expect(within(heading).getByRole("img", { name: "Caliboo（キャリブー）" })).toHaveAttribute("src", wordmark);
+    expect(screen.getByLabelText("ログインID")).toBeInTheDocument();
+    expect(screen.getByLabelText("パスワード")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "ログイン" })).toBeDisabled();
+    expect(screen.getByRole("link", { name: "パスワードを忘れた場合" })).toHaveAttribute("href", "/password/reset");
   });
 });
 

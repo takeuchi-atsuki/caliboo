@@ -7,9 +7,10 @@ import os
 from caliboo_api.auth.password import hash_password
 from caliboo_api.config import get_settings
 from caliboo_api.data.account_data import initialize_profile, now_iso
-from caliboo_api.db import bootstrap_db, init_engine, session_scope
+from caliboo_api.db import prepare_runtime, session_scope
 from caliboo_api.extension_models import AccountState
 from caliboo_api.models import User
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 
 def main() -> None:
@@ -27,8 +28,7 @@ def main() -> None:
     previous = os.environ.get("CALIBOO_DEMO_SEED")
     os.environ["CALIBOO_DEMO_SEED"] = "false"
     try:
-        init_engine(get_settings().sqlite_path)
-        bootstrap_db()
+        prepare_runtime(get_settings())
     finally:
         if previous is None:
             os.environ.pop("CALIBOO_DEMO_SEED", None)
@@ -45,12 +45,19 @@ def main() -> None:
             created_at=now_iso(),
         )
         session.add(user)
-        session.flush()
-        initialize_profile(session, user.id)
-        session.add(AccountState(user_id=user.id, active=True))
-        session.commit()
+        try:
+            session.flush()
+            initialize_profile(session, user.id)
+            session.add(AccountState(user_id=user.id, active=True))
+            session.commit()
+        except IntegrityError:
+            session.rollback()
+            parser.error("login id or related data already exists")
     print("管理者を作成しました。")
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except SQLAlchemyError:
+        raise SystemExit("DB管理処理に失敗しました。DB設定を確認してください。") from None

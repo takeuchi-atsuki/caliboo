@@ -31,7 +31,7 @@ def create_report(session: Session, user_id: int, payload: ReportRequest) -> Rep
 def fetch_report_history(user_id: int) -> list[ReportHistoryItem]:
     """本人が提出済み(status=="submitted")の日報履歴を、日付降順(同日付はID降順)で返す。
 
-    `id`はsqlite_autoincrementのため単調増加し、提出順の代理として使える。
+    `id`はDBの自動採番であり、同日分の表示順を決定するために使う。
     """
     with session_scope() as session:
         rows = (

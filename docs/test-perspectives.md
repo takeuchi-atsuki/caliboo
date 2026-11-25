@@ -140,6 +140,16 @@
 - 配信・見送りは確認ダイアログを経て実行され、完了後は一覧へ戻る
 - 開発用アカウントに日報を持つ新入社員ハルカが追加される(シードのためDB作成時のみ)。既存DBのまま起動しても新テーブルが作られ、課題案APIが動作する
 
+#### 生成時点の日報ときもちの有無の区別(#40)
+
+Issue #40 の受入条件および実装依頼の確認観点。上記の生成時点の状況の観点を具体化する。
+
+- 対象者の提出済み日報0件、1〜5件(気分未選択)、気分選択ありを区別する。旧課題案の日報数が欠落/`null`の場合、空のきもち配列から日報の有無を断定しない。旧課題案にきもちがある場合は従来どおり表示する。
+- ルールベース・生成AIとも、実際に使用した対象者の提出済み日報の件数(最大5件)を保存し、他人の日報と下書きは除外する。後日の提出で保存済みの課題案の表示が変化しない。
+- 分析した材料の件数および課題の提出数と日報の件数を混同せず、従来の配信・見送りの導線を維持する。
+
+API結合テストは`backend/tests/integration/`、通常画面の表示テストは`frontend/src/features/assignment/`、ブラウザーでの確認は`docs/manual-test-cases.md`の「日報の有無ときもちの表示 (#40)」に対応する。
+
 ## ログイン・ユーザー/ロール基盤
 
 2026-09-25にユーザー承認済み。API結合フローは`backend/tests/integration/test_flows.py`に、認証・認可の判定規則は単体テスト(`backend/tests/unit/test_auth*.py`)に、画面操作を伴う観点は`docs/manual-test-cases.md`に対応させている。
@@ -297,6 +307,10 @@ PL-1/2は`tests/integration/test_learning_cycle.py`と`tests/unit/test_learning_
 承認済み観点に対応し、`tests/unit/test_study_chat.py`で公開問題と履歴の入力・上限・手動モード・長い履歴の除外を検証する。`tests/integration/test_study_chat.py`で公開問題引継ぎと追質問のHTTP契約、正解データ非送信、他人の文脈非参照、障害からの再送と不正出力拒否を確認する。`useStudyChat.spec.ts`・`quizHandoff.spec.ts`・`StudyChatPage.spec.tsx`で1回だけの自動送信、StrictMode、問題文脈の保持、失敗と再送、二重操作・離脱・入力保持・待ち表示を確認する。
 
 
+### PL-4/5/6・SP-3: #19 実接続前の応答契約（2026-11-25）
+
+既存承認済み観点の回帰として、`backend/tests/unit/test_provider_contracts.py`で5経路の送信スキーマと正常な合成応答を照合し、全必須項目の欠落と追加項目を拒否すること、manual旧形式の既定値を維持することを確認する。`backend/tests/integration/test_ai_worker.py`で合成通常予行と強み・再生成の契約違反時の非保存／旧版維持、`test_llm_proposals.py`で初回課題の非保存・再試行、`test_grounded_ojt.py`・`test_study_chat.py`でチャットの欠損応答拒否、OJT履歴の非保存などを確認する。実API接続および通常のブラウザー手動予行の再実施は対象外であり、実接続は #19 で追跡する。
+
 ### PL-7: 本人の誤答と復習期限（2026-09-29）
 
 承認済み観点に対応し、`tests/unit/test_quiz_review.py`で期限前後の優先順位・分野から渡された候補・同問除外/1問だけの継続・旧正解済みと進捗の保持・間隔上限と誤答リセット・同時更新・ロールバックを確認する。`tests/integration/test_quiz_review.py`で誤答→別問題→期限到来→復習→正解と再起動、本人分離、再回答の非重複集計、不正入力時の非保存、正解データ非公開を確認する。既存`test_quiz.py`の分野・除外・問題なしも維持し、`QuizPracticeReason.spec.tsx`で出題理由を確認する。
@@ -304,7 +318,7 @@ PL-1/2は`tests/integration/test_learning_cycle.py`と`tests/unit/test_learning_
 
 ### 実日報評価の独立性（2026-09-29、GitHub #18）
 
-既存の未完了バックログ評価観点（2名・20件・不足を合格にしない）を具体化する。`tests/unit/test_holdout.py`で未閲覧申告、固定材料、二重ラベル・同時保存、結果先行の拒否、原文引用、受容性の固定、モデル/プロンプト版ごとの集計を検証する。旧方式の20件×2名でも合格にしない回帰は`test_backlog_extensions.py`。`tests/integration/test_holdout.py`は2名の操作→結果の同時登録→受容性、再起動保持、本人への非配信、各APIの講師限定を確認する。`HoldoutEvaluation.spec.tsx`は入力保持・必須確認・手順に応じた表示・二重保存防止を確認する。すべて合成fixtureであり、実日報の本番妥当性は#3で別に評価する。
+既存の未完了バックログ評価観点（2名・20件・不足を合格にしない）を具体化する。`tests/unit/test_holdout.py`で未閲覧申告、固定材料、二重ラベル・同時保存、結果先行の拒否、原文引用、受容性の固定、実行条件（provider/model/promptVersion）の各項目ごとの集計、19/20完了件・片側未入力の除外、一致率・受容率それぞれの31/32票（40票中）の境界を検証する。旧方式の20件×2名でも合格にしない回帰は`test_backlog_extensions.py`。`tests/integration/test_holdout.py`は2名の操作→結果の同時登録→受容性、再起動保持、本人への非配信、各APIの講師限定を確認する。`HoldoutEvaluation.spec.tsx`は入力保持・必須確認・手順に応じた表示・二重保存防止、管理画面から凍結材料と材料SHA-256を一緒に出力し返却値を取り込む手順、既存固定結果の表示を確認する。すべて合成fixtureであり、実日報の本番妥当性は#3で別に評価する。
 
 ## 能力・性格傾向としての強み（2026-09-29）
 

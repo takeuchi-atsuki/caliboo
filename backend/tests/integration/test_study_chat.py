@@ -68,12 +68,13 @@ def test_service_failure_is_retryable_and_does_not_leak_details(
     assert client.post("/api/study/chat", json=dict(text="TCPについて")).status_code == 200
 
 
-def test_invalid_answer_fields_are_not_accepted(client, monkeypatch):
+@pytest.mark.parametrize("output", [{}, {"answer": "答え", "correctIndex": 1}])
+def test_invalid_answer_fields_are_not_accepted(client, monkeypatch, output):
     enable(monkeypatch)
 
     def respond(request, timeout):
         return BytesIO(json.dumps(dict(status="completed", output=[dict(type="message", content=[
-            dict(type="output_text", text=json.dumps(dict(answer="答え", correctIndex=1))),
+            dict(type="output_text", text=json.dumps(output)),
         ])])).encode())
 
     monkeypatch.setattr(llm, "urlopen", respond)

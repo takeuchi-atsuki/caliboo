@@ -41,6 +41,8 @@ def test_automatic_learning_cycle(tmp_path, monkeypatch):
             source = next(row for row in inputs["materials"]["sources"] if row["field"] == "keep")
             output = dict(candidates=[dict(
                 label="根拠を整理する力", skillCode="TEST", confidence=80,
+                kind="ability", summary="根拠を照合して観点を整理した",
+                scopeNote="合成の日報・課題の観測範囲",
                 growthAction="観点を次の共有会で試す", evidence=[dict(
                     materialId=source["id"], quote=source["text"])],
             )], notes="観測に基づく候補")
@@ -93,6 +95,9 @@ def test_automatic_learning_cycle(tmp_path, monkeypatch):
                    for item in final_input["materials"]["sources"])
         response = admin.get(f"/api/development/strengths?userId={user_id}")
         candidate = response.json()["candidates"][0]
+        assert candidate["kind"] == "ability"
+        assert candidate["summary"] == "根拠を照合して観点を整理した"
+        assert candidate["scopeNote"] == "合成の日報・課題の観測範囲"
         assert admin.post(f"/api/development/strengths/{candidate['id']}/decision", json={
             "status": "approved", "label": candidate["label"],
             "growthAction": candidate["growthAction"],
@@ -143,14 +148,19 @@ def test_regeneration_checks_quotes_and_previous_version(client, admin_client, m
     job = admin_client.post(f"/api/assignment-proposals/{proposal['id']}/regenerate",
                             json={"instruction": "短時間で実施できるように"}).json()
 
-    def generate(instructions, materials, output_type, config):
+    def respond(request, timeout):
+        body = json.loads(request.data)
+        assert body["text"]["format"]["name"] == "RegeneratedProposal"
+        materials = json.loads(body["input"][0]["content"])
         assert materials["instruction"] == "短時間で実施できるように"
         source = materials["sources"][0]
-        return output_type(title="短時間の実践", body="観点を1つ記録する", messageForMember="試しましょう",
-                           rationale="時間を絞って実施するため", estimateMinutes=10,
-                           evidence=[dict(materialId=source["id"], quote=source["text"])])
+        return response_packet(dict(
+            title="短時間の実践", body="観点を1つ記録する", messageForMember="試しましょう",
+            rationale="時間を絞って実施するため", estimateMinutes=10,
+            evidence=[dict(materialId=source["id"], quote=source["text"])],
+        ))
 
-    monkeypatch.setattr(llm, "generate_json", generate)
+    monkeypatch.setattr(llm, "urlopen", respond)
     config = llm.LLMSettings("test", "test")
     assert process_next(config)
     updated = admin_client.get(f"/api/assignment-proposals/{proposal['id']}").json()
@@ -183,3 +193,67 @@ def test_regeneration_rejects_unverified_evidence(client, admin_client, evidence
     actual = admin_client.get(f"/api/assignment-proposals/{proposal['id']}").json()
     assert actual["title"] == proposal["title"] and actual["generator"] == proposal["generator"]
     assert admin_client.get(f"/api/development/jobs/{job['id']}").json()["status"] == "pending"
+
+
+@pytest.mark.parametrize("missing", ["kind", "summary", "scopeNote"])
+def test_strength_missing_provider_interpretation_is_not_saved(
+        client, admin_client, monkeypatch, missing):
+    user_id = client.get("/api/auth/me").json()["id"]
+    job = admin_client.post(f"/api/development/strengths/{user_id}/request").json()
+
+    def respond(request, timeout):
+        body = json.loads(request.data)
+        inputs = json.loads(body["input"][0]["content"])
+        source = next(row for row in inputs["materials"]["sources"] if row["evidenceEligible"])
+        candidate = dict(label="根拠を確認する力", skillCode="TEST", kind="ability",
+                         summary="根拠を照合した", scopeNote="本人の記録の範囲", confidence=80,
+                         growthAction="観点を共有する", evidence=[dict(
+                             materialId=source["id"], quote=source["text"])])
+        del candidate[missing]
+        return response_packet(dict(candidates=[candidate], notes="観測に基づく候補"))
+
+    monkeypatch.setattr(llm, "urlopen", respond)
+    assert process_next(llm.LLMSettings("test", "test"))
+    jobs = admin_client.get("/api/development/jobs").json()["jobs"]
+    result = next(row for row in jobs if row["id"] == job["id"])
+    assert result["status"] == "failed" and result["lastError"] == "invalid_output"
+    strengths = admin_client.get(f"/api/development/strengths?userId={user_id}").json()
+    assert strengths["candidates"] == []
+
+
+@pytest.mark.parametrize("invalid", ["messageForMember", "quote", "extra"])
+def test_regeneration_invalid_provider_contract_preserves_previous_version(
+        client, admin_client, monkeypatch, invalid):
+    user_id = client.get("/api/auth/me").json()["id"]
+    proposal = admin_client.post("/api/assignment-proposals", json={"userId": user_id}).json()
+    job = admin_client.post(f"/api/assignment-proposals/{proposal['id']}/regenerate",
+                            json={"instruction": "短時間に"}).json()
+    revision_path = f"/api/assignment-proposals/{proposal['id']}/revisions"
+    previous_revisions = admin_client.get(revision_path).json()["revisions"]
+    assert previous_revisions[0]["jobId"] == job["id"]
+
+    def respond(request, timeout):
+        body = json.loads(request.data)
+        materials = json.loads(body["input"][0]["content"])
+        source = materials["sources"][0]
+        output = dict(title="短時間の実践", body="観点を1つ記録する", messageForMember="試しましょう",
+                      rationale="時間を絞るため", estimateMinutes=10,
+                      evidence=[dict(materialId=source["id"], quote=source["text"])])
+        if invalid == "extra":
+            output["evidence"][0]["extra"] = "余分な項目"
+        elif invalid == "quote":
+            del output["evidence"][0][invalid]
+        else:
+            del output[invalid]
+        return response_packet(output)
+
+    monkeypatch.setattr(llm, "urlopen", respond)
+    assert process_next(llm.LLMSettings("test", "test"))
+    jobs = admin_client.get("/api/development/jobs").json()["jobs"]
+    result = next(row for row in jobs if row["id"] == job["id"])
+    assert result["status"] == "failed" and result["lastError"] == "invalid_output"
+    actual = admin_client.get(f"/api/assignment-proposals/{proposal['id']}").json()
+    for key in ("title", "body", "messageForMember", "rationale", "estimateMinutes", "generator"):
+        assert actual[key] == proposal[key]
+    assert admin_client.get(revision_path).json()["revisions"] == previous_revisions
+    assert admin_client.get(f"/api/development/jobs/{job['id']}").json()["result"] is None

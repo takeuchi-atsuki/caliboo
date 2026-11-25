@@ -5,6 +5,7 @@ import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
 import MuiButton from "@mui/material/Button";
 
+import wordmarkUrl from "../../assets/brand/caliboo-wordmark.svg";
 import { Mascot } from "../../components/mascot/Mascot";
 import { Button } from "../../components/ui/Button";
 import { useAuth } from "../../components/auth/AuthProvider";
@@ -101,8 +102,17 @@ export function LoginPage() {
         }}
       >
         <Mascot size={72} color="var(--color-green-300)" mood="cheer" />
-        <Box sx={{ textAlign: "center" }}>
-          <Box component="h1" sx={{ m: 0, fontFamily: "'Nunito', sans-serif", fontWeight: 800, fontSize: 32, letterSpacing: "-0.04em", color: "var(--color-text)" }}>Caliboo</Box>
+        <Box sx={{ textAlign: "center", maxWidth: "100%" }}>
+          <Box component="h1" sx={{ m: 0, p: "12px", borderRadius: "12px", "[data-theme=dark] &": { bgcolor: "#FFFCF6" } }}>
+            <Box
+              component="img"
+              src={wordmarkUrl}
+              alt="Caliboo（キャリブー）"
+              width={438}
+              height={137}
+              sx={{ display: "block", mx: "auto", width: { xs: 160, sm: 192 }, maxWidth: "100%", height: "auto" }}
+            />
+          </Box>
           <Box sx={{ fontWeight: 500, fontSize: 12.5, color: "var(--color-text-sub)", marginTop: "4px" }}>
             ログインして始めよう
           </Box>

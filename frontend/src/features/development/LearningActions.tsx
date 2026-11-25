@@ -23,7 +23,7 @@ export function LearningActions({ target, admin, candidates }: {
       admin={admin} busy={resource.busy} save={resource.act} />)}
     <Typography component="h2" variant="h6">配信された課題</Typography>
     {resource.data?.assignments.map((assignment) => <Paper key={assignment.id} sx={{ p: 2 }}>
-      <Link to={`/assignment/${assignment.id}`}>{assignment.title}</Link>
+      <Link to={`/assignments/${assignment.id}`}>{assignment.title}</Link>
       <Typography variant="body2">{assignmentStatuses[assignment.status]}{assignment.target ? " / 個人向け" : ""}</Typography>
     </Paper>)}
     {resource.data?.assignments.length === 0 && <Typography>配信された課題はありません。</Typography>}

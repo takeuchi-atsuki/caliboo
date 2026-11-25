@@ -37,6 +37,7 @@ def basic_job(user_id, kind="strength", materials=None):
 def candidate_batch(materials, **changes):
     source = next(item for item in materials["sources"] if item["evidenceEligible"])
     candidate = dict(label="根拠を確認する力", skillCode="TEST", confidence=70,
+                     kind="ability", summary="本人が根拠を確認した", scopeNote="観測記録に限る",
                      growthAction="確認した観点を共有する", evidence=[dict(
                          materialId=source["id"], quote=source["text"])])
     return job_inference.CandidateBatch(candidates=[{**candidate, **changes}], notes="観測に基づく候補")

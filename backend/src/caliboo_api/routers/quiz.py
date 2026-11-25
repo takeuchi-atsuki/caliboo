@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy.dialects.sqlite import insert
+from caliboo_api.dialect import conflict_insert, lock_user
 from sqlalchemy.orm import Session
 
 from caliboo_api.auth.deps import get_current_user
@@ -43,9 +43,10 @@ def answer_quiz(payload: QuizAnswerRequest, user: User = Depends(get_current_use
     if payload.selectedIndex >= len(record.choices):
         raise HTTPException(422, "choice index out of range")
     correct_answer = payload.selectedIndex == record.correct_index
+    lock_user(session, user.id)
     record_attempt(session, user.id, record.id, payload.selectedIndex, correct_answer)
     if correct_answer:
-        session.execute(insert(QuizSuccess).values(
+        session.execute(conflict_insert(session, QuizSuccess).values(
             user_id=user.id, question_id=record.id,
         ).on_conflict_do_nothing())
     for category in session.query(UserProgress).filter_by(user_id=user.id):

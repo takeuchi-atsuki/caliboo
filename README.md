@@ -2,7 +2,7 @@
 
 Calibooは、新人研修向けのパーソナライズ学習支援アプリです。日報による振り返り、OJTでの相談、資格勉強、課題演習を通じて、新入社員の学習と講師の育成支援をつなぎます。
 
-現在は、画面・業務フローの検証と強み解析のPoCを進めている開発段階です。ReactのフロントエンドとFastAPIのバックエンドで構成し、学習記録などをSQLiteに保存します。
+現在は、画面・業務フローの検証と強み解析のPoCを進めている開発段階です。ReactのフロントエンドとFastAPIのバックエンドで構成し、学習記録などをSQLite、または明示設定した共有PostgreSQLに保存します。
 
 ## 主な機能
 
@@ -31,7 +31,7 @@ Calibooは、新人研修向けのパーソナライズ学習支援アプリで�
 | --- | --- |
 | フロントエンド | React 18 / TypeScript / Vite / MUI / React Router |
 | バックエンド | Python 3.12以降 / FastAPI / SQLAlchemy |
-| データベース | SQLite |
+| データベース | SQLite（既定） / PostgreSQL 18 + psycopg 3（共有モード） |
 | 認証 | パスワード認証・HttpOnly Cookieによるセッション管理 |
 | テスト・静的解析 | pytest / pytest-cov / flake8 / Vitest / Testing Library / TypeScript |
 | 開発環境 | VS Code Dev Containers、またはWSL / Linux / macOS |
@@ -111,10 +111,11 @@ SQLiteのデータベースは初回起動時に自動作成され、以後の�
 
 | 環境変数 | 既定値 | 用途 |
 | --- | --- | --- |
+| `CALIBOO_DATABASE_URL` | 未設定（SQLite互換） | PostgreSQL接続先。指定時はSQLiteへフォールバックしない |
 | `CALIBOO_SQLITE_PATH` | `backend/var/caliboo.db`（リポジトリからの絶対パス） | SQLiteファイルの保存先 |
 | `CALIBOO_COOKIE_SECURE` | `false` | `true`または`1`でセッションCookieにSecure属性を付与 |
 
-設定を変える場合は、起動するシェルで環境変数を指定します。通常のローカル開発は既定値のままで動作します。
+設定を変える場合は、起動するシェルで環境変数を指定します。通常のローカル開発は既定値のままで動作します。共有モードは別途PostgreSQL 18の空DBを用意し、起動前に初期化または移行します。新規構築では既定でデモアカウントを作成せず、管理CLIの対話入力で初期管理者を作成します。接続文字列やパスワードをソース、ログ、コマンド履歴に記録しないでください。詳細は[共有DBの構築・移行・検証](docs/shared-database.md)を参照してください。
 
 > [!NOTE]
 > 開発時はHTTPで利用するため、`CALIBOO_COOKIE_SECURE`は既定で無効です。また、フロントエンドからの`/api`リクエストはViteがバックエンドへ転送し、Cookie認証に必要な同一オリジンでの通信を保ちます。

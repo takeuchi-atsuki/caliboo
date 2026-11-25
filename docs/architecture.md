@@ -14,21 +14,31 @@
 
 ```
 frontend/  React + TypeScript + Vite（画面）
-backend/   FastAPI（SQLiteでDB永続化するAPI）
+backend/   FastAPI（SQLite / PostgreSQLでDB永続化するAPI）
 docs/      本ディレクトリ（仕様書）
 ```
 
-バックエンドはSQLiteでDB永続化を行う。DB本体は`backend/var/caliboo.db`(`CALIBOO_SQLITE_PATH`環境変数で変更可能)に保存され、アプリ起動時(`main.py`の`lifespan`)に`init_engine()`→`bootstrap_db()`でテーブル作成・初回シード投入を行う。`POST /api/report`等の書き込み系エンドポイントは、DBの`reports`テーブルへINSERTする。`GET /api/report/history`により、提出済み日報の全文(Keep/Problem/Try/きもち/きもちコメント)を一覧取得できる。下書き(`status: "draft"`)は`GET /api/report/drafts`で一覧取得・`DELETE /api/report/drafts/{id}`で削除でき、一覧から選んだ内容をフロントのフォームへ反映することで編集を実現している(専用の更新APIは無く、編集後の再保存も既存の`POST /api/report`への新規INSERTで行う。詳細は`docs/screens/report.md`を参照)。
+バックエンドは既定ではSQLiteでDB永続化を行う。DB本体は`backend/var/caliboo.db`(`CALIBOO_SQLITE_PATH`環境変数で変更可能)に保存され、アプリ起動時(`main.py`の`lifespan`)に`init_engine()`→`bootstrap_db()`でテーブル作成・初回シード投入を行う。`POST /api/report`等の書き込み系エンドポイントは、DBの`reports`テーブルへINSERTする。`GET /api/report/history`により、提出済み日報の全文(Keep/Problem/Try/きもち/きもちコメント)を一覧取得できる。下書き(`status: "draft"`)は`GET /api/report/drafts`で一覧取得・`DELETE /api/report/drafts/{id}`で削除でき、一覧から選んだ内容をフロントのフォームへ反映することで編集を実現している(専用の更新APIは無く、編集後の再保存も既存の`POST /api/report`への新規INSERTで行う。詳細は`docs/screens/report.md`を参照)。
 
 課題演習機能(`assignments`/`assignment_submissions`テーブル)は、講師による課題(タイトル・課題文)の作成、新入社員によるテキスト回答の提出、講師によるコメントフィードバックという一連のワークフローを永続化する(詳細は`docs/screens/assignment.md`を参照)。個人宛ての課題は`assignment_recipients`(課題ごとに0〜1行。行なし=全員宛て)で配信先と講師のひとことを持つ。AIの課題案は`assignment_proposals`に生成時の内容・分析した材料・生成器名を記録し、配信すると作成した課題を`assignment_id`で指す。既定の生成は`services/assignment_proposal/`のルールベース生成器(`RuleBasedProposalGenerator`)で行い、強み解析PoCの`providers.py`と同じくProtocolで差し替え可能にしている。
 
-!NOTE: MySQL/PostgreSQL等の外部DBMSではなくSQLiteを選んだ理由は、DevContainerだけで完結し追加のミドルウェアインストールが不要な点(移植性)、依存関係を最小限に保つ方針、および今回のスコープが「デザイン案の動作確認」であり本格的な同時接続・スケールを想定しないためである。
+!NOTE: 初期PoCでMySQL/PostgreSQL等の外部DBMSではなくSQLiteを選んだ理由は、DevContainerだけで完結し追加のミドルウェアインストールが不要な点(移植性)、依存関係を最小限に保つ方針、および今回のスコープが「デザイン案の動作確認」であり本格的な同時接続・スケールを想定しないためである。
 
 !TIP: モック定数は削除せず`backend/src/caliboo_api/data/seed/`配下に保持し、`bootstrap_db()`の初回シード投入元、およびテストの固定データとして共用している(シードデータとテストフィクスチャの二重管理を避けるため)。シード投入は`departments`テーブルが空の場合のみ行われるため、既存の`caliboo.db`ファイルが残っている限り再投入されない(`assignments`/`assignment_submissions`等、後から追加したテーブルも同じ単一ゲートの対象で、テーブル自体は`create_all`で作られてもシードは投入されない)。ローカルのシード内容を最新化したい場合は`backend/var/caliboo.db`を削除してから再起動する。(例: AIの課題案の確認用に追加した新入社員ハルカとその日報(`report_seed.py`)は、DBを作り直すまで入らない)
 
-`bootstrap_db()`はシード投入の判定より前に旧スキーマ(`users`テーブル導入前)のDBを検知する(`db.py`の`_check_schema_compatibility()`)。`home_profile`テーブルが存在し、`departments`がシード済みであるにもかかわらず「`users`が空」または「`home_profile`に`user_id`列が無い」場合を旧スキーマとみなし、`backend/var/caliboo.db`の削除を促すメッセージ付きで起動に失敗する。マイグレーションは用意していないため、旧スキーマのDBは削除して作り直す必要がある。`users`テーブル導入前のコードへ戻す場合も、同じくDBの削除が必要になる。
+`bootstrap_db()`はシード投入の判定より前に旧スキーマ(`users`テーブル導入前)のDBを検知する(`db.py`の`_check_schema_compatibility()`)。`home_profile`テーブルが存在し、`departments`がシード済みであるにもかかわらず「`users`が空」または「`home_profile`に`user_id`列が無い」場合を旧スキーマとみなし、`backend/var/caliboo.db`の削除を促すメッセージ付きで起動に失敗する。SQLiteの旧スキーマを現行版へ自動更新するマイグレーションは用意していないため、旧スキーマのローカル検証DBは作り直す必要がある。`users`テーブル導入前のコードへ戻す場合も、同じくDBの削除が必要になる。
 
 !NOTE: 旧スキーマを検知して起動を止めるのは、`create_all`が既存テーブルに列を追加しないため。黙って起動すると「誰もログインできない」「一部APIだけ500になる」という原因の分かりにくい状態になる。
+
+## 共有DB（issue #25）
+
+`CALIBOO_DATABASE_URL`未設定時は従来のSQLite互換モード。明示設定時は`postgresql+psycopg`で1台のPostgreSQL 18に接続する。全端末は同じFastAPIを利用し、ブラウザからDBへの直接接続は行わない。管理CLIとAPI内の永続ワーカーも同じ接続先を使用する。
+
+共有モードは起動時に現行40表・列と課題案部分一意索引の存在を検査する。DDL、デモシード、アカウント追加は起動時に行わない。共有DBが利用できないときは起動またはAPI処理が失敗し、ローカルSQLiteへ切り替えない。初回構築・空DBへの単一スナップショット移行・検証は専用CLIで実行する。
+
+!NOTE: PostgreSQLは複数トランザクションが同時に判定・書込できるため、確認待ち課題案の一意性は部分一意索引でも保証する。共有DBでの課題案生成は`INSERT ... RETURNING`で挿入されたIDの有無を確認し、新規作成(201)と既存案返却(200)を区別する。クイズ達成率、回答とフィードバックの順序、強み候補、認証情報の変更等は対象者単位のロックと既存の条件付き更新・一意制約を組み合わせる。外部推論中はロックを保持しない。既存SQLiteの同時利用を新たに保証するものではない。
+
+詳細な操作、移行制約、復元、検証観点は[共有DBの構築・移行・検証](shared-database.md)参照。複数SQLite DBの統合、旧版スキーマの自動アップグレード、本番切替は対象外とする。
 
 ## 認証・認可
 
@@ -91,6 +101,7 @@ services/poc_strength/
 - MUI(`@mui/material`): 業務ロジックと密結合したUI要素(資格勉強クイズの選択肢、OJT課カード等)を含む全コンポーネントで採用する。キーボード操作対応・フォーカス管理・フォーカスリング表示を自前実装すると都度作り込みが必要になるため、標準でこれらを備えるUIライブラリに委ねる方針とした。
 - 色・角丸のデザイントークン(`src/styles/tokens.css`のCSS変数)は単一の色ソースとして維持し、`src/theme.ts`の`createAppTheme(mode)`から参照する。`palette.accent`は`var(--color-*)`のままモード分岐が不要だが、`palette.text`/`palette.background`はMUI内部が`alpha()`等の色演算に使うため、CSS変数参照ではなくモードごとに異なる実値をハードコードする例外としている(詳細は`src/theme.ts`のコメント参照)。
 - ダークモード対応: `tokens.css`は`:root`(ライト)に加え`[data-theme="dark"]`セレクタでダーク版のCSS変数を持つ。`<html>`要素の`data-theme`属性で切り替わり、`components/theme/ThemeModeProvider.tsx`が初期値の決定(localStorage優先、無ければOS設定`prefers-color-scheme`に追従)・切替・永続化を担う。初期表示後も、まだ手動でモードを選択していない間はOS設定のライブ変更(`matchMedia`の`change`イベント)に追従し続けるが、一度でも手動選択(localStorageへの保存)が行われた後は、OS設定が変化してもそれを無視し明示選択を維持する。
+- ルート単位の読み込み: `App.tsx`は頻用するログイン・ホーム・強み・課題一覧を静的に取り込み、残る画面を`React.lazy`で分割し、`Suspense`で読み込み中の状態を表示する。!NOTE: 初回遷移での追加JS取得を減らしつつ初期JS gzipの削減を維持するため、頻用4画面を初期JSに含める。課題詳細・課題案は引き続き遅延読み込みとする。認証・テーマ・ルーターは先に起動し、JSの取得方式にかかわらず保護ページの描画・API利用は認証・認可に従う。配信時のgzip合計と計測方法は[GUI応答性能](gui-performance.md)を参照。
 - ログイン状態: `components/auth/AuthProvider.tsx`が起動時に`GET /api/auth/me`でログイン中のユーザーを取得し、`useAuth()`で各画面へ提供する。`components/auth/RequireAuth.tsx`が`/login`以外の全ルートを保護する。APIが401を返した場合(セッション期限切れ等)は`lib/apiClient.ts`の401ハンドラ経由で未ログイン状態へ戻し、`/login`へ遷移させる(`/api/auth/*`自体の401は、ログイン失敗の表示と競合させないため対象外)。
 - 日報入力内容の自動保存: `features/report/reportAutosave.ts`がlocalStorage(キー`caliboo:report-autosave`)への読み書きを担う。プライベートモード等でlocalStorageが例外を投げても日報の入力・送信という本来の機能を止めないよう、読み書きをすべて`try/catch`で囲み失敗時は「自動保存なし」として扱う(テーマ設定は表示設定の保持のみで、`try/catch`は入れていない)(仕様は`docs/screens/report.md`「入力内容の自動保存・復元」参照)。
 - Tailwind CSSは採用しない。アクセントカラー・角丸のユーティリティクラス生成という役割はMUIのテーマ機能と重複するため、`devDependencies`・`postcss.config.js`のプラグイン登録を外している。`tailwind.config.ts`/`postcss.config.js`のファイル自体はビルドに関与しない状態で残置されている(削除コマンドの実行権限上の制約による)。
@@ -118,7 +129,7 @@ services/poc_strength/
 
 ## レイアウト・レスポンシブ方針
 
-`src/theme.ts`で定義済みのMUI標準`breakpoints`(`xs:0, sm:600, md:900, lg:1200, xl:1536`)をそのまま採用し、**`md`(900px)未満を「コンパクト表示」に切り替える原則の閾値**としてアプリ全体で統一している(例外はReport・課題一覧(`/assignments`)のヘッダー行と`TopNav`右側のユーザー表示で、いずれも`sm`を境界にする)。OJT三ペイン(`/ojt/panel`)・Quiz(`/study`)・StudyChat(`/study/chat`)の固定幅サイドバー/ペインは、`components/layout/CollapsibleAside.tsx`により`md`未満でMUI`Drawer`のオーバーレイ表示(ドロワー化)に切り替わり、`TopNav`のナビゲーションは管理者向け項目を含むため`lg`未満でハンバーガーメニュー+Drawerに切り替わる。Home(`/home`)は強み・ふり返り・ショートカット・学習度を全幅で縦に並べ、ショートカット3枚と、ふり返り・学習度の本文とボタンを`md`未満で縦積みにする。Report(`/report`)のKPT3カラムも`md`、ヘッダーボタン行のみ`sm`を境に縦積みへ変わる。`TopNav`右側のユーザー表示(表示名・ロール・アバター)も例外的に`sm`未満で隠し、ログアウトボタンが画面内に収まるようにしている(対象とする最小幅は320px。`sm`未満でロゴ文字も省略)。
+`src/theme.ts`で定義済みのMUI標準`breakpoints`(`xs:0, sm:600, md:900, lg:1200, xl:1536`)をそのまま採用し、**`md`(900px)未満を「コンパクト表示」に切り替える原則の閾値**としてアプリ全体で統一している(例外はReport・課題一覧(`/assignments`)のヘッダー行と`TopNav`右側のユーザー表示で、いずれも`sm`を境界にする)。OJT三ペイン(`/ojt/panel`)・Quiz(`/study`)・StudyChat(`/study/chat`)の固定幅サイドバー/ペインは、`components/layout/CollapsibleAside.tsx`により`md`未満でMUI`Drawer`のオーバーレイ表示(ドロワー化)に切り替わり、`TopNav`のナビゲーションは管理者向け項目を含むため`lg`未満でハンバーガーメニュー+Drawerに切り替わる。Home(`/home`)は強み・ふり返り・ショートカット・学習度を全幅で縦に並べ、ショートカット3枚と、ふり返り・学習度の本文とボタンを`md`未満で縦積みにする。Report(`/report`)のKPT3カラムも`md`、ヘッダーボタン行のみ`sm`を境に縦積みへ変わる。`TopNav`右側のユーザー表示(表示名・ロール・アバター)も例外的に`sm`未満で隠し、ログアウトボタンが画面内に収まるようにしている(対象とする最小幅は320px。`sm`未満では公式アプリアイコン単体、`sm`以上では従来のマスコットと公式ワードマークを表示する)。
 
 !NOTE: 境界を原則`md`に統一した理由は、OJT三ペインの固定幅(左230px+右382px=612px)だけで`sm`(600px)を超えてしまい、`sm`を境界にするとタブレット縦持ち幅(768px前後)でも中央チャットが極端に狭くなるため。画面ごとに閾値がバラバラだと挙動を覚えにくくなる点も踏まえ、`md`をアプリ全体の判断基準としている。例外(Report・課題一覧のヘッダー行、`TopNav`右側のユーザー表示)は、レイアウト全体の切替ではなく、`sm`未満の狭い画面で個別の要素を画面内に収めるための調整に限っている。
 
@@ -127,6 +138,8 @@ services/poc_strength/
 `CollapsibleAside`はMUIの`Drawer`(`variant="temporary"`)をポータル経由で描画するため、親の`display:flex`コンテナに置いても幅を消費しない。そのため各画面の外枠(flex比率・固定高さ)自体は変更せず、既存の`<aside>`を`<CollapsibleAside>`に置き換えるだけで対応している。`md`以上に戻った際は内部で開閉状態を自動的にリセットする(モバイル幅でドロワーを開いたまま画面を広げ、再度狭めたときに意図せず開いた状態にならないようにするため)。
 
 !NOTE: `CollapsibleAside`は静的`<aside>`とDrawerとでJSXツリーの構造自体(`Box` vs `Drawer`)を切り替えるため、`md`境界をまたぐたびに`children`のサブツリーが再マウントされる。現状の`children`(課カード一覧・分野リスト等)はローカルUI状態を持たないため実害は無いが、将来的に検索フィルタ入力等のローカル状態を子要素へ追加する場合は、この再マウントで状態が消える点に注意が必要。
+
+公式ロゴの表示と同梱アセットの出典は [UI改善仕様](ui-refresh.md#公式ロゴの適用issue-38) を参照。両HTML入口のアイコンとUI内の画像には同梱した公式素材を用い、ダークモードでも素材の色は加工しない。
 
 ## バックエンドAPI設計の要点
 
@@ -185,6 +198,8 @@ OJTの共通処理（本人×部署の会話保存、講師への明示相談と
 `learning_actions`を追加し、ユーザー、任意の承認済み強み、行動と達成の目安、期限、状態、振り返り、更新番号を保存する。選択時の強みをJSONで保存するため、後続の解析が本人の計画を変えない。既存DBは`create_all`でテーブルを追加し、既存データの変更・削除を必要としない。
 
 ホームと強み画面の定期取得は`useAutoRefresh`と`useResource`が担う。表示中のみ5秒間隔で実行し、取得処理中・保存中には重ねず、非表示時に停止する。画面復帰時に取得し、対象変更・アンマウント後の古い応答を破棄する。フォームの下書きは取得結果から独立し、更新番号不一致をサーバー側の条件付きUPDATEで拒否する。
+
+ホームと強みの読み取りでは候補と解釈を、強みと解析管理ではジョブと実行情報を外部結合でまとめて取得する。対応行が存在しない旧データも残し、候補の公開条件・並び順およびジョブの絞り込み・並び順は変更しない。キャッシュによる陳腐化を避け、既存の5秒更新で最新のDB状態を読む。詳細は[GUI応答性能](gui-performance.md)を参照。
 
 詳細は [個別学習仕様](personalized-learning.md) を参照。
 ## 外部生成provider（2026-09-29）

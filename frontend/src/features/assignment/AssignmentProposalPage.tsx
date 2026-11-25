@@ -415,7 +415,12 @@ function ProposalAnalysisPanel({ proposal }: { proposal: ProposalDetail }) {
             })
           ) : (
             <Box component="span" sx={{ fontSize: 12, color: "var(--color-text-sub)" }}>
-              日報の記録なし
+              {/* !NOTE: 旧データの未記録(null/欠落)から日報0件と断定しない。 */}
+              {proposal.progress.recentReportCount == null
+                ? "きもちの選択記録はありません"
+                : proposal.progress.recentReportCount === 0
+                  ? "課題案の生成時点で、提出済みの日報はありません"
+                  : "提出済みの日報に、きもちの選択はありません"}
             </Box>
           )}
         </Box>

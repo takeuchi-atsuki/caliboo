@@ -128,6 +128,8 @@ def post_chat(payload: OjtChatRequest, user: User = Depends(get_current_user),
 def escalate(dept_id: str, user: User = Depends(require_member),
              session: Session = Depends(get_session)) -> dict:
     thread = thread_for(session, user.id, dept_id)
+    thread = session.query(OjtThread).filter_by(id=thread.id).populate_existing().with_for_update(
+    ).one()
     if not messages_for(session, thread):
         raise HTTPException(409, "send a message before requesting help")
     if thread.escalated_at is None or thread.resolved_at is not None:
@@ -157,7 +159,7 @@ class ReplyRequest(BaseModel):
 def reply_to_escalation(thread_id: int, payload: ReplyRequest,
                         admin: User = Depends(require_admin),
                         session: Session = Depends(get_session)) -> dict:
-    thread = session.get(OjtThread, thread_id)
+    thread = session.query(OjtThread).filter_by(id=thread_id).with_for_update().one_or_none()
     if thread is None or thread.escalated_at is None:
         raise HTTPException(404, "escalation not found")
     if thread.resolved_at is not None:

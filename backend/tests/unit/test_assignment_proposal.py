@@ -1,7 +1,9 @@
 """AIの課題案API(`/api/assignment-proposals`)の仕様テスト。"""
 
+import pytest
+
 import caliboo_api.db as db
-from caliboo_api.models import Report
+from caliboo_api.models import AssignmentProposal, Report
 
 
 def _user_id(client) -> int:
@@ -131,6 +133,35 @@ def test_get_proposal_detail_returns_full_fields(admin_client, other_member_clie
     assert "estimateMinutes" in body
     assert body["rejectReason"] is None
     assert body["decidedBy"] is None
+
+
+@pytest.mark.parametrize("legacy_count", [{}, {"recentReportCount": None}])
+@pytest.mark.parametrize("legacy_moods", [[], ["tired", "happy"]])
+def test_get_legacy_proposal_progress_preserves_unknown_count(
+    admin_client, other_member_client, legacy_count, legacy_moods,
+):
+    sora_id = _user_id(other_member_client)
+    created = _create_proposal(admin_client, sora_id)
+    legacy_progress = {
+        "submittedCount": 0,
+        "reviewedCount": 0,
+        "notSubmittedCount": 3,
+        "recentMoods": legacy_moods,
+        **legacy_count,
+    }
+    with db.session_scope() as session:
+        proposal = session.get(AssignmentProposal, created["id"])
+        proposal.progress = legacy_progress
+        session.commit()
+
+    # !NOTE: 旧データの件数は、生成後の日報から推測したり保存し直したりしない。
+    _insert_report(sora_id, "2026-10-01")
+    response = admin_client.get(f"/api/assignment-proposals/{created['id']}")
+
+    assert response.status_code == 200
+    assert response.json()["progress"] == {**legacy_progress, "recentReportCount": None}
+    with db.session_scope() as session:
+        assert session.get(AssignmentProposal, created["id"]).progress == legacy_progress
 
 
 def test_get_proposal_detail_missing_returns_404(admin_client):
@@ -531,6 +562,7 @@ def test_materials_include_report_quote_with_date_and_progress_values(
         "submittedCount": 0,
         "reviewedCount": 0,
         "notSubmittedCount": 3,
+        "recentReportCount": 1,
         "recentMoods": [],
     }
 

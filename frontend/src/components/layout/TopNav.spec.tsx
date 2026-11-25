@@ -4,6 +4,8 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter, useLocation } from "react-router-dom";
 import { ThemeProvider } from "@mui/material/styles";
 import { useMediaQuery } from "@mui/material";
+import appIcon from "../../assets/brand/caliboo-app-icon.svg";
+import wordmark from "../../assets/brand/caliboo-wordmark.svg";
 import { TopNav } from "./TopNav";
 import { useAuth } from "../auth/AuthProvider";
 import { useThemeMode } from "../theme/ThemeModeProvider";
@@ -38,6 +40,30 @@ beforeEach(() => {
 });
 
 describe("共通ナビゲーション (docs/ui-refresh.md)", () => {
+  it("公式ロゴを装飾画像として1つのホームリンクに置き、キーボードで遷移できる", async () => {
+    const user = userEvent.setup();
+    renderNav("/assignments/42");
+    const home = screen.getByRole("link", { name: "Caliboo ホーム" });
+    expect(home).toHaveAttribute("href", "/home");
+
+    // 幅による表示切替と余白は、実ブラウザーで確認する。
+    const images = Array.from(home.querySelectorAll("img"));
+    expect(images).toHaveLength(2);
+    expect(images.map((image) => image.getAttribute("src"))).toEqual(
+      expect.arrayContaining([appIcon, wordmark]),
+    );
+    for (const image of images) {
+      expect(image).toHaveAttribute("alt", "");
+    }
+
+    await user.tab();
+    expect(screen.getByRole("button", { name: "メニューを開く" })).toHaveFocus();
+    await user.tab();
+    expect(home).toHaveFocus();
+    await user.keyboard("{Enter}");
+    expect(screen.getByTestId("location")).toHaveTextContent("/home");
+  });
+
   it("詳細URLでも親を現在地とし、下部リンクで遷移できる", async () => {
     const user = userEvent.setup();
     renderNav("/assignments/42");

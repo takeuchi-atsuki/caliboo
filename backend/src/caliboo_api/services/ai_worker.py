@@ -5,7 +5,7 @@ import logging
 import time
 
 from fastapi import HTTPException
-from sqlalchemy.dialects.sqlite import insert
+from caliboo_api.dialect import conflict_insert
 
 from caliboo_api.data.account_data import now_iso
 from caliboo_api.data.assignment_proposal_data import save_generated_proposal
@@ -52,7 +52,7 @@ def process_next(config: llm.LLMSettings) -> bool:
                     job.status = "completed"
                     job.completed_at = now_iso()
                     job.result = dict(proposalId=proposal.id, created=is_new)
-                    session.execute(insert(ProposalAutomation).values(
+                    session.execute(conflict_insert(session, ProposalAutomation).values(
                         user_id=job.user_id, last_date=today).on_conflict_do_update(
                         index_elements=["user_id"], set_={"last_date": today}))
                 session.commit()

@@ -15,11 +15,13 @@ from pathlib import Path
 from fastapi.staticfiles import StaticFiles
 from typing import AsyncIterator
 
-from fastapi import Depends, FastAPI
+from fastapi import Depends, FastAPI, Request
+from fastapi.responses import JSONResponse
+from sqlalchemy.exc import OperationalError, InterfaceError
 
 from caliboo_api.auth.deps import get_current_user
 from caliboo_api.config import get_settings
-from caliboo_api.db import bootstrap_db, init_engine
+from caliboo_api.db import prepare_runtime
 from caliboo_api.routers import (
     assignment,
     assignment_proposal,
@@ -42,8 +44,7 @@ from caliboo_api.services import ai_worker, llm
 @asynccontextmanager
 async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
     settings = get_settings()
-    init_engine(settings.sqlite_path)
-    bootstrap_db()
+    prepare_runtime(settings)
     stop = asyncio.Event()
     task = None
     if llm.provider_name() == "openai":
@@ -57,6 +58,13 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
 
 
 app = FastAPI(title="Caliboo API", lifespan=lifespan)
+
+
+@app.exception_handler(OperationalError)
+@app.exception_handler(InterfaceError)
+async def database_unavailable(_request: Request, _exc: Exception) -> JSONResponse:
+    # !NOTE: DBエラーの詳細やSQLパラメーターをレスポンスに含めない。
+    return JSONResponse(status_code=503, content={"detail": "database unavailable"})
 
 app.include_router(auth.router)
 app.include_router(home.router, dependencies=[Depends(get_current_user)])

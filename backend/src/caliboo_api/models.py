@@ -3,7 +3,7 @@
 アプリで使用する全テーブルをこのファイルに集約する。
 """
 
-from sqlalchemy import JSON, Column, ForeignKey, Integer, String, UniqueConstraint
+from sqlalchemy import JSON, Column, ForeignKey, Index, Integer, String, UniqueConstraint, text
 from sqlalchemy.orm import declarative_base
 
 Base = declarative_base()
@@ -123,7 +123,12 @@ class AssignmentProposal(Base):
     """
 
     __tablename__ = "assignment_proposals"
-    __table_args__ = {"sqlite_autoincrement": True}
+    __table_args__ = (
+        Index("uq_assignment_proposals_pending_user", "target_user_id", unique=True,
+              postgresql_where=text("assignment_id IS NULL AND decided_at IS NULL")
+              ).ddl_if(dialect="postgresql"),
+        {"sqlite_autoincrement": True},
+    )
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     target_user_id = Column(Integer, ForeignKey("users.id"), nullable=False)

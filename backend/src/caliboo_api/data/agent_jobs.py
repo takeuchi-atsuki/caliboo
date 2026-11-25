@@ -4,7 +4,7 @@ import hashlib
 import json
 import time
 
-from sqlalchemy.dialects.sqlite import insert
+from caliboo_api.dialect import conflict_insert, lock_user
 from sqlalchemy.orm import Session
 
 from caliboo_api.data.account_data import now_iso
@@ -48,18 +48,19 @@ def create_job(session: Session, user_id: int, kind: str, materials: dict,
         fingerprint_input.append(context)
     encoded = json.dumps(fingerprint_input, ensure_ascii=False, sort_keys=True)
     fingerprint = hashlib.sha256(encoded.encode()).hexdigest()
-    session.execute(insert(AgentJob).values(
+    session.execute(conflict_insert(session, AgentJob).values(
         user_id=user_id, kind=kind, materials=materials, fingerprint=fingerprint,
         status="pending", created_at=now_iso(),
     ).on_conflict_do_nothing(index_elements=["fingerprint"]))
     job = session.query(AgentJob).filter_by(fingerprint=fingerprint).one()
     if context is not None:
-        session.execute(insert(AgentJobContext).values(job_id=job.id, context=context).
-                        on_conflict_do_nothing())
+        session.execute(conflict_insert(session, AgentJobContext).values(
+            job_id=job.id, context=context).on_conflict_do_nothing())
     return job
 
 
 def enqueue_strength(session: Session, user_id: int) -> AgentJob | None:
+    lock_user(session, user_id)
     materials = strength_materials(session, user_id)
     if not materials:
         return None
@@ -88,8 +89,24 @@ def candidate_kind(session: Session, row: StrengthCandidate) -> str:
     return interpretation.kind if interpretation is not None else "ability"
 
 
+def candidate_rows(session: Session, user_id: int, approved_only: bool):
+    """本人の候補と任意の解釈を取得する(解釈のない旧候補も残す)。"""
+    query = session.query(StrengthCandidate, StrengthInterpretation).outerjoin(
+        StrengthInterpretation, StrengthInterpretation.candidate_id == StrengthCandidate.id
+    ).filter(StrengthCandidate.user_id == user_id)
+    if approved_only:
+        query = query.filter(StrengthCandidate.status == "approved")
+    # !NOTE: 解釈は候補ごとに0/1件。外部結合により候補数に依存する追加SELECTを避ける。
+    return query.order_by(StrengthCandidate.id.desc()).all()
+
+
 def candidate_view(row: StrengthCandidate, session: Session) -> dict:
-    interpretation = candidate_interpretation(session, row)
+    return candidate_view_with_interpretation(row, candidate_interpretation(session, row))
+
+
+def candidate_view_with_interpretation(
+    row: StrengthCandidate, interpretation: StrengthInterpretation | None,
+) -> dict:
     return dict(id=row.id, userId=row.user_id, jobId=row.job_id, label=row.label,
                 skillCode=row.skill_code, confidence=row.confidence, evidence=row.evidence,
                 growthAction=row.growth_action, status=row.status,

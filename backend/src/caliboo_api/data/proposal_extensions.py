@@ -3,7 +3,7 @@
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
-from sqlalchemy.dialects.sqlite import insert
+from caliboo_api.dialect import conflict_insert, lock_user
 from sqlalchemy.orm import Session
 
 from caliboo_api.data.account_data import is_active
@@ -20,9 +20,10 @@ def today_jst() -> str:
 
 
 def enqueue_proposal(session: Session, user_id: int) -> AgentJob | None:
+    lock_user(session, user_id)
     today = today_jst()
-    session.execute(insert(ProposalAutomation).values(user_id=user_id, last_date="").
-                    on_conflict_do_nothing())
+    session.execute(conflict_insert(session, ProposalAutomation).values(
+        user_id=user_id, last_date="").on_conflict_do_nothing())
     automation = session.get(ProposalAutomation, user_id)
     if automation.last_date == today or _find_pending_proposal(session, user_id) is not None:
         session.commit()
@@ -52,8 +53,8 @@ def auto_propose(session: Session, user_id: int, event: str = "report") -> None:
     if statuses.count("not_submitted") < 3:
         return
     today = today_jst()
-    session.execute(insert(ProposalAutomation).values(user_id=user_id, last_date="").
-                    on_conflict_do_nothing())
+    session.execute(conflict_insert(session, ProposalAutomation).values(
+        user_id=user_id, last_date="").on_conflict_do_nothing())
     updated = session.query(ProposalAutomation).filter(
         ProposalAutomation.user_id == user_id, ProposalAutomation.last_date != today,
     ).update({"last_date": today})
