@@ -91,6 +91,7 @@ services/poc_strength/
 - MUI(`@mui/material`): 業務ロジックと密結合したUI要素(資格勉強クイズの選択肢、OJT課カード等)を含む全コンポーネントで採用する。キーボード操作対応・フォーカス管理・フォーカスリング表示を自前実装すると都度作り込みが必要になるため、標準でこれらを備えるUIライブラリに委ねる方針とした。
 - 色・角丸のデザイントークン(`src/styles/tokens.css`のCSS変数)は単一の色ソースとして維持し、`src/theme.ts`の`createAppTheme(mode)`から参照する。`palette.accent`は`var(--color-*)`のままモード分岐が不要だが、`palette.text`/`palette.background`はMUI内部が`alpha()`等の色演算に使うため、CSS変数参照ではなくモードごとに異なる実値をハードコードする例外としている(詳細は`src/theme.ts`のコメント参照)。
 - ダークモード対応: `tokens.css`は`:root`(ライト)に加え`[data-theme="dark"]`セレクタでダーク版のCSS変数を持つ。`<html>`要素の`data-theme`属性で切り替わり、`components/theme/ThemeModeProvider.tsx`が初期値の決定(localStorage優先、無ければOS設定`prefers-color-scheme`に追従)・切替・永続化を担う。初期表示後も、まだ手動でモードを選択していない間はOS設定のライブ変更(`matchMedia`の`change`イベント)に追従し続けるが、一度でも手動選択(localStorageへの保存)が行われた後は、OS設定が変化してもそれを無視し明示選択を維持する。
+- ルート単位の読み込み: `App.tsx`は頻用するログイン・ホーム・強み・課題一覧を静的に取り込み、残る画面を`React.lazy`で分割し、`Suspense`で読み込み中の状態を表示する。!NOTE: 初回遷移での追加JS取得を減らしつつ初期JS gzipの削減を維持するため、頻用4画面を初期JSに含める。課題詳細・課題案は引き続き遅延読み込みとする。認証・テーマ・ルーターは先に起動し、JSの取得方式にかかわらず保護ページの描画・API利用は認証・認可に従う。配信時のgzip合計と計測方法は[GUI応答性能](gui-performance.md)を参照。
 - ログイン状態: `components/auth/AuthProvider.tsx`が起動時に`GET /api/auth/me`でログイン中のユーザーを取得し、`useAuth()`で各画面へ提供する。`components/auth/RequireAuth.tsx`が`/login`以外の全ルートを保護する。APIが401を返した場合(セッション期限切れ等)は`lib/apiClient.ts`の401ハンドラ経由で未ログイン状態へ戻し、`/login`へ遷移させる(`/api/auth/*`自体の401は、ログイン失敗の表示と競合させないため対象外)。
 - 日報入力内容の自動保存: `features/report/reportAutosave.ts`がlocalStorage(キー`caliboo:report-autosave`)への読み書きを担う。プライベートモード等でlocalStorageが例外を投げても日報の入力・送信という本来の機能を止めないよう、読み書きをすべて`try/catch`で囲み失敗時は「自動保存なし」として扱う(テーマ設定は表示設定の保持のみで、`try/catch`は入れていない)(仕様は`docs/screens/report.md`「入力内容の自動保存・復元」参照)。
 - Tailwind CSSは採用しない。アクセントカラー・角丸のユーティリティクラス生成という役割はMUIのテーマ機能と重複するため、`devDependencies`・`postcss.config.js`のプラグイン登録を外している。`tailwind.config.ts`/`postcss.config.js`のファイル自体はビルドに関与しない状態で残置されている(削除コマンドの実行権限上の制約による)。
@@ -185,6 +186,8 @@ OJTの共通処理（本人×部署の会話保存、講師への明示相談と
 `learning_actions`を追加し、ユーザー、任意の承認済み強み、行動と達成の目安、期限、状態、振り返り、更新番号を保存する。選択時の強みをJSONで保存するため、後続の解析が本人の計画を変えない。既存DBは`create_all`でテーブルを追加し、既存データの変更・削除を必要としない。
 
 ホームと強み画面の定期取得は`useAutoRefresh`と`useResource`が担う。表示中のみ5秒間隔で実行し、取得処理中・保存中には重ねず、非表示時に停止する。画面復帰時に取得し、対象変更・アンマウント後の古い応答を破棄する。フォームの下書きは取得結果から独立し、更新番号不一致をサーバー側の条件付きUPDATEで拒否する。
+
+ホームと強みの読み取りでは候補と解釈を、強みと解析管理ではジョブと実行情報を外部結合でまとめて取得する。対応行が存在しない旧データも残し、候補の公開条件・並び順およびジョブの絞り込み・並び順は変更しない。キャッシュによる陳腐化を避け、既存の5秒更新で最新のDB状態を読む。詳細は[GUI応答性能](gui-performance.md)を参照。
 
 詳細は [個別学習仕様](personalized-learning.md) を参照。
 ## 外部生成provider（2026-09-29）
